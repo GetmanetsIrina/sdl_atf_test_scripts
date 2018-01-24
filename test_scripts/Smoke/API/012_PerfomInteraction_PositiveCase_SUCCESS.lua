@@ -263,30 +263,37 @@ local function PI_PerformViaVR_ONLY(paramsSend, self)
       timeoutPrompt = paramsSend.timeoutPrompt
     })
   :Do(function(_,data)
-      local function vrResponse()
-        self.hmiConnection:SendNotification("TTS.Started")
-        self.hmiConnection:SendNotification("VR.Started")
-        SendOnSystemContext(self, "VRSESSION")
-        self.hmiConnection:SendResponse(data.id, data.method, "SUCCESS",
-          { choiceID = paramsSend.interactionChoiceSetIDList[1] })
-        self.hmiConnection:SendNotification("TTS.Stopped")
-        self.hmiConnection:SendNotification("VR.Stopped")
-        SendOnSystemContext(self, "MAIN")
-      end
-      RUN_AFTER(vrResponse, 1000)
-    end)
+    local function vrResponse()
+      self.hmiConnection:SendNotification("TTS.Started")
+      self.hmiConnection:SendNotification("VR.Started")
+      SendOnSystemContext(self, "VRSESSION")
+      self.hmiConnection:SendResponse(data.id, data.method, "SUCCESS",
+        { choiceID = paramsSend.interactionChoiceSetIDList[1] })
+      self.hmiConnection:SendNotification("TTS.Stopped")
+      self.hmiConnection:SendNotification("VR.Stopped")
+      SendOnSystemContext(self, "MAIN")
+    end
+    RUN_AFTER(vrResponse, 1000)
+  end)
 
   EXPECT_HMICALL("UI.PerformInteraction", {
-      timeout = paramsSend.timeout,
-      vrHelp = paramsSend.vrHelp,
-      vrHelpTitle = paramsSend.initialText,
-    })
+    timeout = paramsSend.timeout,
+    vrHelp = paramsSend.vrHelp,
+    vrHelpTitle = paramsSend.initialText,
+  })
   :Do(function(_,data)
+    local function uiResponse()
       self.hmiConnection:SendResponse( data.id, data.method, "SUCCESS", { } )
-    end)
+    end
+    RUN_AFTER(uiResponse,1000) -- Added delay for response sending because of SD issue
+  end)
   ExpectOnHMIStatusWithAudioStateChanged_PI(self, "VR")
   self.mobileSession1:ExpectResponse(cid,
-    { success = true, resultCode = "SUCCESS", choiceID = paramsSend.interactionChoiceSetIDList[1] })
+    { success = true,
+      resultCode = "SUCCESS",
+      choiceID = paramsSend.interactionChoiceSetIDList[1],
+      triggerSource = "VR"
+    })
 end
 
 --! @PI_PerformViaMANUAL_ONLY: Processing PI with interaction mode MANUAL_ONLY with performing selection
@@ -327,7 +334,12 @@ local function PI_PerformViaMANUAL_ONLY(paramsSend, self)
     end)
   ExpectOnHMIStatusWithAudioStateChanged_PI(self, "MANUAL")
   self.mobileSession1:ExpectResponse(cid,
-    { success = true, resultCode = "SUCCESS", choiceID = paramsSend.interactionChoiceSetIDList[1] })
+    {
+      success = true,
+      resultCode = "SUCCESS",
+      choiceID = paramsSend.interactionChoiceSetIDList[1],
+      triggerSource = "MENU"
+    })
 end
 
 --! @PI_PerformViaBOTH: Processing PI with interaction mode BOTH with timeout on VR and IU

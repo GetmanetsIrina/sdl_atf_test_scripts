@@ -1,0 +1,2 @@
+./test_scripts/Smoke/ShutDown/ATF_ShutDown_MASTER_RESET.lua
+./test_scripts/Smoke/ShutDown/ATF_ShutDown_IGNITION_OFF.lua

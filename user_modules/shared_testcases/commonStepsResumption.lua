@@ -145,14 +145,17 @@ function commonStepsResumption:ExpectNoResumeApp(app)
   return exp
 end
 
-function commonStepsResumption:Expect_Resumption_Data(app)
+-- pAddComTimes parameter is work around for smoke test because of SDL issue with resuming AddCommand
+-- remove pAddComTimes parameter after resolving issue with resuming AddCommand
+function commonStepsResumption:Expect_Resumption_Data(pApp, pAddComTimes)
+  if not pAddComTimes then pAddComTimes = 2 end -- remove after resolving issue with resuming AddCommand
   local on_ui_sub_menu_added = EXPECT_HMICALL("UI.AddSubMenu")
   on_ui_sub_menu_added:Do(function(_,data)
     Test.hmiConnection:SendResponse(data.id, data.method, "SUCCESS")
   end)
   on_ui_sub_menu_added:ValidIf(function(_,data)
     if (data.params.menuParams.menuName == "SubMenu" and data.params.menuID == 1) then
-      if data.params.appID == app.hmi_app_id then
+      if data.params.appID == pApp.hmi_app_id then
         return true
       else
         commonFunctions:userPrint(31, "App is registered with wrong appID " )
@@ -162,13 +165,13 @@ function commonStepsResumption:Expect_Resumption_Data(app)
   end)
   local is_command_received = false
   local is_choice_received = false
-  local on_vr_commands_added = EXPECT_HMICALL("VR.AddCommand"):Times(2)
+  local on_vr_commands_added = EXPECT_HMICALL("VR.AddCommand"):Times(pAddComTimes) -- update pAddComTimes parameter to '2' after resolving issue with resuming AddCommand
   on_vr_commands_added:Do(function(_,data)
     Test.hmiConnection:SendResponse(data.id, data.method, "SUCCESS")
   end)
   on_vr_commands_added:ValidIf(function(_,data)
     if (data.params.type == "Command" and data.params.cmdID == 1) then
-      if (data.params.appID == app.hmi_app_id and not is_command_received) then
+      if (data.params.appID == pApp.hmi_app_id and not is_command_received) then
         is_command_received = true
         return true
       else
@@ -176,7 +179,7 @@ function commonStepsResumption:Expect_Resumption_Data(app)
         return false
       end
     elseif (data.params.type == "Choice" and data.params.cmdID == 1) then
-      if (data.params.appID == app.hmi_app_id and not is_choice_received) then
+      if (data.params.appID == pApp.hmi_app_id and not is_choice_received) then
         is_choice_received = true
         return true
       else

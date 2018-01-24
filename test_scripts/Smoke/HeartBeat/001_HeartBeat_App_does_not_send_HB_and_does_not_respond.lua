@@ -67,10 +67,10 @@ commonFunctions:newTestCasesGroup("Test")
 
 function Test:Start_Session_And_Register_App()
   self.mobileSession = mobile_session.MobileSession(self, self.mobileConnection)
-  self.mobileSession.activateHeartbeat = false
-  self.mobileSession.sendHeartbeatToSDL = false
+  config.defaultProtocolVersion = 3
+  self.mobileSession.sendHeartbeatToSDL = true
   self.mobileSession.answerHeartbeatFromSDL = false
-  self.mobileSession.ignoreSDLHeartBeatACK = false
+  self.mobileSession.ignoreHeartBeatAck = false
   self.mobileSession:StartRPC():Do(function()
     local correlation_id = self.mobileSession:SendRPC("RegisterAppInterface", default_app_params)
     EXPECT_HMINOTIFICATION("BasicCommunication.OnAppRegistered",
@@ -85,7 +85,6 @@ end
 
 function Test:Register_Second_App_With_HeartBeat()
   self.mobileSession1 = mobile_session.MobileSession(self, self.mobileConnection)
-  self.mobileSession1.activateHeartbeat = true
   self.mobileSession1.sendHeartbeatToSDL = true
   self.mobileSession1.answerHeartbeatFromSDL = true
   self.mobileSession1.ignoreSDLHeartBeatACK = false
@@ -99,6 +98,7 @@ function Test:Register_Second_App_With_HeartBeat()
 end
 
 function Test:Wait_15_seconds_And_Verify_OnAppUnregistered()
+  self.mobileSession.sendHeartbeatToSDL = false
   EXPECT_HMINOTIFICATION("BasicCommunication.OnAppUnregistered",
     {appID = default_app_params.hmi_app_id, unexpectedDisconnect =  true}):Timeout(15000):Do(function()
     self.mobileSession:StopHeartbeat()

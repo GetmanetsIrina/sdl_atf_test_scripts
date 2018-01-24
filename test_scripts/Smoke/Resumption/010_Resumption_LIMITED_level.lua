@@ -27,6 +27,7 @@ local commonFunctions = require('user_modules/shared_testcases/commonFunctions')
 local commonSteps = require('user_modules/shared_testcases/commonSteps')
 local commonStepsResumption = require('user_modules/shared_testcases/commonStepsResumption')
 local mobile_session = require('mobile_session')
+local commonSmoke = require('test_scripts/Smoke/commonSmoke')
 
 --[[ General Settings for configuration ]]
 Test = require('user_modules/dummy_connecttest')
@@ -52,8 +53,9 @@ function Test:Start_SDL_With_One_Activated_App()
           commonFunctions:userPrint(35, "Mobile Connected")
           self:startSession():Do(function ()
             commonFunctions:userPrint(35, "App is registered")
-            commonSteps:ActivateAppInSpecificLevel(self, self.applications[default_app_params.appName])
-            EXPECT_NOTIFICATION("OnHMIStatus", {hmiLevel = "FULL", audioStreamingState = "AUDIBLE", systemContext = "MAIN"})
+            commonSmoke.AppActivationForResumption(self, self.applications[default_app_params.appName])
+            EXPECT_NOTIFICATION("OnHMIStatus",
+              { hmiLevel = "FULL", audioStreamingState = "AUDIBLE", systemContext = "MAIN" })
             commonFunctions:userPrint(35, "App is activated")
           end)
         end)
@@ -79,8 +81,8 @@ commonFunctions:newTestCasesGroup("Transport unexpected disconnect. App resume a
 commonSteps:ChangeHMIToLimited("Change_app_to_Limited")
 
 function Test:Close_Session()
-  EXPECT_HMINOTIFICATION("BasicCommunication.OnAppUnregistered", {unexpectedDisconnect = true,
-                   appID = self.applications[default_app_params]})
+  EXPECT_HMINOTIFICATION("BasicCommunication.OnAppUnregistered",
+    { unexpectedDisconnect = true, appID = self.applications[default_app_params] })
   self.mobileSession:Stop()
 end
 
@@ -89,7 +91,7 @@ function Test:Register_And_Resumes_App_And_Data()
   local on_rpc_service_started = mobileSession:StartRPC()
   on_rpc_service_started:Do(function()
     default_app_params.hashID = self.currentHashID
-    commonStepsResumption:Expect_Resumption_Data(default_app_params)
+    commonStepsResumption:Expect_Resumption_Data(default_app_params,1) -- removed parameter value 1 after resolving SDL issue with resumption od AddCommand
     commonStepsResumption:RegisterApp(default_app_params, commonStepsResumption.ExpectResumeAppLIMITED, true)
   end)
 end

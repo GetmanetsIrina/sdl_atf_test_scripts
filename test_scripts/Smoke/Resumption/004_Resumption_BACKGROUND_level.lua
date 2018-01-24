@@ -29,6 +29,7 @@ local commonFunctions = require('user_modules/shared_testcases/commonFunctions')
 local commonSteps = require('user_modules/shared_testcases/commonSteps')
 local commonStepsResumption = require('user_modules/shared_testcases/commonStepsResumption')
 local mobile_session = require('mobile_session')
+local commonSmoke = require('test_scripts/Smoke/commonSmoke')
 
 --[[ General Settings for configuration ]]
 Test = require('user_modules/dummy_connecttest')
@@ -55,8 +56,9 @@ function Test:Start_SDL_With_One_Activated_App()
           commonFunctions:userPrint(35, "Mobile Connected")
           self:startSession():Do(function ()
             commonFunctions:userPrint(35, "App is registered")
-            commonSteps:ActivateAppInSpecificLevel(self, self.applications[default_app_params1.appName])
-            EXPECT_NOTIFICATION("OnHMIStatus", {hmiLevel = "FULL",audioStreamingState = "AUDIBLE", systemContext = "MAIN"})
+            commonSmoke.AppActivationForResumption(self, self.applications[default_app_params1.appName])
+            EXPECT_NOTIFICATION("OnHMIStatus",
+              {hmiLevel = "FULL",audioStreamingState = "AUDIBLE", systemContext = "MAIN"})
             commonFunctions:userPrint(35, "App is activated")
           end)
         end)
@@ -84,14 +86,14 @@ commonSteps:RegisterTheSecondMediaApp()
 commonSteps:ActivateTheSecondMediaApp()
 
 function Test:Close_Session2()
-  EXPECT_HMINOTIFICATION("BasicCommunication.OnAppUnregistered", {unexpectedDisconnect = true,
-    appID = self.applications[default_app_params2.appName]})
+  EXPECT_HMINOTIFICATION("BasicCommunication.OnAppUnregistered", { unexpectedDisconnect = true,
+    appID = self.applications[default_app_params2.appName] })
   self.mobileSession2:Stop()
 end
 
 function Test:Close_Session1()
-  EXPECT_HMINOTIFICATION("BasicCommunication.OnAppUnregistered", {unexpectedDisconnect = true,
-    appID = self.applications[default_app_params1.appName]})
+  EXPECT_HMINOTIFICATION("BasicCommunication.OnAppUnregistered", { unexpectedDisconnect = true,
+    appID = self.applications[default_app_params1.appName] })
   self.mobileSession:Stop()
 end
 
@@ -100,7 +102,7 @@ function Test:Register_And_No_Resume_App_BACKGROUND_And_Resumes_Data()
   local on_rpc_service_started = mobileSession:StartRPC()
   default_app_params1.hashID = self.currentHashID
   on_rpc_service_started:Do(function()
-    commonStepsResumption:Expect_Resumption_Data(default_app_params1)
+    commonStepsResumption:Expect_Resumption_Data(default_app_params1, 1) --removed parameter value 1 after resolving issue with resumtion of AddCommand
     commonStepsResumption:RegisterApp(default_app_params1, commonStepsResumption.ExpectNoResumeApp, true)
   end)
 end

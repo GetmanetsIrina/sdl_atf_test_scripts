@@ -57,6 +57,12 @@ local responseUiParams = {
 		keyboardLayout = "QWERTY",
 		autoCompleteText = "",
 		language = "EN-US"
+	},
+	vrHelp = {
+		{
+			position = 1,
+			text = "Test Application"
+		}
 	}
 }
 
@@ -80,17 +86,9 @@ local function resetGlobalProperties(params, self)
 	:Do(function(_,data)
 		self.hmiConnection:SendResponse(data.id, data.method, "SUCCESS", {})
 	end)
-	:ValidIf(function(_,data)
-		if data.params.vrHelp == nil then
-			return true
-		else
-			return false, "vrHelp array in UI.SetGlobalProperties request is not empty." ..
-			" Expected array size 0, actual " .. tostring(#data.params.vrHelp)
-		end
-	end)
 
 	local ttsDelimiter = commonSmoke.readParameterFromSmartDeviceLinkIni("TTSDelimiter")
-	local helpPromptString = commonSmoke.readParameterFromSmartDeviceLinkIni("HelpPromt")
+	local helpPromptString = commonSmoke.readParameterFromSmartDeviceLinkIni("HelpPrompt")
 	local helpPromptList = commonSmoke.splitString(helpPromptString, ttsDelimiter);
 
 	for key,value in pairs(helpPromptList) do

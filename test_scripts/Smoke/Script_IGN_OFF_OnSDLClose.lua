@@ -27,8 +27,6 @@ config.application1.registerAppInterfaceParams.isMediaApplication = true
 -- [[ Required Shared Libraries ]]
 local commonFunctions = require('user_modules/shared_testcases/commonFunctions')
 local commonSteps = require('user_modules/shared_testcases/commonSteps')
-local commonStepsResumption = require('user_modules/shared_testcases/commonStepsResumption')
-local mobile_session = require('mobile_session')
 local SDL = require('SDL')
 local commonSmoke = require('test_scripts/Smoke/commonSmoke')
 
@@ -69,23 +67,7 @@ end
 function Test:Start_Session_And_Register_App()
   self:startSession():Do(function()
     commonFunctions:userPrint(35, "App is registered")
-    default_app = self.applications[default_app_params.appName]
-    commonSmoke.AppActivationForResumption(self, default_app)
-    EXPECT_NOTIFICATION("OnHMIStatus", {hmiLevel = "FULL",audioStreamingState = "AUDIBLE", systemContext = "MAIN"})
-    commonFunctions:userPrint(35, "App is activated")
   end)
-end
-
-function Test.AddCommand()
-  commonStepsResumption:AddCommand()
-end
-
-function Test.AddSubMenu()
-  commonStepsResumption:AddSubMenu()
-end
-
-function Test.AddChoiceSet()
-  commonStepsResumption:AddChoiceSet()
 end
 
 --[[ Test ]]
@@ -100,52 +82,13 @@ function Test:IGNITION_OFF()
       { reason = "IGNITION_OFF" })
     EXPECT_NOTIFICATION("OnAppInterfaceUnregistered", { reason = "IGNITION_OFF" })
     EXPECT_HMINOTIFICATION("BasicCommunication.OnAppUnregistered", { unexpectedDisconnect = false })
-    -- EXPECT_HMINOTIFICATION("BasicCommunication.OnSDLClose") -- commented because of SDL issue
-    -- :Do(function()
-    --     SDL:StopSDL()
-    --   end)
+    EXPECT_HMINOTIFICATION("BasicCommunication.OnSDLClose")
+    :Do(function()
+        SDL:StopSDL()
+      end)
     end)
 end
 
-function Test.Stop_SDL() -- remove after uncomment OnSDLClose
-  StopSDL()
-end
-
-function Test.Restart_SDL_And_Add_Mobile_Connection()
-  Start_SDL_And_Add_Mobile_Connection()
-end
-
-function Test:IGNITION_OFF()
-  self.hmiConnection:SendNotification("BasicCommunication.OnExitAllApplications",
-    { reason = "SUSPEND" })
-  EXPECT_HMINOTIFICATION("BasicCommunication.OnSDLPersistenceComplete"):Do(function()
-    SDL:DeleteFile()
-    self.hmiConnection:SendNotification("BasicCommunication.OnExitAllApplications",
-      { reason = "IGNITION_OFF" })
-    -- EXPECT_HMINOTIFICATION("BasicCommunication.OnSDLClose") -- commented because of SDL issue
-    -- :Do(function()
-        -- SDL:StopSDL()
-      -- end)
-  end)
-end
-
-function Test.Stop_SDL() -- remove after uncomment OnSDLClose
-  StopSDL()
-end
-
-function Test.Restart_SDL_And_Add_Mobile_Connection()
-  Start_SDL_And_Add_Mobile_Connection()
-end
-
-function Test:Register_And_No_Resume_App()
-  local mobile_session1 = mobile_session.MobileSession(self, self.mobileConnection)
-  local on_rpc_service_started = mobile_session1:StartRPC()
-  on_rpc_service_started:Do(function()
-    default_app_params.hashID = self.currentHashID
-    commonStepsResumption:Expect_Resumption_Data(default_app_params)
-    commonStepsResumption:RegisterApp(default_app_params, commonStepsResumption.ExpectNoResumeApp, true)
-  end)
-end
 
 -- [[ Postconditions ]]
 commonFunctions:newTestCasesGroup("Postcondition")

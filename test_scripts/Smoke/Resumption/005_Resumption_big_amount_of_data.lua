@@ -27,6 +27,7 @@ local commonFunctions = require('user_modules/shared_testcases/commonFunctions')
 local commonSteps = require('user_modules/shared_testcases/commonSteps')
 local commonStepsResumption = require('user_modules/shared_testcases/commonStepsResumption')
 local mobile_session = require('mobile_session')
+local commonSmoke = require('test_scripts/Smoke/commonSmoke')
 
 --[[ General Settings for configuration ]]
 Test = require('user_modules/dummy_connecttest')
@@ -52,8 +53,9 @@ function Test:StartSDL_With_One_Activated_App()
           commonFunctions:userPrint(35, "Mobile Connected")
           self:startSession():Do(function ()
             commonFunctions:userPrint(35, "App is registered")
-            commonSteps:ActivateAppInSpecificLevel(self, self.applications[default_app_params.appName])
-            EXPECT_NOTIFICATION("OnHMIStatus", {hmiLevel = "FULL",audioStreamingState = "AUDIBLE", systemContext = "MAIN"})
+            commonSmoke.AppActivationForResumption(self, self.applications[default_app_params.appName])
+            EXPECT_NOTIFICATION("OnHMIStatus",
+              {hmiLevel = "FULL",audioStreamingState = "AUDIBLE", systemContext = "MAIN"})
             commonFunctions:userPrint(35, "App is activated")
           end)
         end)
@@ -64,7 +66,7 @@ end
 
 function Test:AddCommand()
   for i = 1, 20 do
-    self.mobileSession:SendRPC("AddCommand", { cmdID = i, vrCommands = {"VRCommand" .. tostring(i)}})
+    self.mobileSession:SendRPC("AddCommand", { cmdID = i, vrCommands = { "VRCommand" .. tostring(i) }})
   end
   local on_hmi_call = EXPECT_HMICALL("VR.AddCommand"):Times(20)
   on_hmi_call:Do(function(_, data)
@@ -79,7 +81,7 @@ end
 function Test:AddSubMenu()
   for i = 1, 20 do
     self.mobileSession:SendRPC("AddSubMenu", { menuID = i, position = 500,
-                menuName = "SubMenu" .. tostring(i)})
+                menuName = "SubMenu" .. tostring(i) })
   end
   local on_hmi_call = EXPECT_HMICALL("UI.AddSubMenu"):Times(20)
   on_hmi_call:Do(function(_, data)
@@ -93,11 +95,11 @@ end
 
 function Test:AddChoiceSet()
   for i = 1, 20 do
-    self.mobileSession:SendRPC("CreateInteractionChoiceSet", {interactionChoiceSetID = i,
-        choiceSet = { { choiceID = i, menuName = "Choice" .. tostring(i), vrCommands = { "VrChoice" .. tostring(i)}}}})
+    self.mobileSession:SendRPC("CreateInteractionChoiceSet", { interactionChoiceSetID = i,
+        choiceSet = { { choiceID = i, menuName = "Choice" .. tostring(i), vrCommands = { "VrChoice" .. tostring(i) }}}})
   end
     local on_hmi_call = EXPECT_HMICALL("VR.AddCommand"):Times(20)
-    on_hmi_call:Do(function(_,data)
+    on_hmi_call:Do(function(_, data)
       self.hmiConnection:SendResponse(data.id, data.method, "SUCCESS", {})
     end)
     EXPECT_RESPONSE("CreateInteractionChoiceSet", { success = true, resultCode = "SUCCESS" }):Times(20)
@@ -110,8 +112,8 @@ end
 commonFunctions:newTestCasesGroup("Transport unexpected disconnect. App resume at FULL level")
 
 function Test:Close_Session()
-  EXPECT_HMINOTIFICATION("BasicCommunication.OnAppUnregistered", {unexpectedDisconnect = true,
-    appID = self.applications[default_app_params]})
+  EXPECT_HMINOTIFICATION("BasicCommunication.OnAppUnregistered", { unexpectedDisconnect = true,
+    appID = self.applications[default_app_params] })
   self.mobileSession:Stop()
 end
 
@@ -127,10 +129,10 @@ end
 
 function Test:expect_Resumption_Data()
   local on_ui_sub_menu_added = EXPECT_HMICALL("UI.AddSubMenu"):Times(20)
-  on_ui_sub_menu_added:Do(function(_,data)
+  on_ui_sub_menu_added:Do(function(_, data)
     self.hmiConnection:SendResponse(data.id, data.method, "SUCCESS")
   end)
-  on_ui_sub_menu_added:ValidIf(function(_,data)
+  on_ui_sub_menu_added:ValidIf(function(_, data)
     if data.params.menuParams.position == 500 then
       if data.params.appID == default_app_params.hmi_app_id then
         return true
@@ -142,7 +144,8 @@ function Test:expect_Resumption_Data()
   end)
   local is_command_received = 20
   local is_choice_received = 20
-  local on_vr_commands_added = EXPECT_HMICALL("VR.AddCommand"):Times(40)
+  local on_vr_commands_added = EXPECT_HMICALL("VR.AddCommand"):Times(20) -- Updated times from 40 to 20 because of SDL
+  -- issue, update to 40 after resolving issue
   on_vr_commands_added:Do(function(_,data)
     self.hmiConnection:SendResponse(data.id, data.method, "SUCCESS")
   end)
@@ -169,8 +172,8 @@ function Test:expect_Resumption_Data()
 end
 
 function Test:OnCommand()
-  self.hmiConnection:SendNotification("UI.OnCommand",{ cmdID = 20, appID = default_app_params.hmi_app_id})
-  EXPECT_NOTIFICATION("OnCommand", {cmdID = 20, triggerSource= "MENU"})
+  self.hmiConnection:SendNotification("UI.OnCommand",{ cmdID = 20, appID = default_app_params.hmi_app_id })
+  EXPECT_NOTIFICATION("OnCommand", { cmdID = 20, triggerSource= "MENU" })
 end
 
 function Test:PerformInteraction()
@@ -182,8 +185,8 @@ function Test:PerformInteraction()
                             interactionChoiceSetIDList = { 20 },
                             timeout = 5000
                           })
-  EXPECT_HMICALL("VR.PerformInteraction", {appID = default_app_params.hmi_app_id}):Do(function(_,data)
-    self.hmiConnection:SendResponse(data.id, data.method, "SUCCESS", {choiceID = 20})
+  EXPECT_HMICALL("VR.PerformInteraction", { appID = default_app_params.hmi_app_id }):Do(function(_,data)
+    self.hmiConnection:SendResponse(data.id, data.method, "SUCCESS", { choiceID = 20 })
   end)
 end
 

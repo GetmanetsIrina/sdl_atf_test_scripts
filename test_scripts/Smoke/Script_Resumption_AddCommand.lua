@@ -1,19 +1,21 @@
 --  Requirement summary:
---  [Data Resumption] Application data must not be resumed
+--  [HMILevel Resumption]: Conditions to resume app to FULL after "unexpected disconnect" event.
 --
 --  Description:
---  Check that no resumption occurs if App unregister itself gracefully.
-
+--  Check that SDL perform resumption after unexpected disconnect.
+--
 --  1. Used precondition
 --  App is registered and activated on HMI.
+--  App has added 1 sub menu, 1 command and 1 choice set.
 
 --  2. Performed steps
---  Exit from SPT
---  Start SPT again, Find Apps
+--  Turn off transport.
+--  Turn on transport.
 --
 --  Expected behavior:
---  1. SPT sends UnregisterAppInterface and EndSession to SDL.
---     SPT register in usual way, no resumption occurs
+--  1. App is unregistered.
+--  2. App is registered successfully, SDL resumes all App data and sends
+--     BC.ActivateApp to HMI. App gets FULL HMI Level.
 ---------------------------------------------------------------------------------------------------
 --[[ General Precondition before ATF start ]]
 config.defaultProtocolVersion = 2
@@ -23,6 +25,7 @@ config.application1.registerAppInterfaceParams.isMediaApplication = true
 local commonFunctions = require('user_modules/shared_testcases/commonFunctions')
 local commonSteps = require('user_modules/shared_testcases/commonSteps')
 local commonStepsResumption = require('user_modules/shared_testcases/commonStepsResumption')
+local mobile_session = require('mobile_session')
 local commonSmoke = require('test_scripts/Smoke/commonSmoke')
 
 --[[ General Settings for configuration ]]
@@ -38,7 +41,7 @@ commonFunctions:newTestCasesGroup("Preconditions")
 commonSteps:DeletePolicyTable()
 commonSteps:DeleteLogsFiles()
 
-function Test:Start_SDL_With_One_Activated_App()
+function Test:StartSDL_With_One_Activated_App()
   self:runSDL()
   commonFunctions:waitForSDLStart(self):Do(function()
     self:initHMI():Do(function()
@@ -49,9 +52,9 @@ function Test:Start_SDL_With_One_Activated_App()
           commonFunctions:userPrint(35, "Mobile Connected")
           self:startSession():Do(function ()
             commonFunctions:userPrint(35, "App is registered")
-           commonSmoke.AppActivationForResumption(self, self.applications[default_app_params.appName])
+            commonSmoke.AppActivationForResumption(self, self.applications[default_app_params.appName])
             EXPECT_NOTIFICATION("OnHMIStatus",
-              {hmiLevel = "FULL",audioStreamingState = commonSmoke.GetAudibleState(), systemContext = "MAIN"})
+              { hmiLevel = "FULL",audioStreamingState = "AUDIBLE", systemContext = "MAIN" })
             commonFunctions:userPrint(35, "App is activated")
           end)
         end)
@@ -60,40 +63,38 @@ function Test:Start_SDL_With_One_Activated_App()
   end)
 end
 
-function Test:Add_Command_And_Put_File()
-  local correlation_id = self.mobileSession:SendRPC("AddCommand", { cmdID = 1, vrCommands = { "OnlyVRCommand" } })
-  local on_hmi_call = EXPECT_HMICALL("VR.AddCommand",
-    { cmdID = 1, type = "Command", vrCommands = { "OnlyVRCommand" } })
-  on_hmi_call:Do(function(_, data)
-    self.hmiConnection:SendResponse(data.id, data.method, "SUCCESS", {})
-  end)
-  EXPECT_RESPONSE(correlation_id, { success = true, resultCode = "SUCCESS" })
-  EXPECT_NOTIFICATION("OnHashChange") :Do(function(_, data)
-    self.currentHashID = data.payload.hashID
-  end)
+function Test.AddCommand()
+  commonStepsResumption:AddCommand()
+end
 
-  local cid = self.mobileSession:SendRPC(
-    "PutFile", {
-      syncFileName = "icon.png",
-      fileType = "GRAPHIC_PNG",
-      persistentFile = true,
-      systemFile = false,
-    }, "files/icon.png")
-    EXPECT_RESPONSE(cid, { success = true, resultCode = "SUCCESS" })
+function Test.AddSubMenu()
+  commonStepsResumption:AddSubMenu()
 end
 
 --[[ Test ]]
-commonFunctions:newTestCasesGroup("No resumption if App unregister itself")
+commonFunctions:newTestCasesGroup("Transport unexpected disconnect. App resume at FULL level")
 
-function Test:Unregister_App()
-  local cid = self.mobileSession:SendRPC("UnregisterAppInterface", default_app_params)
-  EXPECT_RESPONSE(cid, { success = true, resultCode = "SUCCESS" })
+function Test:Close_Session()
   EXPECT_HMINOTIFICATION("BasicCommunication.OnAppUnregistered",
-    { unexpectedDisconnect = false, appID = self.applications[default_app_params] })
+    { unexpectedDisconnect = true, appID = self.applications[default_app_params] })
+  self.mobileSession:Stop()
 end
 
-function Test.Register_And_No_Resume_App()
-  commonStepsResumption:RegisterApp(default_app_params, commonStepsResumption.ExpectNoResumeApp, false)
+function Test:Register_And_Resume_App_And_Data()
+  local mobileSession = mobile_session.MobileSession(self, self.mobileConnection)
+  local on_rpc_service_started = mobileSession:StartRPC()
+  on_rpc_service_started:Do(function()
+    default_app_params.hashID = self.currentHashID
+    EXPECT_HMICALL("VR.AddCommand", { type = " Command", cmdID = 1, vrCommands = { "OnlyVRCommand" }}):Times(1)
+    :Do(function(_,data)
+      self.hmiConnection:SendResponse(data.id, data.method, "SUCCESS")
+    end)
+    EXPECT_HMICALL("UI.AddSubMenu")
+    :Do(function(_,data)
+      self.hmiConnection:SendResponse(data.id, data.method, "SUCCESS")
+    end)
+    commonStepsResumption:RegisterApp(default_app_params, commonStepsResumption.ExpectResumeAppFULL, true)
+  end)
 end
 
 -- [[ Postconditions ]]
