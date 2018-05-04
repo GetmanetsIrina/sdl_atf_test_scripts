@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/smartdevicelink/sdl_atf_test_scripts.svg?branch=master)](https://travis-ci.org/smartdevicelink/sdl_atf_test_scripts)
+[![Build Status](http://opensdl-jenkins.luxoft.com:8080/job/ATF_mobile_projection_2_GetmanetsIrina/badge/icon)](http://opensdl-jenkins.luxoft.com:8080/job/ATF_mobile_projection_2_GetmanetsIrina/)
 
 # Automated Test Framework (ATF) scripts
 This repository contains ATF scripts and data to run it.
