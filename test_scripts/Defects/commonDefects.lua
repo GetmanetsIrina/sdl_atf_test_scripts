@@ -19,8 +19,10 @@ local mobile_session = require("mobile_session")
 local events = require("events")
 local json = require("modules/json")
 local actions = require("user_modules/sequences/actions")
+local utils = require('user_modules/utils')
 
 --[[ Local Variables ]]
+local preloadedPT = commonFunctions:read_parameter_from_smart_device_link_ini("PreloadedPT")
 
 -- table with data for Policy Table Update
 local ptu_table = {}
@@ -203,6 +205,18 @@ function commonDefect.preconditions()
   commonSteps:DeleteLogsFiles()
 end
 
+--[[ @preconditionsWithPTUpdate: precondition steps with PT update
+--! @parameters: none
+--! @return: none
+--]]
+function commonDefect.preconditionsWithPTUpdate(pAdditionalRPCs)
+  commonFunctions:SDLForceStop()
+  commonSteps:DeletePolicyTable()
+  commonSteps:DeleteLogsFiles()
+  commonPreconditions:BackupFile(preloadedPT)
+  commonDefect.updatePreloadedPT(pAdditionalRPCs)
+end
+
 --[[ @start: starting sequence: starting of SDL, initialization of HMI, connect mobile
 --! @parameters:
 --! self - test object
@@ -255,6 +269,42 @@ end
 --]]
 function commonDefect.postconditions()
   StopSDL()
+end
+
+--[[ @postconditionsWithPreloadedRestore: postcondition steps
+--! @parameters: none
+--! @return: none
+--]]
+function commonDefect.postconditionsWithPreloadedRestore()
+  StopSDL()
+  commonPreconditions:RestoreFile(preloadedPT)
+end
+
+--[[ @updatePreloadedPT: update PU with all needed RPC
+--! @parameters: none
+--! @return: none
+--]]
+function commonDefect.updatePreloadedPT(pAdditionalRPCs)
+  local preloadedFile = commonPreconditions:GetPathToSDL() .. preloadedPT
+  local pt = utils.jsonFileToTable(preloadedFile)
+  pt.policy_table.functional_groupings["DataConsent-2"].rpcs = json.null
+  if not pAdditionalRPCs then
+    pAdditionalRPCs = {
+      "SendLocation", "SubscribeVehicleData", "UnsubscribeVehicleData", "GetVehicleData", "UpdateTurnList",
+      "AlertManeuver", "DialNumber", "ReadDID", "GetDTCs", "ShowConstantTBT"
+    }
+  end
+  pt.policy_table.functional_groupings.NewTestCaseGroup = { rpcs = { } }
+  for _, v in pairs(pAdditionalRPCs) do
+    pt.policy_table.functional_groupings.NewTestCaseGroup.rpcs[v] = {
+      hmi_levels = { "BACKGROUND", "FULL", "LIMITED" }
+    }
+  end
+  pt.policy_table.app_policies["0000001"] = utils.cloneTable(pt.policy_table.app_policies.default)
+  pt.policy_table.app_policies["0000001"].groups = { "Base-4", "NewTestCaseGroup" }
+  pt.policy_table.app_policies["0000001"].keep_context = true
+  pt.policy_table.app_policies["0000001"].steal_focus = true
+  utils.tableToJsonFile(pt, preloadedFile)
 end
 
 --[[ @printSDLConfig: print information about SDL build options
