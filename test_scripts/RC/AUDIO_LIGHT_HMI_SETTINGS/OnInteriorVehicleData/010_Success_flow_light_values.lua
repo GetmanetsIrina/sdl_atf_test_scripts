@@ -54,7 +54,7 @@ local function isSubscribed(pLightName)
   local notificationParams = common.getAppResponseParams(rpc, Module)
   notificationParams.moduleData.lightControlData.lightState[1].id = pLightName
 
-  common.getHMIconnection():SendNotification(common.getHMIEventName(rpc), notificationHMIParams)
+  common.getHMIConnection():SendNotification(common.getHMIEventName(rpc), notificationHMIParams)
   mobSession:ExpectNotification(common.getAppEventName(rpc), notificationParams)
 end
 
@@ -62,7 +62,7 @@ end
 runner.Title("Preconditions")
 runner.Step("Clean environment", common.preconditions)
 runner.Step("Start SDL, HMI, connect Mobile, start Session", common.start)
-runner.Step("RAI, PTU", common.raiPTUn)
+runner.Step("RAI, PTU", common.registerAppWOPTU)
 runner.Step("Activate App", common.activateApp)
 
 runner.Title("Test")

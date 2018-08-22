@@ -40,6 +40,7 @@ commonRC.getHMIAppId = actions.getHMIAppId
 commonRC.jsonFileToTable = utils.jsonFileToTable
 commonRC.tableToJsonFile = utils.tableToJsonFile
 commonRC.cloneTable = utils.cloneTable
+commonRC.wait = utils.wait
 
 commonRC.modules = { "RADIO", "CLIMATE" }
 commonRC.allModules = { "RADIO", "CLIMATE", "SEAT", "AUDIO", "LIGHT", "HMI_SETTINGS" }

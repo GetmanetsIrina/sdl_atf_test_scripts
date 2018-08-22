@@ -41,7 +41,7 @@ local function setInteriorVehicleData(pLightName)
   local cid = mobSession:SendRPC(common.getAppEventName(rpc), requestParams)
   EXPECT_HMICALL(common.getHMIEventName(rpc), requestParams)
   :Do(function(_, data)
-    common.getHMIconnection():SendResponse(data.id, data.method, "SUCCESS", responseHMIParams)
+    common.getHMIConnection():SendResponse(data.id, data.method, "SUCCESS", responseHMIParams)
   end)
   mobSession:ExpectResponse(cid, { success = true, resultCode = "SUCCESS", moduleData = responseHMIParams.moduleData })
 end
@@ -50,7 +50,7 @@ end
 runner.Title("Preconditions")
 runner.Step("Clean environment", common.preconditions)
 runner.Step("Start SDL, HMI, connect Mobile, start Session", common.start)
-runner.Step("RAI, PTU", common.raiPTUn)
+runner.Step("RAI, PTU", common.registerAppWOPTU)
 runner.Step("Activate App", common.activateApp)
 
 runner.Title("Test")
