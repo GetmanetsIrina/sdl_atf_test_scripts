@@ -25,7 +25,7 @@ local freeModules = common.getAllModules()
 local allocatedModules = {{}}
 
 --[[ Local Functions ]]
-local function pTUfunc(tbl)
+local function PTUfunc(tbl)
   local appId = config.application1.registerAppInterfaceParams.appID
   tbl.policy_table.app_policies[appId] = common.getRCAppConfig()
   local HMILevels = { "NONE", "BACKGROUND", "FULL", "LIMITED" }
@@ -51,7 +51,7 @@ local function alocateModule(pModuleType)
 end
 
 local function registerApp()
-  common.raiPTU_n(pTUfunc, 1)
+  common.registerApp()
   common.getMobileSession(1):ExpectNotification("OnRCStatus")
   :Times(0)
   EXPECT_HMICALL("RC.OnRCStatus")
@@ -60,11 +60,12 @@ end
 
 --[[ Scenario ]]
 runner.Title("Preconditions")
-runner.Step("Clean environment", common.preconditions, { 0 })
+runner.Step("Clean environment", common.preconditions, { true, 0 })
 runner.Step("Start SDL, HMI, connect Mobile, start Session", common.start)
 
 runner.Title("Test")
 runner.Step("Register RC application", registerApp)
+runner.Step("PTU", common.policyTableUpdate, { PTUfunc })
 runner.Step("Activate App", common.activateApp)
 runner.Step("Allocation of module CLIMATE", alocateModule, { "CLIMATE" })
 

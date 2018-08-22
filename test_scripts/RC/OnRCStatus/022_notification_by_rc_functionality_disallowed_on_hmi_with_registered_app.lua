@@ -27,7 +27,7 @@ config.application2.registerAppInterfaceParams.appHMIType = { "DEFAULT" }
 
 --[[ Local Functions ]]
 local function disableRCFromHMI()
-  common.getHMIconnection():SendNotification("RC.OnRemoteControlSettings", { allowed = false })
+  common.getHMIConnection():SendNotification("RC.OnRemoteControlSettings", { allowed = false })
   common.getMobileSession(1):ExpectNotification("OnRCStatus",
 	{ allowed = false, freeModules = {}, allocatedModules = {} })
   local pModuleStatusHMI = {

@@ -46,7 +46,7 @@ runner.Step("Clean environment", common.preconditions)
 runner.Step("Start SDL, HMI, connect Mobile, start Session", common.start)
 runner.Step("Register RC application 1", common.registerRCApplication)
 runner.Step("Activate App 1", common.activateApp)
-runner.Step("Register non-RC application 2", common.rai_n, { 2 })
+runner.Step("Register non-RC application 2", common.registerAppWOPTU, { 2 })
 
 runner.Title("Test")
 for _, mod in pairs(common.getAllModules()) do

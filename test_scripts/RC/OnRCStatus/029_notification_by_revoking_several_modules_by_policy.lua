@@ -46,8 +46,8 @@ local function alocateModule(pModuleType)
   common.validateOnRCStatusForHMI(1, { pModuleStatus })
 end
 
-local function registrationAppWithRevokingModule()
-  common.raiPTU_n(pTUfunc, 2)
+local function ptuWithRevokingModule()
+  common.policyTableUpdate(pTUfunc)
   local pModuleStatus = {
     freeModules = common.getModulesArray(common.getAllModules()),
     allocatedModules = { }
@@ -58,7 +58,7 @@ end
 
 --[[ Scenario ]]
 runner.Title("Preconditions")
-runner.Step("Clean environment", common.preconditions, { 1 })
+runner.Step("Clean environment", common.preconditions, { true, 1 })
 runner.Step("Start SDL, HMI, connect Mobile, start Session", common.start)
 runner.Step("Register RC application 1", common.registerRCApplication)
 runner.Step("Activate App 1", common.activateApp)
@@ -66,7 +66,8 @@ runner.Step("Allocating module CLIMATE", alocateModule, { "CLIMATE" })
 runner.Step("Allocating module RADIO", alocateModule, { "RADIO" })
 
 runner.Title("Test")
-runner.Step("OnRCStatus by PTU with revoking of allocated module", registrationAppWithRevokingModule)
+runner.Step("Register RC application 2", common.registerApp, { 2 })
+runner.Step("OnRCStatus by PTU with revoking of allocated module", ptuWithRevokingModule)
 
 runner.Title("Postconditions")
 runner.Step("Stop SDL", common.postconditions)

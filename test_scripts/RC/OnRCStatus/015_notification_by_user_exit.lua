@@ -30,7 +30,7 @@ end
 
 local function userExit()
   local hmiAppId = common.getHMIAppId()
-  common.getHMIconnection():SendNotification("BasicCommunication.OnExitApplication",
+  common.getHMIConnection():SendNotification("BasicCommunication.OnExitApplication",
     { appID = hmiAppId, reason = "USER_EXIT" })
   common.getMobileSession(1):ExpectNotification("OnHMIStatus",
     { systemContext = "MAIN", hmiLevel = "NONE", audioStreamingState = "NOT_AUDIBLE" })

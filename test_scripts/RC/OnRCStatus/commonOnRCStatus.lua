@@ -1,182 +1,25 @@
 ---------------------------------------------------------------------------------------------------
 -- OnRCStatus common module
 ---------------------------------------------------------------------------------------------------
---[[ General configuration parameters ]]
-config.defaultProtocolVersion = 2
-config.application1.registerAppInterfaceParams.appHMIType = { "REMOTE_CONTROL" }
-config.application2.registerAppInterfaceParams.appHMIType = { "REMOTE_CONTROL" }
-config.checkAllValidations = true
-config.application1.registerAppInterfaceParams.syncMsgVersion.majorVersion = 5
-config.application2.registerAppInterfaceParams.syncMsgVersion.majorVersion = 5
-
 --[[ Required Shared libraries ]]
 local commonRC = require('test_scripts/RC/commonRC')
-local test = require("user_modules/dummy_connecttest")
 local commonFunctions = require("user_modules/shared_testcases/commonFunctions")
-local commonPreconditions = require('user_modules/shared_testcases/commonPreconditions')
-local json = require("modules/json")
 local utils = require("user_modules/utils")
 
---[[ Module ]]
-local m = {}
+--[[ Common Variables ]]
+commonRC.wait = utils.wait
+commonRC.cloneTable = utils.cloneTable
 
---[[ Functions ]]
-local getRCAppConfigOrigin = commonRC.getRCAppConfig
-function commonRC.getRCAppConfig(tbl)
-  local rcAppConfig = getRCAppConfigOrigin(tbl)
-  rcAppConfig.moduleType = { "RADIO", "CLIMATE", "SEAT", "AUDIO", "LIGHT", "HMI_SETTINGS" }
-  return rcAppConfig
-end
-
-function commonRC.getSettableModuleControlData(pModuleType)
-  local out = commonRC.getModuleControlData(pModuleType)
-  local params_read_only = commonRC.getModuleParams(commonRC.getReadOnlyParamsByModule(pModuleType))
-  if params_read_only then
-    for p_read_only in pairs(params_read_only) do
-      commonRC.getModuleParams(out)[p_read_only] = nil
-    end
-  end
-  return out
-end
-
-local function backupPreloadedPT()
-  local preloadedFile = commonFunctions:read_parameter_from_smart_device_link_ini("PreloadedPT")
-  commonPreconditions:BackupFile(preloadedFile)
-end
-
-local function updatePreloadedPT(pCountOfRCApps)
-  if not pCountOfRCApps then pCountOfRCApps = 2 end
-  local preloadedFile = commonPreconditions:GetPathToSDL()
-  .. commonFunctions:read_parameter_from_smart_device_link_ini("PreloadedPT")
-  local preloadedTable = commonRC.jsonFileToTable(preloadedFile)
-  preloadedTable.policy_table.functional_groupings["DataConsent-2"].rpcs = json.null
-  preloadedTable.policy_table.functional_groupings["RemoteControl"].rpcs.OnRCStatus = {
-    hmi_levels = { "FULL", "BACKGROUND", "LIMITED", "NONE" }
-  }
-  for i = 1, pCountOfRCApps do
-    local appId = config["application" .. i].registerAppInterfaceParams.appID
-    preloadedTable.policy_table.app_policies[appId] = commonRC.getRCAppConfig(preloadedTable)
-    preloadedTable.policy_table.app_policies[appId].AppHMIType = nil
-  end
-  commonRC.tableToJsonFile(preloadedTable, preloadedFile)
-end
-
-local origGetModuleControlData = commonRC.getModuleControlData
-function commonRC.getModuleControlData(module_type)
-  local out = { }
-  if module_type == "SEAT" then
-    out.moduleType = module_type
-    out.seatControlData = {
-      id = "DRIVER",
-      heatingEnabled = true,
-      coolingEnabled = true,
-      heatingLevel = 50,
-      coolingLevel = 50,
-      horizontalPosition = 50,
-      verticalPosition = 50,
-      frontVerticalPosition = 50,
-      backVerticalPosition = 50,
-      backTiltAngle = 50,
-      headSupportHorizontalPosition = 50,
-      headSupportVerticalPosition = 50,
-      massageEnabled = true,
-      massageMode = {
-        {
-          massageZone = "LUMBAR",
-          massageMode = "HIGH"
-        },
-        {
-          massageZone = "SEAT_CUSHION",
-          massageMode = "LOW"
-        }
-      },
-      massageCushionFirmness = {
-        {
-          cushion = "TOP_LUMBAR",
-          firmness = 30
-        },
-        {
-          cushion = "BACK_BOLSTERS",
-          firmness = 60
-        }
-      },
-      memory = {
-        id = 1,
-        label = "Label value",
-        action = "SAVE"
-      }
-    }
-  elseif module_type == "AUDIO" then
-    out.moduleType = "AUDIO"
-    out.audioControlData = {
-      source = "AM",
-      volume = 50
-    }
-  elseif module_type == "LIGHT" then
-    out.moduleType = "LIGHT"
-    out.lightControlData = {
-      lightState = {
-        {
-          id = "FRONT_LEFT_HIGH_BEAM",
-          status = "ON",
-          density = 0.2,
-          color = {
-            red = 50,
-            green = 150,
-            blue = 200
-          }
-        }
-      }
-    }
-  elseif module_type == "HMI_SETTINGS" then
-    out.moduleType = "HMI_SETTINGS"
-    out.hmiSettingsControlData = {
-      displayMode = "DAY",
-      temperatureUnit = "CELSIUS",
-      distanceUnit = "KILOMETERS"
-    }
-  else
-    out = origGetModuleControlData(module_type)
-  end
-  return out
-end
-
-local function restorePreloadedPT()
-  local preloadedFile = commonFunctions:read_parameter_from_smart_device_link_ini("PreloadedPT")
-  commonPreconditions:RestoreFile(preloadedFile)
-end
-
-function m.getModules()
+--[[ Common Functions ]]
+function commonRC.getModules()
   return commonFunctions:cloneTable({ "RADIO", "CLIMATE" })
 end
 
-function m.getAllModules()
+function commonRC.getAllModules()
   return commonFunctions:cloneTable({ "RADIO", "CLIMATE", "SEAT", "AUDIO", "LIGHT", "HMI_SETTINGS" })
 end
 
-function m.getRCAppConfig()
-  return commonRC.getRCAppConfig()
-end
-
-function m.getMobileSession(pAppId)
-  return commonRC.getMobileSession(test, pAppId)
-end
-
-function m.getHMIconnection()
-  return test.hmiConnection
-end
-
-function m.preconditions(pCountOfRCApps)
-  commonRC.preconditions()
-  backupPreloadedPT()
-  updatePreloadedPT(pCountOfRCApps)
-end
-
-function m.start()
-  commonRC.start(nil, test)
-end
-
-function m.getModulesArray(pModules)
+function commonRC.getModulesArray(pModules)
   local out = {}
   for _, mod in pairs(pModules) do
     table.insert(out, { moduleType = mod })
@@ -184,7 +27,7 @@ function m.getModulesArray(pModules)
   return out
 end
 
-function m.getHMIAppIdsRC()
+function commonRC.getHMIAppIdsRC()
   local out = {}
   for appID, hmiAppId in pairs(commonRC.getHMIAppIds()) do
     for i = 1, 5 do
@@ -197,53 +40,22 @@ function m.getHMIAppIdsRC()
   return out
 end
 
-function m.registerRCApplication(pAppId, pAllowed)
+function commonRC.registerRCApplication(pAppId, pAllowed)
   if not pAppId then pAppId = 1 end
   if pAllowed == nil then pAllowed = true end
   local freeModulesArray = {}
   if true == pAllowed then
-    freeModulesArray = m.getModulesArray(m.getAllModules())
+    freeModulesArray = commonRC.getModulesArray(commonRC.getAllModules())
   end
   local pModuleStatusForApp = {
     freeModules = freeModulesArray,
     allocatedModules = { },
     allowed = pAllowed
   }
-  commonRC.rai_n(pAppId, test)
-  m.validateOnRCStatusForApp(pAppId, pModuleStatusForApp)
+  commonRC.registerAppWOPTU(pAppId)
+  commonRC.validateOnRCStatusForApp(pAppId, pModuleStatusForApp)
   EXPECT_HMICALL("RC.OnRCStatus")
   :Times(0)
-end
-
-function m.raiPTU_n(ptu_update_func, pAppId)
-  if not pAppId then pAppId = 1 end
-  commonRC.rai_ptu_n(pAppId, ptu_update_func, test)
-end
-
-function m.rai_n(pAppId)
-  commonRC.rai_n(pAppId, test)
-end
-
-function m.subscribeToModule(pModule, pAppId)
-  if not pAppId then pAppId = 1 end
-  commonRC.subscribeToModule(pModule, pAppId, test)
-end
-
-function m.activateApp(pAppId)
-  commonRC.activate_app(pAppId, test)
-end
-
-function m.getHMIAppId(pAppId)
-  return commonRC.getHMIAppId(pAppId)
-end
-
-function m.getSettableModuleControlData(pModuleType)
-  return commonRC.getSettableModuleControlData(pModuleType)
-end
-
-function m.postconditions()
-  commonRC.postconditions()
-  restorePreloadedPT()
 end
 
 local function setAllocationState(pAllocArrays, pAllocApp, pModule)
@@ -257,7 +69,7 @@ local function setAllocationState(pAllocArrays, pAllocApp, pModule)
   table.insert(pAllocArrays[pAllocApp], pModule)
 end
 
-function m.setModuleStatus(pFreeMod, pAllocatedMod, pModule, pAllocApp)
+function commonRC.setModuleStatus(pFreeMod, pAllocatedMod, pModule, pAllocApp)
   if not pAllocApp then pAllocApp = 1 end
   local modulesStatusAllocatedApp = { }
   local modulesStatusAnotherApp = { }
@@ -267,9 +79,9 @@ function m.setModuleStatus(pFreeMod, pAllocatedMod, pModule, pAllocApp)
       table.remove(pFreeMod, key)
     end
   end
-  modulesStatusAllocatedApp.freeModules = m.getModulesArray(pFreeMod)
-  modulesStatusAnotherApp.freeModules = m.getModulesArray(pFreeMod)
-  modulesStatusAllocatedApp.allocatedModules = m.getModulesArray(pAllocatedMod[pAllocApp])
+  modulesStatusAllocatedApp.freeModules = commonRC.getModulesArray(pFreeMod)
+  modulesStatusAnotherApp.freeModules = commonRC.getModulesArray(pFreeMod)
+  modulesStatusAllocatedApp.allocatedModules = commonRC.getModulesArray(pAllocatedMod[pAllocApp])
   if 1 == pAllocApp then
     modulesStatusAnotherApp.allocatedModules = pAllocatedMod[2]
   else
@@ -278,7 +90,7 @@ function m.setModuleStatus(pFreeMod, pAllocatedMod, pModule, pAllocApp)
   return modulesStatusAllocatedApp, modulesStatusAnotherApp
 end
 
-function m.setModuleStatusByDeallocation(pFreeMod, pAllocatedMod, pModule, pRemoveAllocFromApp)
+function commonRC.setModuleStatusByDeallocation(pFreeMod, pAllocatedMod, pModule, pRemoveAllocFromApp)
   if not pRemoveAllocFromApp then pRemoveAllocFromApp = 1 end
   local modulesStatusAllocatedApp = { }
   local modulesStatusAnotherApp = { }
@@ -288,9 +100,9 @@ function m.setModuleStatusByDeallocation(pFreeMod, pAllocatedMod, pModule, pRemo
       table.remove(pAllocatedMod[pRemoveAllocFromApp], key)
     end
   end
-  modulesStatusAllocatedApp.freeModules = m.getModulesArray(pFreeMod)
-  modulesStatusAnotherApp.freeModules = m.getModulesArray(pFreeMod)
-  modulesStatusAllocatedApp.allocatedModules = m.getModulesArray(pAllocatedMod[pRemoveAllocFromApp])
+  modulesStatusAllocatedApp.freeModules = commonRC.getModulesArray(pFreeMod)
+  modulesStatusAnotherApp.freeModules = commonRC.getModulesArray(pFreeMod)
+  modulesStatusAllocatedApp.allocatedModules = commonRC.getModulesArray(pAllocatedMod[pRemoveAllocFromApp])
   if 1 == pRemoveAllocFromApp then
     modulesStatusAnotherApp.allocatedModules = pAllocatedMod[2]
   else
@@ -299,46 +111,13 @@ function m.setModuleStatusByDeallocation(pFreeMod, pAllocatedMod, pModule, pRemo
   return modulesStatusAllocatedApp, modulesStatusAnotherApp
 end
 
-function m.unregisterApp(pAppId)
+function commonRC.closeSession(pAppId)
   if not pAppId then pAppId = 1 end
   commonRC.deleteHMIAppId(pAppId)
-  commonRC.unregisterApp(pAppId, test)
+  commonRC.getMobileSession(pAppId):Stop()
 end
 
-function m.closeSession(pAppId)
-  if not pAppId then pAppId = 1 end
-  commonRC.deleteHMIAppId(pAppId)
-  m.getMobileSession(pAppId):Stop()
-end
-
-function m.defineRAMode(pAllowed, pAccessMode)
-  commonRC.defineRAMode(pAllowed, pAccessMode, test)
-end
-
-function m.rpcRejectWithConsent(pModuleType, pAppId, pRPC)
-  commonRC.rpcRejectWithConsent(pModuleType, pAppId, pRPC, test)
-end
-
-function m.rpcAllowedWithConsent(pModuleType, pAppId, pRPC)
-  commonRC.rpcAllowedWithConsent(pModuleType, pAppId, pRPC, test)
-end
-
-m.getAppEventName = commonRC.getAppEventName
-m.getHMIEventName = commonRC.getHMIEventName
-m.getAppRequestParams = commonRC.getAppRequestParams
-m.getAppResponseParams = commonRC.getAppResponseParams
-m.getHMIRequestParams = commonRC.getHMIRequestParams
-m.getHMIResponseParams = commonRC.getHMIResponseParams
-
-function m.rpcAllowed(pModuleType, pAppId, pRPC)
-  commonRC.rpcAllowed(pModuleType, pAppId, pRPC, test)
-end
-
-function m.cloneTable(...)
-  commonFunctions:cloneTable(...)
-end
-
-function m.sortModules(pModulesArray)
+function commonRC.sortModules(pModulesArray)
   local function f(a, b)
     if a.moduleType and b.moduleType then
       return a.moduleType < b.moduleType
@@ -350,15 +129,15 @@ function m.sortModules(pModulesArray)
   table.sort(pModulesArray, f)
 end
 
-function m.validateOnRCStatusForApp(pAppId, pExpData)
- local ExpData = utils.cloneTable(pExpData)
+function commonRC.validateOnRCStatusForApp(pAppId, pExpData)
+ local ExpData = commonRC.cloneTable(pExpData)
  if ExpData.allowed == nil then ExpData.allowed = true end
- m.getMobileSession(pAppId):ExpectNotification("OnRCStatus")
+ commonRC.getMobileSession(pAppId):ExpectNotification("OnRCStatus")
  :ValidIf(function(_, d)
-     m.sortModules(ExpData.freeModules)
-     m.sortModules(ExpData.allocatedModules)
-     m.sortModules(d.payload.freeModules)
-     m.sortModules(d.payload.allocatedModules)
+     commonRC.sortModules(ExpData.freeModules)
+     commonRC.sortModules(ExpData.allocatedModules)
+     commonRC.sortModules(d.payload.freeModules)
+     commonRC.sortModules(d.payload.allocatedModules)
      return compareValues(ExpData, d.payload, "payload")
    end)
  :ValidIf(function(_, d)
@@ -369,15 +148,15 @@ function m.validateOnRCStatusForApp(pAppId, pExpData)
  end)
 end
 
-function m.validateOnRCStatusForHMI(pCountOfRCApps, pExpData, pAllocApp)
+function commonRC.validateOnRCStatusForHMI(pCountOfRCApps, pExpData, pAllocApp)
   local usedHmiAppIds = { }
   EXPECT_HMINOTIFICATION("RC.OnRCStatus")
   :ValidIf(function(_, d)
-      m.sortModules(d.params.freeModules)
-      m.sortModules(d.params.allocatedModules)
+      commonRC.sortModules(d.params.freeModules)
+      commonRC.sortModules(d.params.allocatedModules)
       for i=1,#pExpData do
-        m.sortModules(pExpData[i].freeModules)
-        m.sortModules(pExpData[i].allocatedModules)
+        commonRC.sortModules(pExpData[i].freeModules)
+        commonRC.sortModules(pExpData[i].allocatedModules)
       end
       local AnotherApp
       if pAllocApp and pAllocApp == 1 then
@@ -402,7 +181,7 @@ function m.validateOnRCStatusForHMI(pCountOfRCApps, pExpData, pAllocApp)
         usedHmiAppIds = {}
       end
       local avlHmiAppIds = {}
-      for _, appId in pairs(m.getHMIAppIdsRC()) do
+      for _, appId in pairs(commonRC.getHMIAppIdsRC()) do
         avlHmiAppIds[appId] = true
       end
       local actAppId = d.params.appID
@@ -422,78 +201,12 @@ function m.validateOnRCStatusForHMI(pCountOfRCApps, pExpData, pAllocApp)
   :Times(pCountOfRCApps)
 end
 
-m.wait = utils.wait
-
-function m.registerNonRCApp(pAppId)
-  m.rai_n(pAppId)
-  m.getMobileSession(pAppId):ExpectNotification("OnRCStatus")
+function commonRC.registerNonRCApp(pAppId)
+  commonRC.registerAppWOPTU(pAppId)
+  commonRC.getMobileSession(pAppId):ExpectNotification("OnRCStatus")
   :Times(0)
   EXPECT_HMINOTIFICATION("RC.OnRCStatus")
   :Times(0)
 end
 
-commonRC.actualInteriorDataStateOnHMI = {
-  CLIMATE = utils.cloneTable(commonRC.getModuleControlData("CLIMATE")),
-  RADIO = utils.cloneTable(commonRC.getModuleControlData("RADIO")),
-  SEAT = utils.cloneTable(commonRC.getModuleControlData("SEAT")),
-  AUDIO = utils.cloneTable(commonRC.getModuleControlData("AUDIO")),
-  LIGHT = utils.cloneTable(commonRC.getModuleControlData("LIGHT")),
-  HMI_SETTINGS = utils.cloneTable(commonRC.getModuleControlData("HMI_SETTINGS"))
-}
-
-local setActualInteriorVDorigin = commonRC.setActualInteriorVD
-function commonRC.setActualInteriorVD(pModuleType, pParams)
-  if pModuleType == "SEAT" then
-    for key, value in pairs(pParams["seatControlData"]) do
-      if type(value) ~= "table" then
-        if value ~= commonRC.actualInteriorDataStateOnHMI[pModuleType]["seatControlData"][key] then
-          commonRC.actualInteriorDataStateOnHMI[pModuleType]["seatControlData"][key] = value
-        end
-      else
-        if false == commonFunctions:is_table_equal(value, commonRC.actualInteriorDataStateOnHMI[pModuleType]["seatControlData"][key]) then
-          commonRC.actualInteriorDataStateOnHMI[pModuleType]["seatControlData"][key] = value
-         end
-      end
-    end
-  elseif pModuleType == "AUDIO" then
-    for key, value in pairs(pParams["audioControlData"]) do
-      if type(value) ~= "table" then
-        if value ~= commonRC.actualInteriorDataStateOnHMI[pModuleType]["audioControlData"][key] then
-          commonRC.actualInteriorDataStateOnHMI[pModuleType]["audioControlData"][key] = value
-        end
-      else
-        if false == commonFunctions:is_table_equal(value, commonRC.actualInteriorDataStateOnHMI[pModuleType]["audioControlData"][key]) then
-          commonRC.actualInteriorDataStateOnHMI[pModuleType]["audioControlData"][key] = value
-         end
-      end
-    end
-  elseif pModuleType == "LIGHT" then
-    for key, value in pairs(pParams["lightControlData"]) do
-      if type(value) ~= "table" then
-        if value ~= commonRC.actualInteriorDataStateOnHMI[pModuleType]["lightControlData"][key] then
-          commonRC.actualInteriorDataStateOnHMI[pModuleType]["lightControlData"][key] = value
-        end
-      else
-        if false == commonFunctions:is_table_equal(value, commonRC.actualInteriorDataStateOnHMI[pModuleType]["lightControlData"][key]) then
-          commonRC.actualInteriorDataStateOnHMI[pModuleType]["lightControlData"][key] = value
-         end
-      end
-    end
-  elseif pModuleType == "HMI_SETTINGS" then
-    for key, value in pairs(pParams["hmiSettingsControlData"]) do
-      if type(value) ~= "table" then
-        if value ~= commonRC.actualInteriorDataStateOnHMI[pModuleType]["hmiSettingsControlData"][key] then
-          commonRC.actualInteriorDataStateOnHMI[pModuleType]["hmiSettingsControlData"][key] = value
-        end
-      else
-        if false == commonFunctions:is_table_equal(value, commonRC.actualInteriorDataStateOnHMI[pModuleType]["hmiSettingsControlData"][key]) then
-          commonRC.actualInteriorDataStateOnHMI[pModuleType]["hmiSettingsControlData"][key] = value
-         end
-      end
-    end
-  else
-    setActualInteriorVDorigin(pModuleType, pParams)
-  end
-end
-
-return m
+return commonRC
