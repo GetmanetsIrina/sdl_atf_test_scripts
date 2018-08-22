@@ -19,45 +19,48 @@
 local runner = require('user_modules/script_runner')
 local commonRC = require('test_scripts/RC/commonRC')
 
+--[[ Test Configuration ]]
+runner.testSettings.isSelfIncluded = false
+
 --[[ Local Variables ]]
 local Module = "RADIO"
 
 --[[ Local Functions ]]
-local function setVehicleData(self)
+local function setVehicleData()
   local requestParams = commonRC.getSettableModuleControlData(Module)
   requestParams.radioControlData.hdChannel = 7
 
-  local cid = self.mobileSession1:SendRPC("SetInteriorVehicleData", {
-	moduleData = requestParams
+  local cid = commonRC.getMobileSession():SendRPC("SetInteriorVehicleData", {
+  moduleData = requestParams
   })
 
-  EXPECT_HMICALL("RC.SetInteriorVehicleData",	{
-	appID = self.applications["Test Application"],
-	moduleData = requestParams
+  EXPECT_HMICALL("RC.SetInteriorVehicleData", {
+    appID = commonRC.getHMIAppId(),
+    moduleData = requestParams
   })
   :Do(function(_, data)
-	self.hmiConnection:SendResponse(data.id, data.method, "SUCCESS", {
-	  moduleData = requestParams
-	})
+  commonRC.getHMIConnection():SendResponse(data.id, data.method, "SUCCESS", {
+    moduleData = requestParams
+  })
   end)
 
-  self.mobileSession1:ExpectResponse(cid, { success = true, resultCode = "SUCCESS" })
+  commonRC.getMobileSession():ExpectResponse(cid, { success = true, resultCode = "SUCCESS" })
 end
 
-local function onVehicleData(self)
+local function onVehicleData()
   local notificationParams = commonRC.getHMIResponseParams("OnInteriorVehicleData", Module)
   notificationParams.moduleData.radioControlData.availableHDs = 7
 
-  self.hmiConnection:SendNotification(commonRC.getHMIEventName("OnInteriorVehicleData"), notificationParams)
-  self.mobileSession1:ExpectNotification(commonRC.getAppEventName("OnInteriorVehicleData"), notificationParams)
+  commonRC.getHMIConnection():SendNotification(commonRC.getHMIEventName("OnInteriorVehicleData"), notificationParams)
+  commonRC.getMobileSession():ExpectNotification(commonRC.getAppEventName("OnInteriorVehicleData"), notificationParams)
 end
 
 --[[ Scenario ]]
 runner.Title("Preconditions")
 runner.Step("Clean environment", commonRC.preconditions)
 runner.Step("Start SDL, HMI, connect Mobile, start Session", commonRC.start)
-runner.Step("RAI, PTU", commonRC.rai_ptu)
-runner.Step("Activate App", commonRC.activate_app)
+runner.Step("RAI", commonRC.registerAppWOPTU)
+runner.Step("Activate App", commonRC.activateApp)
 runner.Step("Subscribe app to " .. Module, commonRC.subscribeToModule, { Module })
 
 runner.Title("Test")

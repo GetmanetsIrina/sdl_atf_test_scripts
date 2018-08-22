@@ -18,30 +18,33 @@
 local runner = require('user_modules/script_runner')
 local commonRC = require('test_scripts/RC/commonRC')
 
+--[[ Test Configuration ]]
+runner.testSettings.isSelfIncluded = false
+
 --[[ Local Variables ]]
 local Module = "RADIO"
 
 --[[ Local Functions ]]
-local function setVehicleData(self)
+local function setVehicleData()
   local requestParams = commonRC.getSettableModuleControlData(Module)
   requestParams.radioControlData.hdChannel = 8
 
-  local cid = self.mobileSession1:SendRPC("SetInteriorVehicleData", {
+  local cid = commonRC.getMobileSession():SendRPC("SetInteriorVehicleData", {
 	moduleData = requestParams
   })
 
   EXPECT_HMICALL("RC.SetInteriorVehicleData")
   :Times(0)
 
-  self.mobileSession1:ExpectResponse(cid, { success = false, resultCode = "INVALID_DATA" })
+  commonRC.getMobileSession():ExpectResponse(cid, { success = false, resultCode = "INVALID_DATA" })
 end
 
-local function onVehicleData(self)
+local function onVehicleData()
   local notificationParams = commonRC.getHMIResponseParams("OnInteriorVehicleData", Module)
   notificationParams.moduleData.radioControlData.availableHDs = 8
 
-  self.hmiConnection:SendNotification(commonRC.getHMIEventName("OnInteriorVehicleData"), notificationParams)
-  self.mobileSession1:ExpectNotification(commonRC.getAppEventName("OnInteriorVehicleData"))
+  commonRC.getHMIConnection():SendNotification(commonRC.getHMIEventName("OnInteriorVehicleData"), notificationParams)
+  commonRC.getMobileSession():ExpectNotification(commonRC.getAppEventName("OnInteriorVehicleData"))
   :Times(0)
 end
 
@@ -49,8 +52,8 @@ end
 runner.Title("Preconditions")
 runner.Step("Clean environment", commonRC.preconditions)
 runner.Step("Start SDL, HMI, connect Mobile, start Session", commonRC.start)
-runner.Step("RAI, PTU", commonRC.rai_ptu)
-runner.Step("Activate App", commonRC.activate_app)
+runner.Step("RAI", commonRC.registerAppWOPTU)
+runner.Step("Activate App", commonRC.activateApp)
 runner.Step("Subscribe app to " .. Module, commonRC.subscribeToModule, { Module })
 
 runner.Title("Test")

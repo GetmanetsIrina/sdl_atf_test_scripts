@@ -30,12 +30,12 @@
 --[[ Required Shared libraries ]]
 local runner = require('user_modules/script_runner')
 local commonRC = require('test_scripts/RC/commonRC')
-local mobile_session = require("mobile_session")
+
+--[[ Test Configuration ]]
+runner.testSettings.isSelfIncluded = false
 
 --[[ Local Variables ]]
-local modules = { "CLIMATE", "RADIO" }
 local access_modes = { nil, "AUTO_ALLOW" }
-local hmiAppIds = { }
 
 local app1Params = config.application1.registerAppInterfaceParams
 local app2Params = config.application2.registerAppInterfaceParams
@@ -49,7 +49,8 @@ app3Params.isMediaApplication = false
 app3Params.appHMIType = { "DEFAULT", "REMOTE_CONTROL" }
 
 --[[ Local Functions ]]
-local function ptu_update_func(tbl)
+local function PTUfunc(tbl)
+  tbl.policy_table.app_policies[app1Params.appID] = commonRC.getRCAppConfig()
   tbl.policy_table.app_policies[app1Params.appID].AppHMIType = app1Params.appHMIType
   tbl.policy_table.app_policies[app2Params.appID] = commonRC.getRCAppConfig()
   tbl.policy_table.app_policies[app2Params.appID].AppHMIType = app2Params.appHMIType
@@ -57,26 +58,26 @@ local function ptu_update_func(tbl)
   tbl.policy_table.app_policies[app3Params.appID].AppHMIType = app3Params.appHMIType
 end
 
-local function step(pModuleType, pRPC1, pRPC2, self)
+local function step(pModuleType, pRPC1, pRPC2)
   local cid1
   if pRPC1 == "SetInteriorVehicleData" then
-    cid1 = self.mobileSession1:SendRPC("SetInteriorVehicleData", {
+    cid1 = commonRC.getMobileSession():SendRPC("SetInteriorVehicleData", {
       moduleData = commonRC.getSettableModuleControlData(pModuleType)
     })
     EXPECT_HMICALL("RC.SetInteriorVehicleData", {
-      appID = self.applications["Test Application"],
+      appID = commonRC.getHMIAppId(),
       moduleData = commonRC.getSettableModuleControlData(pModuleType)
     })
     :Do(function(_, data)
         local function hmiRespond()
-          self.hmiConnection:SendResponse(data.id, data.method, "SUCCESS", {
+          commonRC.getHMIConnection():SendResponse(data.id, data.method, "SUCCESS", {
             moduleData = commonRC.getSettableModuleControlData(pModuleType)
           })
         end
         RUN_AFTER(hmiRespond, 4000)
       end)
   elseif pRPC1 == "ButtonPress" then
-    cid1 = self.mobileSession1:SendRPC("ButtonPress", {
+    cid1 = commonRC.getMobileSession():SendRPC("ButtonPress", {
       moduleType = pModuleType,
       buttonName = commonRC.getButtonNameByModule(pModuleType),
       buttonPressMode = "SHORT"
@@ -89,44 +90,44 @@ local function step(pModuleType, pRPC1, pRPC2, self)
     })
     :Do(function(_, data)
         local function hmiRespond()
-          self.hmiConnection:SendResponse(data.id, data.method, "SUCCESS", {})
+          commonRC.getHMIConnection():SendResponse(data.id, data.method, "SUCCESS", {})
         end
         RUN_AFTER(hmiRespond, 4000)
       end)
   end
-  self.mobileSession1:ExpectResponse(cid1, { success = true, resultCode = "SUCCESS" })
+  commonRC.getMobileSession():ExpectResponse(cid1, { success = true, resultCode = "SUCCESS" })
 
   local req3_func = function()
     local cid3
     local pRPC3 = pRPC2
     if pRPC3 == "SetInteriorVehicleData" then
-      cid3 = self.mobileSession3:SendRPC("SetInteriorVehicleData", {
+      cid3 = commonRC.getMobileSession(3):SendRPC("SetInteriorVehicleData", {
         moduleData = commonRC.getSettableModuleControlData(pModuleType)
       })
     elseif pRPC3 == "ButtonPress" then
-      cid3 = self.mobileSession3:SendRPC("ButtonPress", {
+      cid3 = commonRC.getMobileSession(3):SendRPC("ButtonPress", {
         moduleType = pModuleType,
         buttonName = commonRC.getButtonNameByModule(pModuleType),
         buttonPressMode = "SHORT"
       })
     end
-    self.mobileSession3:ExpectResponse(cid3, { success = false, resultCode = "IN_USE" })
+    commonRC.getMobileSession(3):ExpectResponse(cid3, { success = false, resultCode = "IN_USE" })
   end
 
   local req2_func = function()
     local cid2
     if pRPC2 == "SetInteriorVehicleData" then
-      cid2 = self.mobileSession2:SendRPC("SetInteriorVehicleData", {
+      cid2 = commonRC.getMobileSession(2):SendRPC("SetInteriorVehicleData", {
         moduleData = commonRC.getSettableModuleControlData(pModuleType)
       })
     elseif pRPC2 == "ButtonPress" then
-      cid2 = self.mobileSession2:SendRPC("ButtonPress", {
+      cid2 = commonRC.getMobileSession(2):SendRPC("ButtonPress", {
         moduleType = pModuleType,
         buttonName = commonRC.getButtonNameByModule(pModuleType),
         buttonPressMode = "SHORT"
       })
     end
-    self.mobileSession2:ExpectResponse(cid2, { success = false, resultCode = "IN_USE" })
+    commonRC.getMobileSession(2):ExpectResponse(cid2, { success = false, resultCode = "IN_USE" })
     :Do(function()
       req3_func()
     end)
@@ -135,74 +136,49 @@ local function step(pModuleType, pRPC1, pRPC2, self)
   RUN_AFTER(req2_func, 1000)
 end
 
-local function rai_n(id, self)
-  self, id = commonRC.getSelfAndParams(id, self)
-  if not id then id = 1 end
-  self["mobileSession" .. id] = mobile_session.MobileSession(self, self.mobileConnection)
-  self["mobileSession" .. id]:StartService(7)
-  :Do(function()
-      local corId = self["mobileSession" .. id]:SendRPC("RegisterAppInterface",
-        config["application" .. id].registerAppInterfaceParams)
-      EXPECT_HMINOTIFICATION("BasicCommunication.OnAppRegistered",
-        { application = { appName = config["application" .. id].registerAppInterfaceParams.appName } })
-      :Do(function(_, d1)
-          hmiAppIds[config["application" .. id].registerAppInterfaceParams.appID] = d1.params.application.appID
-        end)
-      self["mobileSession" .. id]:ExpectResponse(corId, { success = true, resultCode = "SUCCESS" })
-      :Do(function()
-          self["mobileSession" .. id]:ExpectNotification("OnHMIStatus",
-            { hmiLevel = "NONE", audioStreamingState = "NOT_AUDIBLE", systemContext = "MAIN" })
-          :Times(AtLeast(1)) -- issue with SDL --> notification is sent twice
-          self["mobileSession" .. id]:ExpectNotification("OnPermissionsChange")
-        end)
-    end)
-end
-
-local function activate_app(pAppId, pOnHMIStatusFunc, self)
-  self, pAppId = commonRC.getSelfAndParams(pAppId, self)
-  if not pAppId then pAppId = 1 end
-  local pHMIAppId = hmiAppIds[config["application" .. pAppId].registerAppInterfaceParams.appID]
-  local mobSession = commonRC.getMobileSession(self, pAppId)
-  local requestId = self.hmiConnection:SendRequest("SDL.ActivateApp", { appID = pHMIAppId })
+local function activateApp(pAppId, pOnHMIStatusFunc)
+  local mobSession = commonRC.getMobileSession(pAppId)
+  local requestId = commonRC.getHMIConnection():SendRequest("SDL.ActivateApp", { appID = commonRC.getHMIAppId(pAppId) })
   EXPECT_HMIRESPONSE(requestId)
   if not pOnHMIStatusFunc then
     mobSession:ExpectNotification("OnHMIStatus",
       { hmiLevel = "FULL", audioStreamingState = "AUDIBLE", systemContext = "MAIN" })
   else
-    pOnHMIStatusFunc(self)
+    pOnHMIStatusFunc()
   end
 end
 
-local function OnHMIStatus2Apps(self)
-  self.mobileSession2:ExpectNotification("OnHMIStatus",
+local function OnHMIStatus2Apps()
+  commonRC.getMobileSession(2):ExpectNotification("OnHMIStatus",
     { hmiLevel = "FULL", audioStreamingState = "AUDIBLE", systemContext = "MAIN" })
-  self.mobileSession1:ExpectNotification("OnHMIStatus",
+  commonRC.getMobileSession():ExpectNotification("OnHMIStatus",
     { hmiLevel = "LIMITED", audioStreamingState = "AUDIBLE", systemContext = "MAIN" })
 end
 
-local function OnHMIStatus3Apps(self)
-  self.mobileSession3:ExpectNotification("OnHMIStatus",
+local function OnHMIStatus3Apps()
+  commonRC.getMobileSession(3):ExpectNotification("OnHMIStatus",
     { hmiLevel = "FULL", audioStreamingState = "NOT_AUDIBLE", systemContext = "MAIN" })
-  self.mobileSession1:ExpectNotification("OnHMIStatus")
+  commonRC.getMobileSession():ExpectNotification("OnHMIStatus")
   :Times(0)
-  self.mobileSession2:ExpectNotification("OnHMIStatus",
+  commonRC.getMobileSession(2):ExpectNotification("OnHMIStatus",
     { hmiLevel = "LIMITED", audioStreamingState = "AUDIBLE", systemContext = "MAIN" })
 end
 
 --[[ Scenario ]]
 runner.Title("Preconditions")
-runner.Step("Clean environment", commonRC.preconditions)
+runner.Step("Clean environment", commonRC.preconditions, { false })
 runner.Step("Start SDL, HMI, connect Mobile, start Session", commonRC.start)
-runner.Step("RAI1, PTU", commonRC.rai_ptu, { ptu_update_func })
-runner.Step("Activate App1", commonRC.activate_app)
-runner.Step("RAI2", rai_n, { 2 })
-runner.Step("Activate App2", activate_app, { 2, OnHMIStatus2Apps })
-runner.Step("RAI3", rai_n, { 3 })
-runner.Step("Activate App3", activate_app, { 3, OnHMIStatus3Apps })
+runner.Step("RAI1", commonRC.registerApp)
+runner.Step("PTU", commonRC.policyTableUpdate, { PTUfunc })
+runner.Step("Activate App1", activateApp, { 1 })
+runner.Step("RAI2", commonRC.registerAppWOPTU, { 2 })
+runner.Step("Activate App2", activateApp, { 2, OnHMIStatus2Apps })
+runner.Step("RAI3", commonRC.registerAppWOPTU, { 3 })
+runner.Step("Activate App3", activateApp, { 3, OnHMIStatus3Apps })
 
 runner.Title("Test")
 
-for _, mod in pairs(modules) do
+for _, mod in pairs(commonRC.modules)  do
   runner.Title("Module: " .. mod)
   -- set control for App1
   runner.Step("App1 SetInteriorVehicleData", commonRC.rpcAllowed, { mod, 1, "SetInteriorVehicleData" })

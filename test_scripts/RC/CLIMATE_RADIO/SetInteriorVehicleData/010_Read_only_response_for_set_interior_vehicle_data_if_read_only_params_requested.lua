@@ -19,17 +19,20 @@ local runner = require('user_modules/script_runner')
 local commonRC = require('test_scripts/RC/commonRC')
 local commonTestCases = require('user_modules/shared_testcases/commonTestCases')
 
+--[[ Test Configuration ]]
+runner.testSettings.isSelfIncluded = false
+
 --[[ Local Variables ]]
 local module_data_climate = commonRC.getReadOnlyParamsByModule("CLIMATE")
 local module_data_radio = commonRC.getReadOnlyParamsByModule("RADIO")
 
 --[[ Local Functions ]]
-local function setVehicleData(module_data, self)
-	local cid = self.mobileSession1:SendRPC("SetInteriorVehicleData", {moduleData = module_data})
+local function setVehicleData(module_data)
+	local cid = commonRC.getMobileSession():SendRPC("SetInteriorVehicleData", {moduleData = module_data})
 
 	EXPECT_HMICALL("RC.SetInteriorVehicleData"):Times(0)
 
-	self.mobileSession1:ExpectResponse(cid, { success = false, resultCode = "READ_ONLY" })
+	commonRC.getMobileSession():ExpectResponse(cid, { success = false, resultCode = "READ_ONLY" })
 	commonTestCases:DelayedExp(commonRC.timeout)
 end
 
@@ -37,8 +40,8 @@ end
 runner.Title("Preconditions")
 runner.Step("Clean environment", commonRC.preconditions)
 runner.Step("Start SDL, HMI, connect Mobile, start Session", commonRC.start)
-runner.Step("RAI, PTU", commonRC.rai_ptu)
-runner.Step("Activate App", commonRC.activate_app)
+runner.Step("RAI", commonRC.registerAppWOPTU)
+runner.Step("Activate App", commonRC.activateApp)
 
 runner.Title("Test: SDL respond with READ_ONLY if SetInteriorVehicleData is sent with read_only params")
 

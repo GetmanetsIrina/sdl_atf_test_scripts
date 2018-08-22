@@ -18,6 +18,9 @@ local runner = require('user_modules/script_runner')
 local commonRC = require('test_scripts/RC/commonRC')
 local hmi_values = require("user_modules/hmi_values")
 
+--[[ Test Configuration ]]
+runner.testSettings.isSelfIncluded = false
+
 --[[ Local Variables ]]
 local Module = "RADIO"
 local hmiValues = hmi_values.getDefaultHMITable()
@@ -27,8 +30,8 @@ hmiValues.RC.GetCapabilities.params.remoteControlCapability.radioControlCapabili
 runner.Title("Preconditions")
 runner.Step("Clean environment", commonRC.preconditions)
 runner.Step("Start SDL, HMI, connect Mobile, start Session", commonRC.start, { hmiValues })
-runner.Step("RAI, PTU", commonRC.rai_ptu)
-runner.Step("Activate App", commonRC.activate_app)
+runner.Step("RAI", commonRC.registerAppWOPTU)
+runner.Step("Activate App", commonRC.activateApp)
 
 runner.Title("Test")
 

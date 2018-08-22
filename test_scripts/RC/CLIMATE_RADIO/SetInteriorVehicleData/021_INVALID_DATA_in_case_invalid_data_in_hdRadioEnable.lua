@@ -16,30 +16,33 @@
 local runner = require('user_modules/script_runner')
 local commonRC = require('test_scripts/RC/commonRC')
 
+--[[ Test Configuration ]]
+runner.testSettings.isSelfIncluded = false
+
 --[[ Local Variables ]]
 local Module = "RADIO"
 
 --[[ Local Functions ]]
-local function rpcInvalidData(self)
+local function rpcInvalidData()
   local requestParams = commonRC.getSettableModuleControlData(Module)
   requestParams.radioControlData.hdRadioEnable = "ENABLE"
 
-  local cid = self.mobileSession1:SendRPC("SetInteriorVehicleData", {
+  local cid = commonRC.getMobileSession():SendRPC("SetInteriorVehicleData", {
 	moduleData = requestParams
   })
 
   EXPECT_HMICALL("RC.SetInteriorVehicleData")
   :Times(0)
 
-  self.mobileSession1:ExpectResponse(cid, { success = false, resultCode = "INVALID_DATA" })
+  commonRC.getMobileSession():ExpectResponse(cid, { success = false, resultCode = "INVALID_DATA" })
 end
 
 --[[ Scenario ]]
 runner.Title("Preconditions")
 runner.Step("Clean environment", commonRC.preconditions)
 runner.Step("Start SDL, HMI, connect Mobile, start Session", commonRC.start)
-runner.Step("RAI, PTU", commonRC.rai_ptu)
-runner.Step("Activate App", commonRC.activate_app)
+runner.Step("RAI", commonRC.registerAppWOPTU)
+runner.Step("Activate App", commonRC.activateApp)
 
 runner.Title("Test")
 

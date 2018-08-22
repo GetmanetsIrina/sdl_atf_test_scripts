@@ -15,26 +15,24 @@
 ---------------------------------------------------------------------------------------------------
 --[[ Required Shared libraries ]]
 local runner = require('user_modules/script_runner')
-local common = require('test_scripts/RC/commonRC')
+local commonRC = require('test_scripts/RC/commonRC')
 local hmi_values = require("user_modules/hmi_values")
 
+--[[ Test Configuration ]]
+runner.testSettings.isSelfIncluded = false
+
 --[[ Local Variables ]]
-local modules = { "CLIMATE", "RADIO" }
-local capMap = {
-  ["RADIO"] = "radioControlCapabilities",
-  ["CLIMATE"] = "climateControlCapabilities"
-}
 local capabParams = {}
-for _, v in pairs(modules) do capabParams[v] = common.DEFAULT end -- HMI has all posible RC capabilities
+for _, v in pairs(commonRC.modules) do capabParams[v] = commonRC.DEFAULT end -- HMI has all posible RC capabilities
 
 --[[ Local Functions ]]
 local function buildHmiRcCapabilities(pCapabilities)
   local hmiParams = hmi_values.getDefaultHMITable()
   hmiParams.RC.IsReady.params.available = true
   local capParams = hmiParams.RC.GetCapabilities.params.remoteControlCapability
-  for k, v in pairs(capMap) do
+  for k, v in pairs(commonRC.capMap) do
     if pCapabilities[k] then
-      if pCapabilities[k] ~= common.DEFAULT then
+      if pCapabilities[k] ~= commonRC.DEFAULT then
         capParams[v] = pCapabilities[v]
       end
     else
@@ -46,10 +44,10 @@ end
 
 local hmiRcCapabilities = buildHmiRcCapabilities(capabParams)
 
-local function rpcSuccess(self)
+local function rpcSuccess()
   local rcCapabilities = hmiRcCapabilities.RC.GetCapabilities.params.remoteControlCapability
-  local cid = common.getMobileSession(self):SendRPC("GetSystemCapability", { systemCapabilityType = "REMOTE_CONTROL" })
-  common.getMobileSession(self):ExpectResponse(cid, {
+  local cid = commonRC.getMobileSession():SendRPC("GetSystemCapability", { systemCapabilityType = "REMOTE_CONTROL" })
+  commonRC.getMobileSession():ExpectResponse(cid, {
     success = true,
     resultCode = "SUCCESS",
     systemCapability = {
@@ -67,16 +65,16 @@ end
 
 --[[ Scenario ]]
 runner.Title("Preconditions")
-runner.Step("Backup HMI capabilities file", common.backupHMICapabilities)
-runner.Step("Update HMI capabilities file", common.updateDefaultCapabilities, { modules })
-runner.Step("Clean environment", common.preconditions)
-runner.Step("Start SDL, HMI, connect Mobile, start Session", common.start, { hmiRcCapabilities })
-runner.Step("RAI, PTU", common.rai_ptu)
-runner.Step("Activate App", common.activate_app)
+runner.Step("Backup HMI capabilities file", commonRC.backupHMICapabilities)
+runner.Step("Update HMI capabilities file", commonRC.updateDefaultCapabilities, { commonRC.modules })
+runner.Step("Clean environment", commonRC.preconditions)
+runner.Step("Start SDL, HMI, connect Mobile, start Session", commonRC.start, { hmiRcCapabilities })
+runner.Step("RAI", commonRC.registerAppWOPTU)
+runner.Step("Activate App", commonRC.activateApp)
 
 runner.Title("Test")
 runner.Step("GetSystemCapability Positive Case", rpcSuccess)
 
 runner.Title("Postconditions")
-runner.Step("Stop SDL", common.postconditions)
-runner.Step("Restore HMI capabilities file", common.restoreHMICapabilities)
+runner.Step("Stop SDL", commonRC.postconditions)
+runner.Step("Restore HMI capabilities file", commonRC.restoreHMICapabilities)

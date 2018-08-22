@@ -489,4 +489,21 @@ function m.setHMIAppId(pHMIAppId, pAppId)
   hmiAppIds[m.getConfigAppParams(pAppId).appID] = pHMIAppId
 end
 
+--[[ @getHMIAppIds: return array of all HMI application identifiers
+--! @parameters: none
+--! @return: array of all HMI application identifiers
+--]]
+function m.getHMIAppIds()
+  return hmiAppIds
+end
+
+--[[ @deleteHMIAppId: remove HMI application identifier
+--! @parameters:
+--! pAppId - application number (1, 2, etc.)
+--! @return: none
+--]]
+function m.deleteHMIAppId(pAppId)
+  hmiAppIds[m.getConfigAppParams(pAppId).appID] = nil
+end
+
 return m
