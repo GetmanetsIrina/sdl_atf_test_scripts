@@ -18,7 +18,6 @@
 --[[ Required Shared libraries ]]
 local runner = require('user_modules/script_runner')
 local common = require('test_scripts/RC/InteriorVehicleData_cache/common_interiorVDcache')
-local commonRC = require('test_scripts/RC/commonRC')
 local functionId = require('function_id')
 
 --[[ Test Configuration ]]
@@ -32,13 +31,13 @@ local function GetInteriorVehicleData(pModuleType, pRequestNubmer)
   local rpc = "GetInteriorVehicleData"
   local subscribe = nil
   local mobSession = common.getMobileSession(1)
-  local cid = mobSession:SendRPC(commonRC.getAppEventName(rpc),
-    commonRC.getAppRequestParams(rpc, pModuleType, subscribe))
+  local cid = mobSession:SendRPC(common.getAppEventName(rpc),
+    common.getAppRequestParams(rpc, pModuleType, subscribe))
 
   local hmiRequestParams = common.getHMIRequestParams(rpc, pModuleType, 1, subscribe)
   timestampArray[pRequestNubmer] = timestamp()
   hmiRequestParams.subscribe = nil
-  EXPECT_HMICALL(commonRC.getHMIEventName(rpc), hmiRequestParams)
+  EXPECT_HMICALL(common.getHMIEventName(rpc), hmiRequestParams)
   :Do(function(_, data)
 	    local hmiResponseParams = common.getHMIResponseParams(rpc, pModuleType, subscribe)
 	    hmiResponseParams.subscribe = nil
@@ -50,7 +49,7 @@ local function GetInteriorVehicleData(pModuleType, pRequestNubmer)
       end
       return true
     end)
-  mobSession:ExpectResponse(cid, common.getResponseParams(rpc, true, "SUCCESS", pModuleType, subscribe))
+  mobSession:ExpectResponse(cid, common.getAppResponseParams(rpc, true, "SUCCESS", pModuleType, subscribe))
 end
 
 local function GetInteriorVehicleDataRejectedSuccess(pModuleType, pCompareRequest)
@@ -58,15 +57,15 @@ local function GetInteriorVehicleDataRejectedSuccess(pModuleType, pCompareReques
   local subscribe = nil
   local mobSession = common.getMobileSession(1)
   local function request()
-	mobSession:SendRPC(commonRC.getAppEventName(rpc),
-	  commonRC.getAppRequestParams(rpc, pModuleType, subscribe))
+	mobSession:SendRPC(common.getAppEventName(rpc),
+	  common.getAppRequestParams(rpc, pModuleType, subscribe))
   end
 
   request()
 
   local hmiRequestParams = common.getHMIRequestParams(rpc, pModuleType, 1, subscribe)
   hmiRequestParams.subscribe = nil
-  EXPECT_HMICALL(commonRC.getHMIEventName(rpc), hmiRequestParams)
+  EXPECT_HMICALL(common.getHMIEventName(rpc), hmiRequestParams)
   :Do(function(_, data)
 	  timestampArray[4] = timestamp()
 	  local hmiResponseParams = common.getHMIResponseParams(rpc, pModuleType, subscribe)

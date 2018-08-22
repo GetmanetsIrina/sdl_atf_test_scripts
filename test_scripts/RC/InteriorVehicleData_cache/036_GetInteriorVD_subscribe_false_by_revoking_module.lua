@@ -8,40 +8,39 @@
 -- Description:
 -- In case
 -- 1. Mobile app is subscribed to module_1
--- 2. Mobile app2 is subscribed to module_1
--- 3. Module_1 is revoked during PTU
+-- 2. Module_1 is revoked during PTU
 -- SDL must
 -- 1. send GetInteriorVD(module_1, subscribe = false) request to HMI
 ---------------------------------------------------------------------------------------------------
 --[[ Required Shared libraries ]]
 local runner = require('user_modules/script_runner')
 local common = require('test_scripts/RC/InteriorVehicleData_cache/common_interiorVDcache')
-local commonRC = require('test_scripts/RC/commonRC')
 
 --[[ Test Configuration ]]
 runner.testSettings.isSelfIncluded = false
 
 --[[ Local Functions ]]
-local function ptuFuncRPC(tbl)
+local function ptuFuncRPC2(tbl)
   tbl.policy_table.app_policies[config.application1.registerAppInterfaceParams.appID].moduleType = { common.modules[2] }
 end
 
 local function ptu()
   local rpc = "GetInteriorVehicleData"
-  EXPECT_HMICALL(commonRC.getHMIEventName(rpc), common.getHMIRequestParams(rpc, common.modules[1], 1, false))
+  EXPECT_HMICALL(common.getHMIEventName(rpc), common.getHMIRequestParams(rpc, common.modules[1], 1, false))
   :Do(function(_, data)
 	    common.getHMIConnection():SendResponse(data.id, data.method, "SUCCESS",
 	    common.getHMIResponseParams(rpc, common.modules[1], false))
     end)
-  common.policyTableUpdate(ptuFuncRPC)
+  common.policyTableUpdate(ptuFuncRPC2)
 end
 
 --[[ Scenario ]]
 runner.Title("Preconditions")
-runner.Step("Clean environment", common.preconditions)
+runner.Step("Clean environment", common.preconditions, { true, 1 })
 runner.Step("Start SDL, HMI, connect Mobile, start Session", common.start)
-runner.Step("Register app", common.registerApp, { 1 })
+runner.Step("Register app", common.registerAppWOPTU, { 1 })
 runner.Step("Activate app", common.activateApp, { 1 })
+runner.Step("Register app2", common.registerApp, { 2 })
 
 runner.Title("Test")
 

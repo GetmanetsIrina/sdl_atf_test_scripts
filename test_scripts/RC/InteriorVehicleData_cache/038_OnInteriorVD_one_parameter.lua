@@ -22,9 +22,31 @@ local common = require('test_scripts/RC/InteriorVehicleData_cache/common_interio
 runner.testSettings.isSelfIncluded = false
 
 local OnInteriorVDparams = {
-  CLIMATE = { fanSpeed = 30 },
-  RADIO = { frequencyFraction = 3 }
+  CLIMATE =  { fanSpeed = 30 },
+  RADIO = { frequencyFraction = 3 },
+  SEAT = { id = "FRONT_PASSENGER" },
+  LIGHT = { lightState = { { id = "FRONT_RIGHT_HIGH_BEAM", status = "ON" } } },
+  AUDIO = { source = "FM" },
+  HMI_SETTINGS = { displayMode = "NIGHT" }
 }
+
+local function getModuleData(module_type, pParams)
+  local out = { moduleType = module_type }
+  if module_type == "CLIMATE" then
+    out.climateControlData = pParams
+  elseif module_type == "RADIO" then
+    out.radioControlData = pParams
+  elseif module_type == "SEAT" then
+    out.seatControlData = pParams
+  elseif module_type == "AUDIO" then
+    out.audioControlData = pParams
+  elseif module_type == "LIGHT" then
+    out.lightControlData = pParams
+  elseif module_type == "HMI_SETTINGS" then
+    out.hmiSettingsControlData = pParams
+  end
+  return out
+end
 
 --[[ Scenario ]]
 runner.Title("Preconditions")
@@ -39,7 +61,7 @@ for _, mod in pairs(common.modules) do
   runner.Step("App1 GetInteriorVehicleData with subscribe=true " .. mod, common.GetInteriorVehicleData,
     { mod, true, true, 1 })
   runner.Step("App1 OnInteriorVehicleData for " .. mod, common.OnInteriorVD,
-    { mod, true, 1, OnInteriorVDparams[mod] })
+    { mod, true, 1, getModuleData(mod, OnInteriorVDparams[mod]) })
   runner.Step("App2 GetInteriorVehicleData without subscribe " .. mod, common.GetInteriorVehicleData,
     { mod, nil, false, 1 })
 end

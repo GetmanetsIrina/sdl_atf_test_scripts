@@ -46,7 +46,7 @@ local function GetInteriorVehicleData(pModuleType, isSubscribe)
       end
       return true
     end)
-  mobSession:ExpectResponse(cid, common.getResponseParams(rpc, true, "SUCCESS", pModuleType, subscribe))
+  mobSession:ExpectResponse(cid, common.getAppResponseParams(rpc, true, "SUCCESS", pModuleType, subscribe))
 end
 
 --[[ Scenario ]]
@@ -56,7 +56,7 @@ runner.Step("Start SDL, HMI, connect Mobile, start Session", common.start)
 runner.Step("Register app1", common.registerAppWOPTU, { 1 })
 runner.Step("Register app2", common.registerAppWOPTU, { 2 })
 runner.Step("Activate app1", common.activateApp, { 1 })
-runner.Step("Activate app2", common.activateApp, { 2, "NOT_AUDIBLE" })
+runner.Step("Activate app2", common.activateApp, { 2 })
 
 runner.Title("Test")
 

@@ -23,19 +23,9 @@ runner.testSettings.isSelfIncluded = false
 
 --[[ Local Funstions ]]
 local function OnInteriorVDUpdatedData2Apps(pModuleType)
-  local params = common.cloneTable(common.actualInteriorDataStateOnHMI[pModuleType])
-  for key, value in pairs(params) do
-    if type(value) == "boolean" then
-      if value == true then
-        params[key] = false
-      else
-        params[key] = true
-      end
-    end
-  end
+  local params = common.moduleDataUpdate(pModuleType)
   common.OnInteriorVD(pModuleType, true, 1, params)
-  common.getMobileSession(2):ExpectNotification("OnInteriorVehicleData",
-  common.getResponseParams("OnInteriorVehicleData", pModuleType, params))
+  common.getMobileSession(2):ExpectNotification("OnInteriorVehicleData",{moduleData = params})
 end
 
 --[[ Scenario ]]
@@ -45,7 +35,7 @@ runner.Step("Start SDL, HMI, connect Mobile, start Session", common.start)
 runner.Step("Register app1", common.registerAppWOPTU, { 1 })
 runner.Step("Register app2", common.registerAppWOPTU, { 2 })
 runner.Step("Activate app1", common.activateApp, { 1 })
-runner.Step("Activate app2", common.activateApp, { 2, "NOT_AUDIBLE" })
+runner.Step("Activate app2", common.activateApp, { 2 })
 
 runner.Title("Test")
 
