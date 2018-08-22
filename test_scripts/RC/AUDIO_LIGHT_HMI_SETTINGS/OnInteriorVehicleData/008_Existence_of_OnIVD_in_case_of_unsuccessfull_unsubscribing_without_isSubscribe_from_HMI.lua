@@ -19,13 +19,12 @@
 ---------------------------------------------------------------------------------------------------
 --[[ Required Shared libraries ]]
 local runner = require('user_modules/script_runner')
-local common = require('test_scripts/RC/AUDIO_LIGHT_HMI_SETTINGS/commonRCmodules')
+local common = require("test_scripts/RC/commonRC")
 
 --[[ Test Configuration ]]
 runner.testSettings.isSelfIncluded = false
 
 --[[ Local Variables ]]
-local modules = { "AUDIO", "LIGHT", "HMI_SETTINGS" }
 local error_codes = { "GENERIC_ERROR", "INVALID_DATA", "OUT_OF_MEMORY", "REJECTED" }
 
 --[[ Local Functions ]]
@@ -41,7 +40,7 @@ local function unSubscriptionToModule(pModuleType, pResultCode)
       subscribe = false
     })
   :Do(function(_, data)
-      common.getHMIconnection():SendError(data.id, data.method, pResultCode, "Error error")
+      common.getHMIConnection():SendError(data.id, data.method, pResultCode, "Error error")
       -- no isSubscribed parameter
     end)
 
@@ -58,17 +57,17 @@ end
 runner.Title("Preconditions")
 runner.Step("Clean environment", common.preconditions)
 runner.Step("Start SDL, HMI, connect Mobile, start Session", common.start)
-runner.Step("RAI, PTU", common.raiPTUn)
+runner.Step("RAI", common.registerAppWOPTU)
 runner.Step("Activate App", common.activateApp)
 
-for _, mod in pairs(modules) do
+for _, mod in pairs(common.newModules) do
   runner.Step("Subscribe app to " .. mod, common.subscribeToModule, { mod })
   runner.Step("Send notification OnInteriorVehicleData " .. mod .. ". App subscribed", common.isSubscribed, { mod })
 end
 
 runner.Title("Test")
 
-for _, mod in pairs(modules) do
+for _, mod in pairs(common.newModules) do
   for _, err in pairs(error_codes) do
     runner.Step("Unsubscribe app to " .. mod .. " (" .. err .. " from HMI)", unSubscriptionToModule, { mod, err })
     runner.Step("Send notification OnInteriorVehicleData " .. mod .. ". App still subscribed", common.isSubscribed,

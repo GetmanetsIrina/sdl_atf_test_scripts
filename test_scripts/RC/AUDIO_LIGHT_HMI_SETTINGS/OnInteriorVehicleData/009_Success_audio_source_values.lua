@@ -14,7 +14,7 @@
 ---------------------------------------------------------------------------------------------------
 --[[ Required Shared libraries ]]
 local runner = require('user_modules/script_runner')
-local common = require('test_scripts/RC/AUDIO_LIGHT_HMI_SETTINGS/commonRCmodules')
+local common = require("test_scripts/RC/commonRC")
 
 --[[ Test Configuration ]]
 runner.testSettings.isSelfIncluded = false
@@ -28,7 +28,8 @@ local function isSubscribed(pAudioSources)
   hmiParams.moduleData.audioControlData.source = pAudioSources
   local mobileParams = common.getAppResponseParams(rpc, moduleType)
   mobileParams.moduleData.audioControlData.source = pAudioSources
-  common.getHMIconnection():SendNotification(common.getHMIEventName(rpc), hmiParams)
+  mobileParams.moduleData.audioControlData.keepContext = nil
+  common.getHMIConnection():SendNotification(common.getHMIEventName(rpc), hmiParams)
   mobSession:ExpectNotification(common.getAppEventName(rpc), mobileParams)
   :ValidIf(function(_,data)
       if nil ~= data.payload.moduleData.audioControlData.keepContext then
@@ -42,7 +43,7 @@ end
 runner.Title("Preconditions")
 runner.Step("Clean environment", common.preconditions)
 runner.Step("Start SDL, HMI, connect Mobile, start Session", common.start)
-runner.Step("RAI, PTU", common.raiPTUn)
+runner.Step("RAI", common.registerAppWOPTU)
 runner.Step("Activate App", common.activateApp)
 runner.Step("Subscribe app to AUDIO", common.subscribeToModule, { "AUDIO" })
 

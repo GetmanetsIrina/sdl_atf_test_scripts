@@ -15,7 +15,7 @@
 ---------------------------------------------------------------------------------------------------
 --[[ Required Shared libraries ]]
 local runner = require('user_modules/script_runner')
-local common = require('test_scripts/RC/AUDIO_LIGHT_HMI_SETTINGS/commonRCmodules')
+local common = require("test_scripts/RC/commonRC")
 local utils = require("user_modules/utils")
 
 --[[ Test Configuration ]]
@@ -29,12 +29,13 @@ local function subscribeToModule(pAudioSources)
   local mobSession = common.getMobileSession(1)
   local hmiResponseParams = common.getHMIResponseParams(rpc, moduleType, subscribe)
   hmiResponseParams.moduleData.audioControlData.source = pAudioSources
+  hmiResponseParams.moduleData.audioControlData.keepContext = nil
   local mobileResponseParams = common.getAppResponseParams(rpc, true, "SUCCESS", moduleType, subscribe)
   mobileResponseParams.moduleData.audioControlData.source = pAudioSources
   local cid = mobSession:SendRPC(common.getAppEventName(rpc), common.getAppRequestParams(rpc, moduleType, subscribe))
   EXPECT_HMICALL(common.getHMIEventName(rpc), common.getHMIRequestParams(rpc, moduleType, 1, subscribe))
   :Do(function(_, data)
-      common.getHMIconnection():SendResponse(data.id, data.method, "SUCCESS", hmiResponseParams)
+      common.getHMIConnection():SendResponse(data.id, data.method, "SUCCESS", hmiResponseParams)
     end)
   mobSession:ExpectResponse(cid, mobileResponseParams)
   :ValidIf(function(_,data)
@@ -50,7 +51,7 @@ end
 runner.Title("Preconditions")
 runner.Step("Clean environment", common.preconditions)
 runner.Step("Start SDL, HMI, connect Mobile, start Session", common.start)
-runner.Step("RAI, PTU", common.raiPTUn)
+runner.Step("RAI", common.registerAppWOPTU)
 runner.Step("Activate App", common.activateApp)
 
 runner.Title("Test")

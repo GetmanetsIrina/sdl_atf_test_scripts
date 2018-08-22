@@ -17,13 +17,12 @@
 --[[ Required Shared libraries ]]
 local runner = require('user_modules/script_runner')
 local json = require('modules/json')
-local common = require('test_scripts/RC/AUDIO_LIGHT_HMI_SETTINGS/commonRCmodules')
+local common = require("test_scripts/RC/commonRC")
 
 --[[ Test Configuration ]]
 runner.testSettings.isSelfIncluded = false
 
 local function PTUfunc(tbl)
-  common.AddOnRCStatusToPT(tbl)
   local appId = config.application1.registerAppInterfaceParams.appID
   tbl.policy_table.app_policies[appId] = common.getRCAppConfig()
   tbl.policy_table.app_policies[appId].moduleType = json.EMPTY_ARRAY
@@ -31,13 +30,14 @@ end
 
 --[[ Scenario ]]
 runner.Title("Preconditions")
-runner.Step("Clean environment", common.preconditions)
+runner.Step("Clean environment", common.preconditions, { false })
 runner.Step("Start SDL, HMI, connect Mobile, start Session", common.start)
-runner.Step("RAI, PTU", common.raiPTUn, { PTUfunc })
+runner.Step("RAI", common.registerApp)
+runner.Step("PTU", common.policyTableUpdate, { PTUfunc })
 runner.Step("Activate App", common.activateApp)
 
 runner.Title("Test")
-for _, mod in pairs(common.modules) do
+for _, mod in pairs(common.modulesWithoutSeat) do
   runner.Step("GetInteriorVehicleData " .. mod, common.rpcAllowed, { mod, 1, "GetInteriorVehicleData" })
 end
 

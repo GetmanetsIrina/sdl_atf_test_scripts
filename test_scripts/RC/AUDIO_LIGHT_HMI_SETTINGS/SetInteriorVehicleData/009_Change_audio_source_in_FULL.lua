@@ -15,7 +15,7 @@
 ---------------------------------------------------------------------------------------------------
 --[[ Required Shared libraries ]]
 local runner = require('user_modules/script_runner')
-local common = require('test_scripts/RC/AUDIO_LIGHT_HMI_SETTINGS/commonRCmodules')
+local common = require("test_scripts/RC/commonRC")
 
 --[[ Test Configuration ]]
 runner.testSettings.isSelfIncluded = false
@@ -38,7 +38,7 @@ local function setVehicleData(pSource)
       moduleData = audioData
     })
   :Do(function(_, data)
-      common.getHMIconnection():SendResponse(data.id, data.method, "SUCCESS", {
+      common.getHMIConnection():SendResponse(data.id, data.method, "SUCCESS", {
           moduleData = audioData
         })
     end)
@@ -50,7 +50,7 @@ end
 runner.Title("Preconditions")
 runner.Step("Clean environment", common.preconditions)
 runner.Step("Start SDL, HMI, connect Mobile, start Session", common.start)
-runner.Step("RAI, PTU", common.raiPTUn)
+runner.Step("RAI", common.registerAppWOPTU)
 runner.Step("Activate App", common.activateApp)
 
 runner.Title("Test")

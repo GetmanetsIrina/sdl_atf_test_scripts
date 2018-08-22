@@ -15,14 +15,14 @@
 ---------------------------------------------------------------------------------------------------
 --[[ Required Shared libraries ]]
 local runner = require('user_modules/script_runner')
-local common = require('test_scripts/RC/AUDIO_LIGHT_HMI_SETTINGS/commonRCmodules')
+local common = require("test_scripts/RC/commonRC")
 
 --[[ Test Configuration ]]
 runner.testSettings.isSelfIncluded = false
 
 --[[ Local Variables ]]
 local capParams = {}
-for _, v in pairs(common.modules) do capParams[v] = common.DEFAULT end -- HMI has all posible RC capabilities
+for _, v in pairs(common.modulesWithoutSeat) do capParams[v] = common.DEFAULT end -- HMI has all posible RC capabilities
 local hmiRcCapabilities = common.buildHmiRcCapabilities(capParams)
 
 --[[ Local Functions ]]
@@ -48,10 +48,10 @@ end
 --[[ Scenario ]]
 runner.Title("Preconditions")
 runner.Step("Backup HMI capabilities file", common.backupHMICapabilities)
-runner.Step("Update HMI capabilities file", common.updateDefaultCapabilities, { common.modules })
+runner.Step("Update HMI capabilities file", common.updateDefaultCapabilities, { common.modulesWithoutSeat })
 runner.Step("Clean environment", common.preconditions)
 runner.Step("Start SDL, HMI, connect Mobile, start Session", common.start, { hmiRcCapabilities })
-runner.Step("RAI, PTU", common.raiPTUn)
+runner.Step("RAI", common.registerAppWOPTU)
 runner.Step("Activate App", common.activateApp)
 
 runner.Title("Test")

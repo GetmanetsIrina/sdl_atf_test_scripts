@@ -15,7 +15,7 @@
 ---------------------------------------------------------------------------------------------------
 --[[ Required Shared libraries ]]
 local runner = require('user_modules/script_runner')
-local common = require('test_scripts/RC/AUDIO_LIGHT_HMI_SETTINGS/commonRCmodules')
+local common = require("test_scripts/RC/commonRC")
 
 --[[ Test Configuration ]]
 runner.testSettings.isSelfIncluded = false
@@ -34,7 +34,7 @@ local function setVehicleData(pSource)
 
   EXPECT_HMICALL("RC.SetInteriorVehicleData", { appID = common.getHMIAppId(), moduleData = audioData })
   :Do(function(_, data)
-      common.getHMIconnection():SendError(data.id, data.method, "REJECTED", "Error")
+      common.getHMIConnection():SendError(data.id, data.method, "REJECTED", "Error")
     end)
 
   common.getMobileSession():ExpectResponse(cid, { success = false, resultCode = "REJECTED", info = "Error" })
@@ -50,8 +50,8 @@ end
 runner.Title("Preconditions")
 runner.Step("Clean environment", common.preconditions)
 runner.Step("Start SDL, HMI, connect Mobile, start Session", common.start)
-runner.Step("RAI, PTU App1", common.raiPTUn)
-runner.Step("RAI App2", common.raiN, {2})
+runner.Step("RAI App1", common.registerAppWOPTU)
+runner.Step("RAI App2", common.registerAppWOPTU, {2})
 runner.Step("Activate App1", common.activateApp)
 runner.Step("Set App1 to BACKGROUND HMI level", BringAppToBACKGROUND)
 

@@ -15,7 +15,7 @@
 ---------------------------------------------------------------------------------------------------
 --[[ Required Shared libraries ]]
 local runner = require('user_modules/script_runner')
-local common = require('test_scripts/RC/AUDIO_LIGHT_HMI_SETTINGS/commonRCmodules')
+local common = require("test_scripts/RC/commonRC")
 
 --[[ Test Configuration ]]
 runner.testSettings.isSelfIncluded = false
@@ -24,7 +24,7 @@ runner.testSettings.isSelfIncluded = false
 config.application1.registerAppInterfaceParams.appHMIType = { "DEFAULT" }
 
 --[[ Local Functions ]]
-local function ptUpdateFunc(pTbl)
+local function PTUfunc(pTbl)
   local appId = config.application1.registerAppInterfaceParams.appID
   pTbl.policy_table.app_policies[appId].AppHMIType = { "DEFAULT" }
 end
@@ -36,9 +36,10 @@ end
 
 --[[ Scenario ]]
 runner.Title("Preconditions")
-runner.Step("Clean environment", common.preconditions)
+runner.Step("Clean environment", common.preconditions, { false })
 runner.Step("Start SDL, HMI, connect Mobile, start Session", common.start)
-runner.Step("RAI, PTU", common.raiPTUn, { ptUpdateFunc })
+runner.Step("RAI", common.registerApp)
+runner.Step("PTU", common.policyTableUpdate, { PTUfunc })
 runner.Step("Activate App", common.activateApp)
 
 runner.Title("Test")

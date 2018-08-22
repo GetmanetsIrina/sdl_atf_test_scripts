@@ -18,13 +18,10 @@
 ---------------------------------------------------------------------------------------------------
 --[[ Required Shared libraries ]]
 local runner = require('user_modules/script_runner')
-local common = require('test_scripts/RC/AUDIO_LIGHT_HMI_SETTINGS/commonRCmodules')
+local common = require("test_scripts/RC/commonRC")
 
 --[[ Test Configuration ]]
 runner.testSettings.isSelfIncluded = false
-
---[[ Local Variables ]]
-local modules = { "AUDIO", "LIGHT", "HMI_SETTINGS" }
 
 --[[ Local Functions ]]
 local function unSubscriptionToModule(pModuleType)
@@ -39,7 +36,7 @@ local function unSubscriptionToModule(pModuleType)
       subscribe = false
     })
   :Do(function(_, data)
-      common.getHMIconnection():SendResponse(data.id, data.method, "SUCCESS", {
+      common.getHMIConnection():SendResponse(data.id, data.method, "SUCCESS", {
           moduleData = common.getModuleControlDataForResponse(pModuleType),
           isSubscribed = true -- HMI responds with true
         })
@@ -55,17 +52,17 @@ end
 runner.Title("Preconditions")
 runner.Step("Clean environment", common.preconditions)
 runner.Step("Start SDL, HMI, connect Mobile, start Session", common.start)
-runner.Step("RAI, PTU", common.raiPTUn)
+runner.Step("RAI", common.registerAppWOPTU)
 runner.Step("Activate App", common.activateApp)
 
-for _, mod in pairs(modules) do
+for _, mod in pairs(common.newModules) do
   runner.Step("Subscribe app to " .. mod, common.subscribeToModule, { mod })
   runner.Step("Send notification OnInteriorVehicleData " .. mod .. ". App is subscribed", common.isSubscribed, { mod })
 end
 
 runner.Title("Test")
 
-for _, mod in pairs(modules) do
+for _, mod in pairs(common.newModules) do
   runner.Step("Subscribe app to " .. mod, unSubscriptionToModule, { mod })
   runner.Step("Send notification OnInteriorVehicleData " .. mod .. ". App still subscribed", common.isSubscribed, { mod })
 end

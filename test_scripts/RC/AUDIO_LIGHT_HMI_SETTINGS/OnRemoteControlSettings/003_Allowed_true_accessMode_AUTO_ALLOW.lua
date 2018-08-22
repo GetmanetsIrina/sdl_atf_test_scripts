@@ -18,7 +18,7 @@
 ---------------------------------------------------------------------------------------------------
 --[[ Required Shared libraries ]]
 local runner = require('user_modules/script_runner')
-local common = require('test_scripts/RC/AUDIO_LIGHT_HMI_SETTINGS/commonRCmodules')
+local common = require("test_scripts/RC/commonRC")
 
 --[[ Test Configuration ]]
 runner.testSettings.isSelfIncluded = false
@@ -27,11 +27,6 @@ runner.testSettings.isSelfIncluded = false
 local modules = { "CLIMATE", "AUDIO", "LIGHT", "HMI_SETTINGS" }
 
 --[[ Local Functions ]]
-local function ptu_update_func(tbl)
-  tbl.policy_table.app_policies[config.application1.registerAppInterfaceParams.appID] = common.getRCAppConfig()
-  tbl.policy_table.app_policies[config.application2.registerAppInterfaceParams.appID] = common.getRCAppConfig()
-end
-
 local function disableRcFromHmi()
   common.defineRAMode(false, nil)
 end
@@ -40,8 +35,8 @@ end
 runner.Title("Preconditions")
 runner.Step("Clean environment", common.preconditions)
 runner.Step("Start SDL, HMI, connect Mobile, start Session", common.start)
-runner.Step("RAI1, PTU", common.raiPTUn, { ptu_update_func })
-runner.Step("RAI2", common.raiN, { 2 })
+runner.Step("RAI1", common.registerAppWOPTU)
+runner.Step("RAI2", common.registerAppWOPTU, { 2 })
 runner.Step("Disable RC from HMI", disableRcFromHmi)
 
 runner.Title("Test")

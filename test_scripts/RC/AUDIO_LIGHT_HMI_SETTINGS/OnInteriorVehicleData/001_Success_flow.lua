@@ -35,7 +35,7 @@
 ---------------------------------------------------------------------------------------------------
 --[[ Required Shared libraries ]]
 local runner = require('user_modules/script_runner')
-local common = require('test_scripts/RC/AUDIO_LIGHT_HMI_SETTINGS/commonRCmodules')
+local common = require("test_scripts/RC/commonRC")
 
 --[[ Test Configuration ]]
 runner.testSettings.isSelfIncluded = false
@@ -44,17 +44,17 @@ runner.testSettings.isSelfIncluded = false
 runner.Title("Preconditions")
 runner.Step("Clean environment", common.preconditions)
 runner.Step("Start SDL, HMI, connect Mobile, start Session", common.start)
-runner.Step("RAI, PTU", common.raiPTUn)
+runner.Step("RAI", common.registerAppWOPTU)
 runner.Step("Activate App", common.activateApp)
 
 runner.Title("Test")
 
-for _, mod in pairs(common.modules) do
+for _, mod in pairs(common.modulesWithoutSeat) do
   runner.Step("Subscribe app to " .. mod, common.subscribeToModule, { mod })
   runner.Step("Send notification OnInteriorVehicleData " .. mod .. ". App is subscribed", common.isSubscribed, { mod })
 end
 
-for _, mod in pairs(common.modules) do
+for _, mod in pairs(common.modulesWithoutSeat) do
   runner.Step("Unsubscribe app to " .. mod, common.unSubscribeToModule, { mod })
   runner.Step("Send notification OnInteriorVehicleData " .. mod .. ". App is unsubscribed", common.isUnsubscribed, { mod })
 end
