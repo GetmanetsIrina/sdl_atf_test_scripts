@@ -15,8 +15,7 @@
 ---------------------------------------------------------------------------------------------------
 --[[ Required Shared libraries ]]
 local runner = require('user_modules/script_runner')
-local commonRC = require('test_scripts/RC/SEAT/commonRC')
-local initialCommon = require('test_scripts/RC/commonRC')
+local commonRC = require('test_scripts/RC/commonRC')
 
 --[[ Test Configuration ]]
 runner.testSettings.isSelfIncluded = false
@@ -33,8 +32,8 @@ local function getDataForModule(pModuleType, isSubscriptionActive, pHMIrequest)
     moduleType = pModuleType
   })
   :Do(function(_, data)
-      commonRC.getHMIconnection():SendResponse(data.id, data.method, "SUCCESS", {
-        moduleData = initialCommon.getModuleControlData(pModuleType),
+      commonRC.getHMIConnection():SendResponse(data.id, data.method, "SUCCESS", {
+        moduleData = commonRC.getModuleControlData(pModuleType),
         isSubscribed = isSubscriptionActive -- return current value of subscription
       })
     end)
@@ -47,7 +46,7 @@ local function getDataForModule(pModuleType, isSubscriptionActive, pHMIrequest)
   :Times(pHMIrequest)
 
   mobSession:ExpectResponse(cid, { success = true, resultCode = "SUCCESS",
-    moduleData = initialCommon.getModuleControlData(pModuleType)
+    moduleData = commonRC.getModuleControlData(pModuleType)
   })
   :ValidIf(function(_, data) -- no isSubscribed parameter
       if data.payload.isSubscribed == nil then
@@ -61,8 +60,8 @@ end
 runner.Title("Preconditions")
 runner.Step("Clean environment", commonRC.preconditions)
 runner.Step("Start SDL, HMI, connect Mobile, start Session", commonRC.start)
-runner.Step("RAI, PTU", commonRC.rai_ptu)
-runner.Step("Activate App", commonRC.activate_app)
+runner.Step("RAI", commonRC.registerAppWOPTU)
+runner.Step("Activate App", commonRC.activateApp)
 
 runner.Title("Test")
 runner.Step("GetInteriorVehicleData SEAT NoSubscription", getDataForModule, { "SEAT", false, 1 })

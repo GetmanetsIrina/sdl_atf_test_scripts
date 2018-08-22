@@ -19,8 +19,7 @@
 ---------------------------------------------------------------------------------------------------
 --[[ Required Shared libraries ]]
 local runner = require('user_modules/script_runner')
-local commonRC = require('test_scripts/RC/SEAT/commonRC')
-local initialCommon = require('test_scripts/RC/commonRC')
+local commonRC = require('test_scripts/RC/commonRC')
 
 --[[ Test Configuration ]]
 runner.testSettings.isSelfIncluded = false
@@ -68,15 +67,15 @@ local function fakeParam(pModuleType)
     subscribe = true
   })
   :Do(function(_, data)
-      commonRC.getHMIconnection():SendResponse(data.id, data.method, "SUCCESS", {
-        moduleData = initialCommon.getModuleControlData(pModuleType),
+      commonRC.getHMIConnection():SendResponse(data.id, data.method, "SUCCESS", {
+        moduleData = commonRC.getModuleControlData(pModuleType),
         isSubscribed = true
       })
     end)
 
   commonRC.getMobileSession():ExpectResponse(cid, { success = true, resultCode = "SUCCESS",
     isSubscribed = true,
-    moduleData = initialCommon.getModuleControlData(pModuleType)
+    moduleData = commonRC.getModuleControlData(pModuleType)
   })
 end
 
@@ -84,8 +83,8 @@ end
 runner.Title("Preconditions")
 runner.Step("Clean environment", commonRC.preconditions)
 runner.Step("Start SDL, HMI, connect Mobile, start Session", commonRC.start)
-runner.Step("RAI, PTU", commonRC.rai_ptu)
-runner.Step("Activate App", commonRC.activate_app)
+runner.Step("RAI", commonRC.registerAppWOPTU)
+runner.Step("Activate App", commonRC.activateApp)
 
 runner.Title("Test")
 

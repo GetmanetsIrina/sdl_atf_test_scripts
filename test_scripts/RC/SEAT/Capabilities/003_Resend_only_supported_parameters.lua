@@ -13,14 +13,19 @@
 ---------------------------------------------------------------------------------------------------
 --[[ Required Shared libraries ]]
 local runner = require('user_modules/script_runner')
-local commonRC = require('test_scripts/RC/SEAT/commonRC')
+local commonRC = require('test_scripts/RC/commonRC')
 
 --[[ Test Configuration ]]
 runner.testSettings.isSelfIncluded = false
 
 --[[ Local Variables ]]
 local seat_capabilities = {{moduleName = "Seat", horizontalPositionAvailable = true, verticalPositionAvailable = false}}
-local rc_capabilities = commonRC.buildHmiRcCapabilities(commonRC.DEFAULT, commonRC.DEFAULT, seat_capabilities, commonRC.DEFAULT)
+local capParams = {}
+capParams.CLIMATE = commonRC.DEFAULT
+capParams.RADIO = commonRC.DEFAULT
+capParams.BUTTONS = commonRC.DEFAULT
+capParams.SEAT = seat_capabilities
+local rc_capabilities = commonRC.buildHmiRcCapabilities(capParams)
 local available_params = {moduleType = "SEAT", seatControlData = {id = "DRIVER", horizontalPosition = 75}}
 local absent_params = {moduleType = "SEAT", seatControlData = {id = "DRIVER", frontVerticalPosition = 55}}
 local unavailable_params = {moduleType = "SEAT", seatControlData = {id = "DRIVER", verticalPosition = 65}}
@@ -35,7 +40,7 @@ local function setVehicleData(params)
             appID = commonRC.getHMIAppId(1),
 			moduleData = params})
 		:Do(function(_, data)
-				commonRC.getHMIconnection():SendResponse(data.id, data.method, "SUCCESS", {
+				commonRC.getHMIConnection():SendResponse(data.id, data.method, "SUCCESS", {
 					moduleData = params})
 			end)
 		mobSession:ExpectResponse(cid, { success = true, resultCode = "SUCCESS" })
@@ -49,8 +54,8 @@ end
 runner.Title("Preconditions")
 runner.Step("Clean environment", commonRC.preconditions)
 runner.Step("Start SDL, HMI, connect Mobile, start Session", commonRC.start, {rc_capabilities})
-runner.Step("RAI, PTU", commonRC.rai_ptu)
-runner.Step("Activate_App", commonRC.activate_app)
+runner.Step("RAI", commonRC.registerAppWOPTU)
+runner.Step("Activate_App", commonRC.activateApp)
 
 runner.Title("Test")
 runner.Step("SetInteriorVehicleData rejected with unavailable parameter", setVehicleData, { unavailable_params })

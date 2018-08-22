@@ -13,8 +13,7 @@
 ---------------------------------------------------------------------------------------------------
 --[[ Required Shared libraries ]]
 local runner = require('user_modules/script_runner')
-local commonRC = require('test_scripts/RC/SEAT/commonRC')
-local initialCommon = require('test_scripts/RC/commonRC')
+local commonRC = require('test_scripts/RC/commonRC')
 local json = require('modules/json')
 
 --[[ Test Configuration ]]
@@ -33,28 +32,29 @@ local function getDataForModule(pModuleType)
     subscribe = true
   })
   :Do(function(_, data)
-      commonRC.getHMIconnection():SendResponse(data.id, data.method, "SUCCESS", {
-        moduleData = initialCommon.getModuleControlData(pModuleType),
+      commonRC.getHMIConnection():SendResponse(data.id, data.method, "SUCCESS", {
+        moduleData = commonRC.getModuleControlData(pModuleType),
         isSubscribed = true
       })
     end)
 
   mobSession:ExpectResponse(cid, { success = true, resultCode = "SUCCESS",
     isSubscribed = true,
-    moduleData = initialCommon.getModuleControlData(pModuleType)
+    moduleData = commonRC.getModuleControlData(pModuleType)
   })
 end
 
-local function ptu_update_func(tbl)
+local function PTUfunc(tbl)
   tbl.policy_table.app_policies[config.application1.registerAppInterfaceParams.appID].moduleType = json.EMPTY_ARRAY
 end
 
 --[[ Scenario ]]
 runner.Title("Preconditions")
-runner.Step("Clean environment", commonRC.preconditions)
+runner.Step("Clean environment", commonRC.preconditions, { false })
 runner.Step("Start SDL, HMI, connect Mobile, start Session", commonRC.start)
-runner.Step("RAI, PTU", commonRC.rai_ptu, { ptu_update_func })
-runner.Step("Activate App", commonRC.activate_app)
+runner.Step("RAI", commonRC.registerApp)
+runner.Step("PTU", commonRC.policyTableUpdate, { PTUfunc })
+runner.Step("Activate App", commonRC.activateApp)
 
 runner.Title("Test")
 runner.Step("GetInteriorVehicleData SEAT", getDataForModule, { "SEAT" })

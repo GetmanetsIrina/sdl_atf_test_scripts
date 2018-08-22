@@ -15,9 +15,8 @@
 ---------------------------------------------------------------------------------------------------
 --[[ Required Shared libraries ]]
 local runner = require('user_modules/script_runner')
-local commonRC = require('test_scripts/RC/SEAT/commonRC')
+local commonRC = require('test_scripts/RC/commonRC')
 local hmi_values = require('user_modules/hmi_values')
-local initialCommon = require('test_scripts/RC/commonRC')
 
 --[[ Test Configuration ]]
 runner.testSettings.isSelfIncluded = false
@@ -37,7 +36,7 @@ end
 local function rpcUnsupportedResource(pModuleType, pRPC)
   local pAppId = 1
   local mobSession = commonRC.getMobileSession(pAppId)
-  local cid = mobSession:SendRPC(commonRC.getAppEventName(pRPC), initialCommon.getAppRequestParams(pRPC, pModuleType))
+  local cid = mobSession:SendRPC(commonRC.getAppEventName(pRPC), commonRC.getAppRequestParams(pRPC, pModuleType))
   EXPECT_HMICALL(commonRC.getHMIEventName(pRPC), {}):Times(0)
   mobSession:ExpectResponse(cid, { success = false, resultCode = "UNSUPPORTED_RESOURCE" })
 end
@@ -45,12 +44,12 @@ end
 local function rpcSuccess(pModuleType, pRPC)
   local pAppId = 1
   local mobSession = commonRC.getMobileSession(pAppId)
-  local cid = mobSession:SendRPC(commonRC.getAppEventName(pRPC), initialCommon.getAppRequestParams(pRPC, pModuleType))
-  EXPECT_HMICALL(commonRC.getHMIEventName(pRPC), initialCommon.getHMIRequestParams(pRPC, pModuleType, pAppId))
+  local cid = mobSession:SendRPC(commonRC.getAppEventName(pRPC), commonRC.getAppRequestParams(pRPC, pModuleType))
+  EXPECT_HMICALL(commonRC.getHMIEventName(pRPC), commonRC.getHMIRequestParams(pRPC, pModuleType, pAppId))
   :Do(function(_, data)
-      commonRC.getHMIconnection():SendResponse(data.id, data.method, "SUCCESS", initialCommon.getHMIResponseParams(pRPC, pModuleType))
+      commonRC.getHMIConnection():SendResponse(data.id, data.method, "SUCCESS", commonRC.getHMIResponseParams(pRPC, pModuleType))
     end)
-  mobSession:ExpectResponse(cid, initialCommon.getAppResponseParams(pRPC, true, "SUCCESS", pModuleType))
+  mobSession:ExpectResponse(cid, commonRC.getAppResponseParams(pRPC, true, "SUCCESS", pModuleType))
 end
 
 --[[ Scenario ]]
@@ -59,8 +58,8 @@ runner.Step("Backup HMI capabilities file", commonRC.backupHMICapabilities)
 runner.Step("Update HMI capabilities file", commonRC.updateDefaultCapabilities, { { disabledModule } })
 runner.Step("Clean environment", commonRC.preconditions)
 runner.Step("Start SDL, HMI, connect Mobile, start Session", commonRC.start, { getHMIParams() })
-runner.Step("RAI, PTU", commonRC.rai_ptu)
-runner.Step("Activate App", commonRC.activate_app)
+runner.Step("RAI", commonRC.registerAppWOPTU)
+runner.Step("Activate App", commonRC.activateApp)
 
 runner.Title("Test - Module enabled: " .. enabledModule .. ", disabled: " .. disabledModule)
 runner.Step("GetInteriorVehicleData_UNSUPPORTED_RESOURCE", rpcUnsupportedResource,
