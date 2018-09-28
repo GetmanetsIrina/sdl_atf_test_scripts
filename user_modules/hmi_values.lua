@@ -316,7 +316,8 @@ function module.getDefaultHMITable()
         module.createButtonCapability("SEEKLEFT"),
         module.createButtonCapability("SEEKRIGHT"),
         module.createButtonCapability("TUNEUP"),
-        module.createButtonCapability("TUNEDOWN")
+        module.createButtonCapability("TUNEDOWN"),
+        module.createButtonCapability("SEARCH")
       },
       presetBankCapabilities = { onScreenPresetsAvailable = true },
     },
