@@ -21,8 +21,32 @@ local common = require('test_scripts/API/Restructuring_OnResetTimeout/common_OnR
 --[[ Test Configuration ]]
 runner.testSettings.isSelfIncluded = false
 
---[[ Local Variables ]]
-local wrongRequestID = 111
+--[[ Local Functions ]]
+local function scrollableMessageError( )
+  local requestParams = {
+    scrollableMessageBody = "abc",
+    timeout = 5000
+  }
+  local cid = common.getMobileSession():SendRPC("ScrollableMessage", requestParams)
+  EXPECT_HMICALL("UI.ScrollableMessage",
+    { messageText = {
+      fieldName = "scrollableMessageBody",
+      fieldText = requestParams.scrollableMessageBody
+    },
+    appID = common.getHMIAppId()
+  })
+  :Do(function()
+  common.getHMIConnection():SendNotification("BasicCommunication.OnResetTimeout",
+    { requestID = 111,
+    methodName = "ScrollableMessage",
+    resetPeriod = 30000
+  })
+  end)
+  :Do(function(_, _)
+    -- HMI does not respond
+  end)
+  common.getMobileSession():ExpectResponse(cid, { success = false, resultCode = "GENERIC_ERROR" })
+end
 
 --[[ Scenario ]]
 runner.Title("Preconditions")
@@ -33,25 +57,7 @@ runner.Step("App activation", common.activateApp)
 runner.Step("Create InteractionChoiceSet", common.createInteractionChoiceSet)
 
 runner.Title("Test")
-runner.Step("Send SendLocation", common.sendLocationError, { wrongRequestID, "SendLocation", 3000, 10000 })
-runner.Step("Send Alert", common.alertError, { wrongRequestID, "Alert", 3000, 10000 })
-runner.Step("Send PerformInteraction", common.performInteractionError, { wrongRequestID, "PerformInteraction", 3000, 10000 })
-runner.Step("Send DialNumber", common.dialNumberError, { wrongRequestID, "DialNumber", 3000, 10000 })
-runner.Step("Send Slider", common.sliderError, { wrongRequestID, "Slider", 3000, 10000 })
-runner.Step("Send Speak", common.speakError, { wrongRequestID, "Speak", 3000, 10000 })
-runner.Step("Send DiagnosticMessage", common.diagnosticMessageError, { wrongRequestID, "DiagnosticMessage", 3000, 10000 })
-runner.Step("Send ScrollableMessage", common.scrollableMessageError, { wrongRequestID, "ScrollableMessage", 3000, 10000 })
-
-for _, buttonName in pairs(common.buttons) do
-
-	runner.Step("SubscribeButton " .. buttonName, common.subscribeButtonError,
-	{ buttonName, wrongRequestID, "SubscribeButton", 3000, 10000 })
-end
-
-for _, mod in pairs(common.allModules)  do
-  runner.Step("SetInteriorVehicleData " .. mod, common.setVehicleData,
-	{ mod, "SetInteriorVehicleData", wrongRequestID, "SetInteriorVehicleData", 3000, 10000 })
-end
+runner.Step("Send ScrollableMessage", scrollableMessageError)
 
 runner.Title("Postconditions")
 runner.Step("Stop SDL", common.postconditions)

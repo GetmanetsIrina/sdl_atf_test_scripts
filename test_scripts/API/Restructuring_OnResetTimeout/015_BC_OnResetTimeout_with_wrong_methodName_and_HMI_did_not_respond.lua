@@ -33,24 +33,24 @@ runner.Step("App activation", common.activateApp)
 runner.Step("Create InteractionChoiceSet", common.createInteractionChoiceSet)
 
 runner.Title("Test")
-runner.Step("Send SendLocation", common.sendLocationError, { _, wrongMethodName, 3000, 10000 })
-runner.Step("Send Alert", common.alertError, { _, wrongMethodName, 3000, 10000 })
-runner.Step("Send PerformInteraction", common.performInteractionError, { _, wrongMethodName, 3000, 10000 })
-runner.Step("Send DialNumber", common.dialNumberError, { _, wrongMethodName, 3000, 10000 })
-runner.Step("Send Slider", common.sliderError, { _, wrongMethodName, 3000, 10000 })
-runner.Step("Send Speak", common.speakError, { _, wrongMethodName, 3000, 10000 })
-runner.Step("Send DiagnosticMessage", common.diagnosticMessageError, { _, wrongMethodName, 3000, 10000 })
-runner.Step("Send ScrollableMessage", common.scrollableMessageError, { _, wrongMethodName, 3000, 10000 })
+runner.Step("Send SendLocation", common.sendLocationError, { wrongMethodName, 3000, 10000 })
+runner.Step("Send Alert", common.alertError, { wrongMethodName, 3000, 10000 })
+runner.Step("Send PerformInteraction", common.performInteractionError, { wrongMethodName, 3000, 10000 })
+runner.Step("Send DialNumber", common.dialNumberError, { wrongMethodName, 3000, 10000 })
+runner.Step("Send Slider", common.sliderError, { wrongMethodName, 3000, 10000 })
+runner.Step("Send Speak", common.speakError, { wrongMethodName, 3000, 10000 })
+runner.Step("Send DiagnosticMessage", common.diagnosticMessageError, { wrongMethodName, 3000, 10000 })
+runner.Step("Send ScrollableMessage", common.scrollableMessageError, { wrongMethodName, 3000, 10000 })
 
 for _, buttonName in pairs(common.buttons) do
 
 	runner.Step("SubscribeButton " .. buttonName, common.subscribeButtonError,
-	{ buttonName, _, wrongMethodName, 3000, 10000 })
+	{ buttonName, wrongMethodName, 3000, 10000 })
 end
 
 for _, mod in pairs(common.allModules)  do
   runner.Step("SetInteriorVehicleData " .. mod, common.setVehicleData,
-	{ mod, "SetInteriorVehicleData", _, wrongMethodName, 3000, 10000 })
+	{ mod, "SetInteriorVehicleData", wrongMethodName, 3000, 10000 })
 end
 
 

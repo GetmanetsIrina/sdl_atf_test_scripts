@@ -31,24 +31,24 @@ runner.Step("App activation", common.activateApp)
 runner.Step("Create InteractionChoiceSet", common.createInteractionChoiceSet)
 
 runner.Title("Test")
-runner.Step("Send SendLocation", common.sendLocation, { _, "SendLocation", 3000, 12000 })
-runner.Step("Send Alert", common.alert, { _, "Alert", 3000, 12000 })
-runner.Step("Send PerformInteraction", common.performInteraction, { _, "PerformInteraction", 3000, 12000 })
-runner.Step("Send DialNumber", common.dialNumber, { _, "DialNumber", 3000, 12000 })
-runner.Step("Send Slider", common.slider, { _, "Slider", 3000, 12000 })
-runner.Step("Send Speak", common.speak, { _, "Speak", 3000, 12000 })
-runner.Step("Send DiagnosticMessage", common.diagnosticMessage, { _, "DiagnosticMessage", 3000, 12000 })
-runner.Step("Send ScrollableMessage", common.scrollableMessage, { _, "ScrollableMessage", 3000,12000 })
+runner.Step("Send SendLocation", common.sendLocation, { "SendLocation", 3000, 12000 })
+runner.Step("Send Alert", common.alert, { "Alert", 3000, 12000 })
+runner.Step("Send PerformInteraction", common.performInteraction, { "PerformInteraction", 3000, 12000 })
+runner.Step("Send DialNumber", common.dialNumber, { "DialNumber", 3000, 12000 })
+runner.Step("Send Slider", common.slider, { "Slider", 3000, 12000 })
+runner.Step("Send Speak", common.speak, { "Speak", 3000, 12000 })
+runner.Step("Send DiagnosticMessage", common.diagnosticMessage, { "DiagnosticMessage", 3000, 12000 })
+runner.Step("Send ScrollableMessage", common.scrollableMessage, { "ScrollableMessage", 3000,12000 })
 
 for _, buttonName in pairs(common.buttons) do
 
 	runner.Step("SubscribeButton " .. buttonName, common.subscribeButton,
-		{ buttonName, _, "SubscribeButton", 3000, 12000 })
+		{ buttonName, "SubscribeButton", 3000, 12000 })
 end
 
 for _, mod in pairs(common.allModules)  do
   runner.Step("SetInteriorVehicleData " .. mod, common.rpcAllowed,
-	{ mod, 1, "SetInteriorVehicleData", _, "SetInteriorVehicleData", 3000, 12000 })
+	{ mod, 1, "SetInteriorVehicleData", "SetInteriorVehicleData", 3000, 12000 })
 end
 
 runner.Title("Postconditions")

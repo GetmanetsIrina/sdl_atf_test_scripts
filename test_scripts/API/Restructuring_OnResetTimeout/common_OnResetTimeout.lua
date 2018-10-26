@@ -593,7 +593,6 @@ function c.activateApp(pAppId)
 end
 
 function c.hmiNotification(pRequestID, pMethodName, pResetPeriod)
-  if not pRequestID then pRequestID = c.getHMIAppId() end
   if not pResetPeriod then pResetPeriod = 3000 end
   c.getHMIConnection():SendNotification("BasicCommunication.OnResetTimeout",
     { requestID = pRequestID,
@@ -602,11 +601,11 @@ function c.hmiNotification(pRequestID, pMethodName, pResetPeriod)
   })
 end
 
-function c.sendLocation( pRequestID, pMethodName, pResetPeriod, pWait )
+function c.sendLocation( pMethodName, pResetPeriod, pWait )
   local cid = c.getMobileSession():SendRPC("SendLocation", sendLocationRequestParams)
   EXPECT_HMICALL("Navigation.SendLocation", { appID = c.getHMIAppId() })
-  :Do(function()
-    c.hmiNotification(pRequestID, pMethodName, pResetPeriod)
+  :Do(function(_, data)
+    c.hmiNotification(data.id, pMethodName, pResetPeriod)
     RUN_AFTER(c.hmiNotification, pWait)
   end)
   :Do(function(_, data)
@@ -615,11 +614,11 @@ function c.sendLocation( pRequestID, pMethodName, pResetPeriod, pWait )
   c.getMobileSession():ExpectResponse(cid, { success = true, resultCode = "SUCCESS" })
 end
 
-function c.sendLocationError( pRequestID, pMethodName, pResetPeriod, pWait )
+function c.sendLocationError( pMethodName, pResetPeriod, pWait )
   local cid = c.getMobileSession():SendRPC("SendLocation", sendLocationRequestParams)
   EXPECT_HMICALL("Navigation.SendLocation", { appID = c.getHMIAppId() })
-  :Do(function()
-    c.hmiNotification(pRequestID, pMethodName, pResetPeriod)
+  :Do(function(_, data)
+    c.hmiNotification(data.id, pMethodName, pResetPeriod)
     RUN_AFTER(c.hmiNotification, pWait)
   end)
   :Do(function(_, _)
@@ -628,7 +627,7 @@ function c.sendLocationError( pRequestID, pMethodName, pResetPeriod, pWait )
   c.getMobileSession():ExpectResponse(cid, { success = false, resultCode = "GENERIC_ERROR" })
 end
 
-function c.alert( pRequestID, pMethodName, pResetPeriod, pWait )
+function c.alert( pMethodName, pResetPeriod, pWait )
   local cid = c.getMobileSession():SendRPC("Alert",
     { ttsChunks = {
       { type = "TEXT",
@@ -644,8 +643,8 @@ function c.alert( pRequestID, pMethodName, pResetPeriod, pWait )
     },
     appID = c.getHMIAppId()
   })
-  :Do(function()
-    c.hmiNotification(pRequestID, pMethodName, pResetPeriod)
+  :Do(function(_, data)
+    c.hmiNotification(data.id, pMethodName, pResetPeriod)
     RUN_AFTER(c.hmiNotification, pWait)
   end)
   :Do(function(_, data)
@@ -655,7 +654,7 @@ function c.alert( pRequestID, pMethodName, pResetPeriod, pWait )
   c.getMobileSession():ExpectResponse(cid, { success = true, resultCode = "SUCCESS"})
 end
 
-function c.alertError( pRequestID, pMethodName, pResetPeriod, pWait )
+function c.alertError( pMethodName, pResetPeriod, pWait )
   local cid = c.getMobileSession():SendRPC("Alert",
     { ttsChunks = {
       { type = "TEXT",
@@ -671,8 +670,8 @@ function c.alertError( pRequestID, pMethodName, pResetPeriod, pWait )
     },
     appID = c.getHMIAppId()
   })
-  :Do(function()
-    c.hmiNotification(pRequestID, pMethodName, pResetPeriod)
+  :Do(function(_, data)
+    c.hmiNotification(data.id, pMethodName, pResetPeriod)
     RUN_AFTER(c.hmiNotification, pWait)
   end)
   :Do(function(_, _)
@@ -700,7 +699,7 @@ function c.createInteractionChoiceSet()
   c.getMobileSession():ExpectResponse(corId, { success = true, resultCode = "SUCCESS" })
 end
 
-function c.performInteraction( pRequestID, pMethodName, pResetPeriod, pWait )
+function c.performInteraction( pMethodName, pResetPeriod, pWait )
   local params = {
     initialText = "StartPerformInteraction",
     interactionMode = "VR_ONLY",
@@ -711,8 +710,8 @@ function c.performInteraction( pRequestID, pMethodName, pResetPeriod, pWait )
   }
   local corId = c.getMobileSession():SendRPC("PerformInteraction", params)
   c.getHMIConnection():ExpectRequest("UI.PerformInteraction")
-  :Do(function()
-    c.hmiNotification(pRequestID, pMethodName, pResetPeriod)
+  :Do(function(_, data)
+    c.hmiNotification(data.id, pMethodName, pResetPeriod)
     RUN_AFTER(c.hmiNotification, pWait)
   end)
   :Do(function(_, data)
@@ -727,7 +726,7 @@ function c.performInteraction( pRequestID, pMethodName, pResetPeriod, pWait )
   c.getMobileSession():ExpectResponse(corId, { success = true, resultCode = "SUCCESS" })
 end
 
-function c.performInteractionError( pRequestID, pMethodName, pResetPeriod, pWait )
+function c.performInteractionError( pMethodName, pResetPeriod, pWait )
   local params = {
     initialText = "StartPerformInteraction",
     interactionMode = "VR_ONLY",
@@ -738,8 +737,8 @@ function c.performInteractionError( pRequestID, pMethodName, pResetPeriod, pWait
   }
   local corId = c.getMobileSession():SendRPC("PerformInteraction", params)
   c.getHMIConnection():ExpectRequest("UI.PerformInteraction")
-  :Do(function()
-    c.hmiNotification(pRequestID, pMethodName, pResetPeriod)
+  :Do(function(_, data)
+    c.hmiNotification(data.id, pMethodName, pResetPeriod)
     RUN_AFTER(c.hmiNotification, pWait)
   end)
   :Do(function(_, data)
@@ -754,12 +753,12 @@ function c.performInteractionError( pRequestID, pMethodName, pResetPeriod, pWait
   c.getMobileSession():ExpectResponse(corId, { success = false, resultCode = "GENERIC_ERROR" })
 end
 
-function c.dialNumber( pRequestID, pMethodName, pResetPeriod, pWait )
+function c.dialNumber( pMethodName, pResetPeriod, pWait )
   local cid = c.getMobileSession():SendRPC("DialNumber", { number = "#3804567654*" })
 
   EXPECT_HMICALL("BasicCommunication.DialNumber", { appID = c.getHMIAppId() })
-  :Do(function()
-    c.hmiNotification(pRequestID, pMethodName, pResetPeriod)
+  :Do(function(_, data)
+    c.hmiNotification(data.id, pMethodName, pResetPeriod)
     RUN_AFTER(c.hmiNotification, pWait)
   end)
   :Do(function(_, data)
@@ -768,11 +767,11 @@ function c.dialNumber( pRequestID, pMethodName, pResetPeriod, pWait )
   c.getMobileSession():ExpectResponse(cid, { success = true, resultCode = "SUCCESS" })
 end
 
-function c.dialNumberError( pRequestID, pMethodName, pResetPeriod, pWait )
+function c.dialNumberError( pMethodName, pResetPeriod, pWait )
   local cid = c.getMobileSession():SendRPC("DialNumber", { number = "#3804567654*" })
   EXPECT_HMICALL("BasicCommunication.DialNumber", { appID = c.getHMIAppId() })
-  :Do(function()
-    c.hmiNotification(pRequestID, pMethodName, pResetPeriod)
+  :Do(function(_, data)
+    c.hmiNotification(data.id, pMethodName, pResetPeriod)
     RUN_AFTER(c.hmiNotification, pWait)
   end)
   :Do(function(_, _)
@@ -782,7 +781,7 @@ function c.dialNumberError( pRequestID, pMethodName, pResetPeriod, pWait )
   c.getMobileSession():ExpectResponse(cid, { success = false, resultCode = "GENERIC_ERROR" })
 end
 
-function c.slider( pRequestID, pMethodName, pResetPeriod, pWait )
+function c.slider( pMethodName, pResetPeriod, pWait )
   local cid = c.getMobileSession():SendRPC("Slider",
     {
       numTicks = 7,
@@ -792,8 +791,8 @@ function c.slider( pRequestID, pMethodName, pResetPeriod, pWait )
       sliderFooter = { "sliderFooter" }
     })
   EXPECT_HMICALL("UI.Slider", { appID = c.getHMIAppId() })
-  :Do(function()
-    c.hmiNotification(pRequestID, pMethodName, pResetPeriod)
+  :Do(function(_, data)
+    c.hmiNotification(data.id, pMethodName, pResetPeriod)
     RUN_AFTER(c.hmiNotification, pWait)
   end)
   :Do(function(_,data)
@@ -809,7 +808,7 @@ function c.slider( pRequestID, pMethodName, pResetPeriod, pWait )
   c.getMobileSession():ExpectResponse(cid, { success = true, resultCode = "SUCCESS", sliderPosition = 1 })
 end
 
-function c.sliderError( pRequestID, pMethodName, pResetPeriod, pWait )
+function c.sliderError( pMethodName, pResetPeriod, pWait )
   local cid = c.getMobileSession():SendRPC("Slider",
     {
       numTicks = 7,
@@ -819,8 +818,8 @@ function c.sliderError( pRequestID, pMethodName, pResetPeriod, pWait )
       sliderFooter = { "sliderFooter" }
     })
   EXPECT_HMICALL("UI.Slider", { appID = c.getHMIAppId() })
-  :Do(function()
-    c.hmiNotification(pRequestID, pMethodName, pResetPeriod)
+  :Do(function(_, data)
+    c.hmiNotification(data.id, pMethodName, pResetPeriod)
     RUN_AFTER(c.hmiNotification, pWait)
   end)
   :Do(function(_, _)
@@ -829,7 +828,7 @@ function c.sliderError( pRequestID, pMethodName, pResetPeriod, pWait )
   c.getMobileSession():ExpectResponse(cid, { success = false, resultCode = "GENERIC_ERROR" })
 end
 
-function c.speak( pRequestID, pMethodName, pResetPeriod, pWait )
+function c.speak( pMethodName, pResetPeriod, pWait )
   local cid = c.getMobileSession():SendRPC("Speak",
     {
     ttsChunks = {
@@ -846,8 +845,8 @@ function c.speak( pRequestID, pMethodName, pResetPeriod, pWait )
       }
     }
   })
-  :Do(function()
-    c.hmiNotification(pRequestID, pMethodName, pResetPeriod)
+  :Do(function(_, data)
+    c.hmiNotification(data.id, pMethodName, pResetPeriod)
     RUN_AFTER(c.hmiNotification, pWait)
   end)
   :Do(function(_, data)
@@ -856,18 +855,13 @@ function c.speak( pRequestID, pMethodName, pResetPeriod, pWait )
         c.getHMIConnection():SendResponse(data.id, data.method, "SUCCESS", { })
         c.getHMIConnection():SendNotification("TTS.Stopped")
       end
-      local function sendOnResetTimeout()
-        c.getHMIConnection():SendNotification("TTS.OnResetTimeout",
-          { appID = c.getHMIAppId(), methodName = "TTS.Speak" })
-      end
-      RUN_AFTER(sendOnResetTimeout, 9000)
       RUN_AFTER(sendSpeakResponse, 18000)
     end)
   c.getMobileSession():ExpectResponse(cid, { success = true, resultCode = "SUCCESS" })
   :Timeout(20000)
 end
 
-function c.speakError( pRequestID, pMethodName, pResetPeriod, pWait )
+function c.speakError( pMethodName, pResetPeriod, pWait )
   local cid = c.getMobileSession():SendRPC("Speak",
     {
     ttsChunks = {
@@ -884,8 +878,8 @@ function c.speakError( pRequestID, pMethodName, pResetPeriod, pWait )
       }
     }
   })
-  :Do(function()
-    c.hmiNotification(pRequestID, pMethodName, pResetPeriod)
+  :Do(function(_, data)
+    c.hmiNotification(data.id, pMethodName, pResetPeriod)
     RUN_AFTER(c.hmiNotification, pWait)
   end)
   :Do(function(_, _)
@@ -894,7 +888,7 @@ function c.speakError( pRequestID, pMethodName, pResetPeriod, pWait )
   c.getMobileSession():ExpectResponse(cid, { success = false, resultCode = "GENERIC_ERROR" })
 end
 
-function c.diagnosticMessage( pRequestID, pMethodName, pResetPeriod, pWait )
+function c.diagnosticMessage( pMethodName, pResetPeriod, pWait )
   local cid = c.getMobileSession():SendRPC("DiagnosticMessage",
   { targetID = 1,
     messageLength = 1,
@@ -905,8 +899,8 @@ function c.diagnosticMessage( pRequestID, pMethodName, pResetPeriod, pWait )
     messageLength = 1,
     messageData = { 1 }
   })
-  :Do(function()
-    c.hmiNotification(pRequestID, pMethodName, pResetPeriod)
+  :Do(function(_, data)
+    c.hmiNotification(data.id, pMethodName, pResetPeriod)
     RUN_AFTER(c.hmiNotification, pWait)
   end)
   :Do(function(_,data)
@@ -915,7 +909,7 @@ function c.diagnosticMessage( pRequestID, pMethodName, pResetPeriod, pWait )
   c.getMobileSession():ExpectResponse(cid, { success = true, resultCode = "SUCCESS" })
 end
 
-function c.diagnosticMessageError( pRequestID, pMethodName, pResetPeriod, pWait )
+function c.diagnosticMessageError( pMethodName, pResetPeriod, pWait )
   local cid = c.getMobileSession():SendRPC("DiagnosticMessage",
   { targetID = 1,
     messageLength = 1,
@@ -926,8 +920,8 @@ function c.diagnosticMessageError( pRequestID, pMethodName, pResetPeriod, pWait 
     messageLength = 1,
     messageData = { 1 }
   })
-  :Do(function()
-    c.hmiNotification(pRequestID, pMethodName, pResetPeriod)
+  :Do(function(_, data)
+    c.hmiNotification(data.id, pMethodName, pResetPeriod)
     RUN_AFTER(c.hmiNotification, pWait)
   end)
   :Do(function(_, _)
@@ -936,11 +930,11 @@ function c.diagnosticMessageError( pRequestID, pMethodName, pResetPeriod, pWait 
   c.getMobileSession():ExpectResponse(cid, { success = false, resultCode = "GENERIC_ERROR" })
 end
 
-function c.subscribeButton( pButtonName, pRequestID, pMethodName, pResetPeriod, pWait)
+function c.subscribeButton( pButtonName, pMethodName, pResetPeriod, pWait)
   local cid = c.getMobileSession():SendRPC("SubscribeButton", { buttonName = pButtonName })
   EXPECT_HMICALL("Buttons.SubscribeButton", { appID = c.getHMIAppId(), buttonName = pButtonName })
-  :Do(function()
-    c.hmiNotification(pRequestID, pMethodName, pResetPeriod)
+  :Do(function(_, data)
+    c.hmiNotification(data.id, pMethodName, pResetPeriod)
     RUN_AFTER(c.hmiNotification, pWait)
   end)
   :Do(function(_, data)
@@ -949,11 +943,11 @@ function c.subscribeButton( pButtonName, pRequestID, pMethodName, pResetPeriod, 
   c.getMobileSession():ExpectResponse(cid, { success = true, resultCode = "SUCCESS" })
 end
 
-function c.subscribeButtonError( pButtonName, pRequestID, pMethodName, pResetPeriod, pWait)
+function c.subscribeButtonError( pButtonName, pMethodName, pResetPeriod, pWait)
   local cid = c.getMobileSession():SendRPC("SubscribeButton", { buttonName = pButtonName })
   EXPECT_HMICALL("Buttons.SubscribeButton", { appID = c.getHMIAppId(), buttonName = pButtonName })
-  :Do(function()
-    c.hmiNotification(pRequestID, pMethodName, pResetPeriod)
+  :Do(function(_, data)
+    c.hmiNotification(data.id, pMethodName, pResetPeriod)
     RUN_AFTER(c.hmiNotification, pWait)
   end)
   :Do(function(_, _)
@@ -962,7 +956,7 @@ function c.subscribeButtonError( pButtonName, pRequestID, pMethodName, pResetPer
   c.getMobileSession():ExpectResponse(cid, { success = false, resultCode = "GENERIC_ERROR" })
 end
 
-function c.scrollableMessage( pRequestID, pMethodName, pResetPeriod, pWait )
+function c.scrollableMessage( pMethodName, pResetPeriod, pWait )
   local requestParams = {
     scrollableMessageBody = "abc",
     timeout = 5000
@@ -975,8 +969,8 @@ function c.scrollableMessage( pRequestID, pMethodName, pResetPeriod, pWait )
     },
     appID = c.getHMIAppId()
   })
-  :Do(function()
-    c.hmiNotification(pRequestID, pMethodName, pResetPeriod)
+  :Do(function(_, data)
+    c.hmiNotification(data.id, pMethodName, pResetPeriod)
     RUN_AFTER(c.hmiNotification, pWait)
   end)
   :Do(function(_,data)
@@ -993,7 +987,7 @@ function c.scrollableMessage( pRequestID, pMethodName, pResetPeriod, pWait )
   c.getMobileSession():ExpectResponse(cid, { success = true, resultCode = "SUCCESS" })
 end
 
-function c.scrollableMessageError( pRequestID, pMethodName, pResetPeriod, pWait )
+function c.scrollableMessageError( pMethodName, pResetPeriod, pWait )
   local requestParams = {
     scrollableMessageBody = "abc",
     timeout = 5000
@@ -1006,8 +1000,8 @@ function c.scrollableMessageError( pRequestID, pMethodName, pResetPeriod, pWait 
     },
     appID = c.getHMIAppId()
   })
-  :Do(function()
-    c.hmiNotification(pRequestID, pMethodName, pResetPeriod)
+  :Do(function(_, data)
+    c.hmiNotification(data.id, pMethodName, pResetPeriod)
     RUN_AFTER(c.hmiNotification, pWait)
   end)
   :Do(function(_, _)
@@ -1016,13 +1010,13 @@ function c.scrollableMessageError( pRequestID, pMethodName, pResetPeriod, pWait 
   c.getMobileSession():ExpectResponse(cid, { success = false, resultCode = "GENERIC_ERROR" })
 end
 
-function c.rpcAllowed( pModuleType, pAppId, pRPC, pRequestID, pMethodName, pResetPeriod, pWait )
+function c.rpcAllowed( pModuleType, pAppId, pRPC, pMethodName, pResetPeriod, pWait )
   if not pAppId then pAppId = 1 end
   local mobSession = c.getMobileSession(pAppId)
   local cid = mobSession:SendRPC(c.getAppEventName(pRPC), c.getAppRequestParams(pRPC, pModuleType ))
   EXPECT_HMICALL(c.getHMIEventName(pRPC), c.getHMIRequestParams(pRPC, pModuleType, pAppId))
-  :Do(function()
-    c.hmiNotification(pRequestID, pMethodName, pResetPeriod)
+  :Do(function(_, data)
+    c.hmiNotification(data.id, pMethodName, pResetPeriod)
     RUN_AFTER(c.hmiNotification, pWait)
   end)
   :Do(function(_, data)
@@ -1031,11 +1025,11 @@ function c.rpcAllowed( pModuleType, pAppId, pRPC, pRequestID, pMethodName, pRese
   mobSession:ExpectResponse(cid, { success = true, resultCode = "SUCCESS" })
 end
 
-function c.setVehicleData( pModuleType, pRPC, pRequestID, pMethodName, pResetPeriod, pWait )
+function c.setVehicleData( pModuleType, pRPC, pMethodName, pResetPeriod, pWait )
   local cid = c.getMobileSession():SendRPC(c.getAppEventName(pRPC), c.getAppRequestParams(pRPC, pModuleType))
   EXPECT_HMICALL(c.getHMIEventName(pRPC), c.getHMIRequestParams(pRPC, pModuleType))
-  :Do(function()
-    c.hmiNotification(pRequestID, pMethodName, pResetPeriod)
+  :Do(function(_, data)
+    c.hmiNotification(data.id, pMethodName, pResetPeriod)
     RUN_AFTER(c.hmiNotification, pWait)
   end)
   :Do(function(_, _)

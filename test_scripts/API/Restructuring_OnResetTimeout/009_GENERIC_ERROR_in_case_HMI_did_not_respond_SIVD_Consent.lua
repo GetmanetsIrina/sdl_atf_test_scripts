@@ -39,7 +39,7 @@ for _, mod in pairs(common.modules) do
     { mod, 1, "SetInteriorVehicleData" })
 
   runner.Step("App2 ButtonPress 1st ", common.rpcAllowedWithConsentError,
-    { mod, 2, "ButtonPress", _, "ButtonPress", 3000, 13000  })
+    { mod, 2, "ButtonPress", "ButtonPress", 3000, 13000  })
 end
 
 runner.Title("Postconditions")

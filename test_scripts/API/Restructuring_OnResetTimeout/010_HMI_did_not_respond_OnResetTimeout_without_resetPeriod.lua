@@ -30,22 +30,22 @@ runner.Step("App activation", common.activateApp)
 runner.Step("Create InteractionChoiceSet", common.createInteractionChoiceSet)
 
 runner.Title("Test")
-runner.Step("Send SendLocation", common.sendLocationError, { _, "SendLocation", _, 20000 })
-runner.Step("Send Alert", common.alertError, { _, "Alert", _, 20000 })
-runner.Step("Send PerformInteraction", common.performInteractionError, { _, "PerformInteraction", _, 20000 })
-runner.Step("Send DialNumber", common.dialNumberError, { _, "DialNumber", _, 20000 })
-runner.Step("Send Slider", common.sliderError, { _, "Slider", _, 20000 })
-runner.Step("Send Speak", common.speakError, { _, "Speak", _, 20000 })
-runner.Step("Send DiagnosticMessage", common.diagnosticMessageError, { _, "DiagnosticMessage", _, 20000 })
-runner.Step("Send ScrollableMessage", common.scrollableMessageError, { _, "ScrollableMessage", _, 20000 })
+runner.Step("Send SendLocation", common.sendLocationError, { "SendLocation", _, 20000 })
+runner.Step("Send Alert", common.alertError, { "Alert", _, 20000 })
+runner.Step("Send PerformInteraction", common.performInteractionError, { "PerformInteraction", _, 20000 })
+runner.Step("Send DialNumber", common.dialNumberError, { "DialNumber", _, 20000 })
+runner.Step("Send Slider", common.sliderError, { "Slider", _, 20000 })
+runner.Step("Send Speak", common.speakError, { "Speak", _, 20000 })
+runner.Step("Send DiagnosticMessage", common.diagnosticMessageError, { "DiagnosticMessage", _, 20000 })
+runner.Step("Send ScrollableMessage", common.scrollableMessageError, {  "ScrollableMessage", _, 20000 })
 
 for _, buttonName in pairs(common.buttons) do
 
 	runner.Step("SubscribeButton " .. buttonName, common.subscribeButtonError,
-	{ buttonName, _, "SubscribeButton", _, 20000 })
+	{ buttonName, "SubscribeButton", _, 20000 })
 end
 
 for _, mod in pairs(common.allModules)  do
   runner.Step("SetInteriorVehicleData " .. mod, common.setVehicleData,
-	{ mod, "SetInteriorVehicleData", _, "SetInteriorVehicleData", _, 20000 })
+	{ mod, "SetInteriorVehicleData", "SetInteriorVehicleData", _, 20000 })
 end

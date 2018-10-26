@@ -28,6 +28,7 @@ local pOnResetTO = {
 	wrongType = { requestID = "wrongType", methodName = 111, resetPeriod = "wrongType" }
 }
 
+--[[ Local Functions ]]
 local function performIError( pRequestID, pMethodName, pResetPeriod )
   local params = {
     initialText = "StartPerformInteraction",
@@ -41,7 +42,7 @@ local function performIError( pRequestID, pMethodName, pResetPeriod )
   common.getHMIConnection():ExpectRequest("UI.PerformInteraction")
   :Do(function()
 	common.getHMIConnection():SendNotification("BasicCommunication.OnResetTimeout",
-	{ 	requestID = pRequestID,
+	{ requestID = pRequestID,
 		methodName = pMethodName,
 		resetPeriod = pResetPeriod
 	})

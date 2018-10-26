@@ -30,9 +30,9 @@ local function diagnosticMessageError()
 	EXPECT_HMICALL("VehicleInfo.DiagnosticMessage",
 	{ targetID = 1, messageLength = 1, messageData = { 1 } })
 
-	:Do(function()
+	:Do(function(_, data)
 	common.getHMIConnection():SendNotification("BasicCommunication.OnResetTimeout", {
-		requestID = common.getHMIAppId(),
+		requestID = data.id,
 		methodName = "DiagnosticMessage",
 		resetPeriod = 3000
 	})
