@@ -9,10 +9,10 @@
 -- In case:
 -- 1) RPC is requested
 -- 2) Some time after receiving RPC request on HMI is passed
--- 3) HMI sends BC.OnResetTimeout(resetPeriod = 3000) to SDL
--- 4) HMI does not send response in 13 seconds after receiving request
+-- 3) HMI sends BC.OnResetTimeout(resetPeriod = 13000) to SDL
+-- 4) HMI does not send response in 14 seconds after receiving request
 -- SDL does:
--- 1) Respond with GENERIC_ERROR resultCode to mobile app after 13 seconds are expired
+-- 1) Respond with GENERIC_ERROR resultCode to mobile app after 14 seconds are expired
 ---------------------------------------------------------------------------------------------------
 --[[ Required Shared libraries ]]
 local runner = require('user_modules/script_runner')
@@ -30,24 +30,8 @@ runner.Step("App activation", common.activateApp)
 runner.Step("Create InteractionChoiceSet", common.createInteractionChoiceSet)
 
 runner.Title("Test")
-runner.Step("Send SendLocation", common.sendLocationError, { "SendLocation", 3000, 13000 })
-runner.Step("Send Alert", common.alertError, { "Alert", 3000, 13000 })
-runner.Step("Send PerformInteraction", common.performInteractionError, { "PerformInteraction", 3000, 13000 })
-runner.Step("Send DialNumber", common.dialNumberError, { "DialNumber", 3000, 13000 })
-runner.Step("Send Slider", common.sliderError, { "Slider", 3000, 13000 })
-runner.Step("Send Speak", common.speakError, { "Speak", 3000, 13000 })
-runner.Step("Send DiagnosticMessage", common.diagnosticMessageError, { "DiagnosticMessage", 3000, 13000 })
-runner.Step("Send ScrollableMessage", common.scrollableMessageError, { "ScrollableMessage", 3000, 13000 })
-
-for _, buttonName in pairs(common.buttons) do
-
-	runner.Step("SubscribeButton " .. buttonName, common.subscribeButtonError,
-	{ buttonName, "SubscribeButton", 3000, 13000 })
-end
-
-for _, mod in pairs(common.allModules)  do
-  runner.Step("SetInteriorVehicleData " .. mod, common.setVehicleData,
-	{ mod, "SetInteriorVehicleData", "SetInteriorVehicleData", 3000, 13000 })
+for _, v in pairs(common.rpcsError) do
+	runner.Step("Send " .. v , common[v], {_, 13000, 14000 })
 end
 
 runner.Title("Postconditions")

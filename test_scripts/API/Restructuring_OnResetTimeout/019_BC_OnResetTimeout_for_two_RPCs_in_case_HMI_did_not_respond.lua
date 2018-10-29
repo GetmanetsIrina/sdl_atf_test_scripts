@@ -7,12 +7,14 @@
 --
 -- Description:
 -- In case:
--- 1) RPC is requested
--- 2) Some time after receiving RPC request on HMI is passed
--- 3) HMI sends BC.OnResetTimeout(without resetPeriod) to SDL
--- 4) HMI does not send response in 20 seconds after receiving request
+-- 1) RPC_1 is requested
+-- 2) RPC_2 is requested
+-- 3) Some time after receiving RPC_1 and RPC_2 requests on HMI is passed
+-- 4) HMI sends BC.OnResetTimeout(resetPeriod = 11000) to SDL for RPC_1 and BC.OnResetTimeout(resetPeriod = 13000) for RPC_2
+-- 5) HMI does not respond
 -- SDL does:
--- 1) Respond with GENERIC_ERROR resultCode to mobile app after 20 seconds are expired
+-- 1) Respond in 11 seconds with GENERIC_ERROR resultCode to mobile app to RPC_1
+-- 2) Respond in 13 seconds with GENERIC_ERROR resultCode to mobile app to RPC_2
 ---------------------------------------------------------------------------------------------------
 --[[ Required Shared libraries ]]
 local runner = require('user_modules/script_runner')
@@ -30,9 +32,8 @@ runner.Step("App activation", common.activateApp)
 runner.Step("Create InteractionChoiceSet", common.createInteractionChoiceSet)
 
 runner.Title("Test")
-for _, v in pairs(common.rpcsError) do
-	runner.Step("Send " .. v , common[v], {_, 13000, 20000 })
-end
+runner.Step("Send SendLocation", common.sendLocationError, { _, "SendLocation", 11000, 11000 })
+runner.Step("Send SetInteriorVehicleData", common.setInteriorVehicleDataError, { _, "SetInteriorVehicleData", 13000, 13000 })
 
 runner.Title("Postconditions")
 runner.Step("Stop SDL", common.postconditions)

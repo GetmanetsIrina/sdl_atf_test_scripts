@@ -9,7 +9,7 @@
 -- In case:
 -- 1) RPC is requested
 -- 2) Some time after receiving RPC request on HMI is passed
--- 3) HMI sends BC.OnResetTimeout(resetPeriod = 3000) with right methodName but wrong requestID to SDL
+-- 3) HMI sends BC.OnResetTimeout(resetPeriod = 13000) with right methodName but wrong requestID to SDL
 -- 4) HMI does not send response
 -- SDL does:
 -- 1) Respond in 10 seconds with GENERIC_ERROR resultCode to mobile app
@@ -36,10 +36,10 @@ local function scrollableMessageError( )
     appID = common.getHMIAppId()
   })
   :Do(function()
-  common.getHMIConnection():SendNotification("BasicCommunication.OnResetTimeout",
-    { requestID = 111,
+  common.getHMIConnection():SendNotification("BasicCommunication.OnResetTimeout", {
+    requestID = 111, -- wrong requestID
     methodName = "ScrollableMessage",
-    resetPeriod = 30000
+    resetPeriod = 130000
   })
   end)
   :Do(function(_, _)
@@ -54,7 +54,6 @@ runner.Step("Clean environment", common.preconditions)
 runner.Step("Start SDL, HMI, connect Mobile, start Session", common.start)
 runner.Step("App registration", common.registerAppWOPTU)
 runner.Step("App activation", common.activateApp)
-runner.Step("Create InteractionChoiceSet", common.createInteractionChoiceSet)
 
 runner.Title("Test")
 runner.Step("Send ScrollableMessage", scrollableMessageError)

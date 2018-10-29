@@ -18,6 +18,7 @@
 --[[ Required Shared libraries ]]
 local runner = require('user_modules/script_runner')
 local common = require('test_scripts/API/Restructuring_OnResetTimeout/common_OnResetTimeout')
+local commonRC = require('test_scripts/RC/commonRC')
 
 --[[ Test Configuration ]]
 runner.testSettings.isSelfIncluded = false
@@ -32,16 +33,9 @@ runner.Step("RAI2", common.registerAppWOPTU, { 2 })
 runner.Step("Activate App2", common.activateApp, { 2 })
 
 runner.Title("Test")
-runner.Step("Set RA mode: ASK_DRIVER", common.askDriver, { true, "ASK_DRIVER" })
-
-for _, mod in pairs(common.modules) do
-  runner.Title("Module: " .. mod)
-  runner.Step("App1 SetInteriorVehicleData", common.rpcAllowed,
-    { mod, 1, "SetInteriorVehicleData" })
-
-  runner.Step("App2 ButtonPress 1st ", common.rpcAllowedWithConsent,
-    { mod, 2, "ButtonPress", "ButtonPress", _, 18000  })
-end
+runner.Step("Set RA mode: ASK_DRIVER", commonRC.defineRAMode, { true, "ASK_DRIVER" })
+runner.Step("App1 SetInteriorVehicleData", commonRC.rpcAllowed,{ "CLIMATE", 1, "SetInteriorVehicleData" } )
+runner.Step("App2 ButtonPress 1st ", common.rpcAllowedWithConsent,{ 2, "ButtonPress", _, _, "ButtonPress", 18000  })
 
 runner.Title("Postconditions")
 runner.Step("Stop SDL", common.postconditions)

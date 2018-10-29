@@ -9,8 +9,8 @@
 -- In case:
 -- 1) RPC is requested
 -- 2) Some time after receiving RPC request on HMI is passed
--- 3) HMI sends BC.OnResetTimeout(resetPeriod = 3000) to SDL
--- 4) HMI sends BC.OnResetTimeout(resetPeriod = 3000) to SDL
+-- 3) HMI sends BC.OnResetTimeout(resetPeriod = 13000) to SDL
+-- 4) HMI sends BC.OnResetTimeout(resetPeriod = 13000) to SDL
 -- 5) HMI does not send response in 16 seconds after receiving request
 -- SDL does:
 -- 1) Respond with GENERIC_ERROR resultCode to mobile app after 16 seconds are expired
@@ -34,7 +34,7 @@ local function diagnosticMessageError()
 	common.getHMIConnection():SendNotification("BasicCommunication.OnResetTimeout", {
 		requestID = data.id,
 		methodName = "DiagnosticMessage",
-		resetPeriod = 3000
+		resetPeriod = 13000
 	})
 	end):Times(2)
 	:Do(function(_, _)

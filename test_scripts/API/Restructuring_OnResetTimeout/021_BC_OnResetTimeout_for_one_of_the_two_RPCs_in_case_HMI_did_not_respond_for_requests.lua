@@ -7,11 +7,11 @@
 --
 -- Description:
 -- In case:
--- 1) RPC_1 is requested
--- 2) RPC_1 is requested one more time
+-- 1) RPC_1 is requested by App1
+-- 2) RPC_1 is requested by App2
 -- 3) Some time after receiving RPC_1 requests on HMI is passed
--- 4) HMI sends BC.OnResetTimeout(resetPeriod = 13000) to SDL for second request
--- 5) HMI does not respond
+-- 4) HMI sends BC.OnResetTimeout(resetPeriod = 13000) to SDL for request from second app
+-- 5) HMI does not respond to both request
 -- SDL does:
 -- Respond in 10 seconds with GENERIC_ERROR resultCode to mobile app to first request
 -- Respond in 13 seconds with GENERIC_ERROR resultCode to mobile app to second request
@@ -24,7 +24,8 @@ local common = require('test_scripts/API/Restructuring_OnResetTimeout/common_OnR
 runner.testSettings.isSelfIncluded = false
 
 --[[ Local Functions ]]
-local function diagnosticMessageError()
+local function diagnosticMessageError(pAppId)
+    if not pAppId then pAppId = 1 end
 	local cid = common.getMobileSession():SendRPC("DiagnosticMessage",
 	{ targetID = 1, messageLength = 1, messageData = { 1 } })
 
@@ -33,26 +34,7 @@ local function diagnosticMessageError()
 	:Do(function(_, _)
 	-- HMI does not respond
 	end)
-
-	local corId = common.getMobileSession():SendRPC("DiagnosticMessage",
-	{ targetID = 1, messageLength = 1, messageData = { 1 } })
-
-	EXPECT_HMICALL("VehicleInfo.DiagnosticMessage",
-	{ targetID = 1, messageLength = 1, messageData = { 1 } })
-	:Do(function(_, data2)
-	common.getHMIConnection():SendNotification("BasicCommunication.OnResetTimeout", {
-		requestID = data2.id,
-		methodName = "DiagnosticMessage",
-		resetPeriod = 13000
-	})
-	end):Times(1)
-	:Do(function(_, _)
-	-- HMI does not respond
-	end)
 	common.getMobileSession():ExpectResponse(cid, { success = false, resultCode = "GENERIC_ERROR" })
-	:Times(10000)
-	common.getMobileSession():ExpectResponse(corId, { success = false, resultCode = "GENERIC_ERROR" })
-	:Times(13000)
 end
 
 --[[ Scenario ]]
@@ -60,10 +42,14 @@ runner.Title("Preconditions")
 runner.Step("Clean environment", common.preconditions)
 runner.Step("Start SDL, HMI, connect Mobile, start Session", common.start)
 runner.Step("App registration", common.registerAppWOPTU)
+runner.Step("App2 registration", common.registerAppWOPTU, { 2 })
 runner.Step("App activation", common.activateApp)
+runner.Step("App2 activation", common.activateApp, { 2 })
+
 
 runner.Title("Test")
-runner.Step("Send DiagnosticMessage", diagnosticMessageError)
+runner.Step("App 1 sends DiagnosticMessage", diagnosticMessageError)
+runner.Step("App 2 sends DiagnosticMessage", common.diagnosticMessageError, {_, 13000, 13000, 2 })
 
 runner.Title("Postconditions")
 runner.Step("Stop SDL", common.postconditions)

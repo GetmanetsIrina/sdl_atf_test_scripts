@@ -9,7 +9,7 @@
 -- In case:
 -- 1) RPC is requested
 -- 2) Some time after receiving RPC request on HMI is passed
--- 3) HMI sends BC.OnResetTimeout(resetPeriod = 3000) with right requestID but wrong methodName to SDL
+-- 3) HMI sends BC.OnResetTimeout(resetPeriod = 13000) with right requestID but wrong methodName to SDL
 -- 4) HMI does not send response
 -- SDL does:
 -- 1) Respond in 10 seconds with GENERIC_ERROR resultCode to mobile app
@@ -33,26 +33,9 @@ runner.Step("App activation", common.activateApp)
 runner.Step("Create InteractionChoiceSet", common.createInteractionChoiceSet)
 
 runner.Title("Test")
-runner.Step("Send SendLocation", common.sendLocationError, { wrongMethodName, 3000, 10000 })
-runner.Step("Send Alert", common.alertError, { wrongMethodName, 3000, 10000 })
-runner.Step("Send PerformInteraction", common.performInteractionError, { wrongMethodName, 3000, 10000 })
-runner.Step("Send DialNumber", common.dialNumberError, { wrongMethodName, 3000, 10000 })
-runner.Step("Send Slider", common.sliderError, { wrongMethodName, 3000, 10000 })
-runner.Step("Send Speak", common.speakError, { wrongMethodName, 3000, 10000 })
-runner.Step("Send DiagnosticMessage", common.diagnosticMessageError, { wrongMethodName, 3000, 10000 })
-runner.Step("Send ScrollableMessage", common.scrollableMessageError, { wrongMethodName, 3000, 10000 })
-
-for _, buttonName in pairs(common.buttons) do
-
-	runner.Step("SubscribeButton " .. buttonName, common.subscribeButtonError,
-	{ buttonName, wrongMethodName, 3000, 10000 })
+for _, v in pairs(common.rpcsError) do
+	runner.Step("Send " .. v , common[v], { _, wrongMethodName, 13000, 10000 })
 end
-
-for _, mod in pairs(common.allModules)  do
-  runner.Step("SetInteriorVehicleData " .. mod, common.setVehicleData,
-	{ mod, "SetInteriorVehicleData", wrongMethodName, 3000, 10000 })
-end
-
 
 runner.Title("Postconditions")
 runner.Step("Stop SDL", common.postconditions)

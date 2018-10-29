@@ -18,63 +18,48 @@ local json = require("modules/json")
 local utils = require('user_modules/utils')
 local actions = require("user_modules/sequences/actions")
 local commonPreconditions = require('user_modules/shared_testcases/commonPreconditions')
+local commonRC = require('test_scripts/RC/commonRC')
 
 --[[ Common Variables ]]
+local c = actions
 
-local c = {}
-
-c.buttonsName = { climate = "FAN_UP", radio = "VOLUME_UP" }
-c.getHMIConnection = actions.getHMIConnection
-c.getMobileSession = actions.getMobileSession
-c.registerApp = actions.registerApp
-c.registerAppWOPTU = actions.registerAppWOPTU
-c.getHMIAppId = actions.getHMIAppId
 c.jsonFileToTable = utils.jsonFileToTable
 c.tableToJsonFile = utils.tableToJsonFile
 c.cloneTable = utils.cloneTable
-
-
-c.allModules = { "RADIO", "CLIMATE", "SEAT", "AUDIO", "LIGHT", "HMI_SETTINGS" }
 c.modules = { "RADIO", "CLIMATE" }
 
-local sendLocationRequestParams = {
-  longitudeDegrees = 1.1,
-  latitudeDegrees = 1.1,
-  locationName = "location Name",
-  locationDescription = "location Description",
-  addressLines = {
-    "line1",
-    "line2",
-  },
-  phoneNumber = "phone Number"
+c.rpcs = {
+  "SendLocation",
+  "Alert",
+  "PerformInteraction",
+  "DialNumber",
+  "Slider",
+  "Speak",
+  "DiagnosticMessage",
+  "ScrollableMessage",
+  "SubscribeButton",
+  "SetInteriorVehicleData"
 }
 
-c.buttons = {
-  "OK",
-  "PLAY_PAUSE",
-  "SEEKLEFT",
-  "SEEKRIGHT",
-  "TUNEUP",
-  "TUNEDOWN",
-  "PRESET_0",
-  "PRESET_1",
-  "PRESET_2",
-  "PRESET_3",
-  "PRESET_4",
-  "PRESET_5",
-  "PRESET_6",
-  "PRESET_7",
-  "PRESET_8",
-  "PRESET_9",
-  "SEARCH"
+c.rpcsError = {
+  "sendLocationError",
+  "alertError",
+  "performInteractionError",
+  "dialNumberError",
+  "sliderError",
+  "speakError",
+  "diagnosticMessageError",
+  "subscribeButtonError",
+  "scrollableMessageError",
+  "setInteriorVehicleDataError"
 }
 
 --[[ Common Functions ]]
-function c.getRCAppConfig(tbl)
+function c.getAppConfig(tbl)
   if tbl then
     local out = c.cloneTable(tbl.policy_table.app_policies.default)
-    out.moduleType = c.allModules
-    out.groups = { "Base-4", "RemoteControl", "SendLocation", "DialNumber", "PropriataryData-1" }
+    out.moduleType = c.modules
+    out.groups = { "Base-4", "RemoteControl" }
     out.AppHMIType = { "REMOTE_CONTROL" }
     return out
   else
@@ -83,54 +68,11 @@ function c.getRCAppConfig(tbl)
       steal_focus = false,
       priority = "NONE",
       default_hmi = "NONE",
-      moduleType = c.allModules,
-      groups = { "Base-4", "RemoteControl", "SendLocation", "DialNumber", "PropriataryData-1" },
+      moduleType = c.modules,
+      groups = { "Base-4", "RemoteControl" },
       AppHMIType = { "REMOTE_CONTROL" }
     }
   end
-end
-
-function actions.getAppDataForPTU(pAppId)
-if not pAppId then pAppId = 1 end
-  return {
-    keep_context = false,
-    steal_focus = false,
-    priority = "NONE",
-    default_hmi = "NONE",
-    groups = { "Base-4", "RemoteControl", "SendLocation", "DialNumber", "PropriataryData-1" },
-    AppHMIType = actions.getConfigAppParams(pAppId).appHMIType
-  }
-end
-
-local function allowSDL()
-  c.getHMIConnection():SendNotification("SDL.OnAllowSDLFunctionality", {
-    allowed = true,
-    source = "GUI",
-    device = {
-      id = utils.getDeviceMAC(),
-      name = utils.getDeviceName()
-    }
-  })
-end
-
-function c.start(pHMIParams)
-  test:runSDL()
-  commonFunctions:waitForSDLStart(test)
-  :Do(function()
-      test:initHMI(test)
-      :Do(function()
-          commonFunctions:userPrint(35, "HMI initialized")
-          test:initHMI_onReady(pHMIParams)
-          :Do(function()
-              commonFunctions:userPrint(35, "HMI is ready")
-              test:connectMobile()
-              :Do(function()
-                  commonFunctions:userPrint(35, "Mobile connected")
-                  allowSDL()
-                end)
-            end)
-        end)
-    end)
 end
 
 local function backupPreloadedPT()
@@ -144,21 +86,26 @@ local function updatePreloadedPT(pCountOfRCApps)
   .. commonFunctions:read_parameter_from_smart_device_link_ini("PreloadedPT")
   local preloadedTable = c.jsonFileToTable(preloadedFile)
   preloadedTable.policy_table.functional_groupings["DataConsent-2"].rpcs = json.null
-  preloadedTable.policy_table.functional_groupings["RemoteControl"].rpcs.SetInteriorVehicleData = {
-    hmi_levels = { "FULL", "BACKGROUND", "LIMITED", "NONE" }
-  }
-  preloadedTable.policy_table.functional_groupings["SendLocation"].rpcs.SendLocation = {
-    hmi_levels = { "FULL", "BACKGROUND", "LIMITED", "NONE" }
-  }
-  preloadedTable.policy_table.functional_groupings["DialNumber"].rpcs.DialNumber = {
-    hmi_levels = { "FULL", "BACKGROUND", "LIMITED", "NONE" }
-  }
-  preloadedTable.policy_table.functional_groupings["PropriataryData-1"].rpcs.DiagnosticMessage = {
-    hmi_levels = { "FULL", "BACKGROUND", "LIMITED", "NONE" }
+  preloadedTable.policy_table.functional_groupings["RemoteControl"].rpcs = {
+    SetInteriorVehicleData = {
+      hmi_levels = { "FULL", "BACKGROUND", "LIMITED", "NONE" }
+    },
+    SendLocation = {
+      hmi_levels = { "FULL", "BACKGROUND", "LIMITED", "NONE" }
+    },
+    DialNumber = {
+      hmi_levels = { "FULL", "BACKGROUND", "LIMITED", "NONE" }
+    },
+    DiagnosticMessage = {
+      hmi_levels = { "FULL", "BACKGROUND", "LIMITED", "NONE" }
+    },
+    ButtonPress = {
+      hmi_levels = { "FULL", "BACKGROUND", "LIMITED", "NONE" }
+    }
   }
   for i = 1, pCountOfRCApps do
     local appId = config["application" .. i].registerAppInterfaceParams.fullAppID
-    preloadedTable.policy_table.app_policies[appId] = c.getRCAppConfig(preloadedTable)
+    preloadedTable.policy_table.app_policies[appId] = c.getAppConfig(preloadedTable)
     preloadedTable.policy_table.app_policies[appId].AppHMIType = nil
   end
   c.tableToJsonFile(preloadedTable, preloadedFile)
@@ -166,7 +113,6 @@ end
 
 function c.preconditions(isPreloadedUpdate, pCountOfRCApps)
   if isPreloadedUpdate == nil then isPreloadedUpdate = true end
-  actions.preconditions()
   if isPreloadedUpdate == true then
     backupPreloadedPT()
     updatePreloadedPT(pCountOfRCApps)
@@ -178,422 +124,62 @@ local function restorePreloadedPT()
   commonPreconditions:RestoreFile(preloadedFile)
 end
 
-function c.postconditions()
-  actions.postconditions()
-  restorePreloadedPT()
-end
-
-function c.getModuleControlData(module_type)
-  local out = { moduleType = module_type }
-  if module_type == "CLIMATE" then
-    out.climateControlData = {
-      fanSpeed = 50,
-      currentTemperature = {
-        unit = "FAHRENHEIT",
-        value = 20.1
-      },
-      desiredTemperature = {
-        unit = "CELSIUS",
-        value = 10.5
-      },
-      acEnable = true,
-      circulateAirEnable = true,
-      autoModeEnable = true,
-      defrostZone = "FRONT",
-      dualModeEnable = true,
-      acMaxEnable = true,
-      ventilationMode = "BOTH",
-      heatedSteeringWheelEnable = true,
-      heatedWindshieldEnable = true,
-      heatedRearWindowEnable = true,
-      heatedMirrorsEnable = true
-    }
-  elseif module_type == "RADIO" then
-    out.radioControlData = {
-      frequencyInteger = 1,
-      frequencyFraction = 2,
-      band = "AM",
-      rdsData = {
-        PS = "ps",
-        RT = "rt",
-        CT = "123456789012345678901234",
-        PI = "pi",
-        PTY = 1,
-        TP = false,
-        TA = true,
-        REG = "US"
-      },
-      availableHDs = 1,
-      hdChannel = 1,
-      signalStrength = 5,
-      signalChangeThreshold = 10,
-      radioEnable = true,
-      state = "ACQUIRING",
-      hdRadioEnable = true,
-      sisData = {
-        stationShortName = "Name1",
-        stationIDNumber = {
-          countryCode = 100,
-          fccFacilityId = 100
-        },
-        stationLongName = "RadioStationLongName",
-        stationLocation = {
-          longitudeDegrees = 0.1,
-          latitudeDegrees = 0.1,
-          altitude = 0.1
-        },
-        stationMessage = "station message"
-      }
-    }
-  elseif module_type == "SEAT" then
-    out.seatControlData = {
-      id = "DRIVER",
-      heatingEnabled = true,
-      coolingEnabled = true,
-      heatingLevel = 50,
-      coolingLevel = 50,
-      horizontalPosition = 50,
-      verticalPosition = 50,
-      frontVerticalPosition = 50,
-      backVerticalPosition = 50,
-      backTiltAngle = 50,
-      headSupportHorizontalPosition = 50,
-      headSupportVerticalPosition = 50,
-      massageEnabled = true,
-      massageMode = {
-        {
-          massageZone = "LUMBAR",
-          massageMode = "HIGH"
-        },
-        {
-          massageZone = "SEAT_CUSHION",
-          massageMode = "LOW"
-        }
-      },
-      massageCushionFirmness = {
-        {
-          cushion = "TOP_LUMBAR",
-          firmness = 30
-        },
-        {
-          cushion = "BACK_BOLSTERS",
-          firmness = 60
-        }
-      },
-      memory = {
-        id = 1,
-        label = "Label value",
-        action = "SAVE"
-      }
-    }
-  elseif module_type == "AUDIO" then
-    out.audioControlData = {
-      source = "AM",
-      keepContext = false,
-      volume = 50,
-      equalizerSettings = {
-        {
-          channelId = 10,
-          channelName = "Channel 1",
-          channelSetting = 50
-        }
-      }
-    }
-  elseif module_type == "LIGHT" then
-    out.lightControlData = {
-      lightState = {
-        {
-          id = "FRONT_LEFT_HIGH_BEAM",
-          status = "ON",
-          density = 0.2,
-          color = {
-            red = 50,
-            green = 150,
-            blue = 200
-          }
-        }
-      }
-    }
-  elseif module_type == "HMI_SETTINGS" then
-    out.hmiSettingsControlData = {
-      displayMode = "DAY",
-      temperatureUnit = "CELSIUS",
-      distanceUnit = "KILOMETERS"
-    }
-  end
-  return out
-end
-
-function c.getButtonNameByModule(pModuleType)
-  return c.buttonsName[string.lower(pModuleType)]
-end
-
-function c.getModuleParams(pModuleData)
-  if pModuleData.moduleType == "CLIMATE" then
-    if not pModuleData.climateControlData then
-      pModuleData.climateControlData = { }
-    end
-    return pModuleData.climateControlData
-  elseif pModuleData.moduleType == "RADIO" then
-    if not pModuleData.radioControlData then
-      pModuleData.radioControlData = { }
-    end
-    return pModuleData.radioControlData
-  elseif pModuleData.moduleType == "AUDIO" then
-    if not pModuleData.audioControlData then
-      pModuleData.audioControlData = { }
-    end
-    return pModuleData.audioControlData
-  elseif pModuleData.moduleType == "SEAT" then
-    if not pModuleData.seatControlData then
-      pModuleData.seatControlData = { }
-    end
-    return pModuleData.seatControlData
-  end
-end
-
-function c.getReadOnlyParamsByModule(pModuleType)
-  local out = { moduleType = pModuleType }
-  if pModuleType == "CLIMATE" then
-    out.climateControlData = {
-      currentTemperature = {
-        unit = "FAHRENHEIT",
-        value = 32.6
-      }
-    }
-  elseif pModuleType == "RADIO" then
-    out.radioControlData = {
-      rdsData = {
-        PS = "ps",
-        RT = "rt",
-        CT = "123456789012345678901234",
-        PI = "pi",
-        PTY = 2,
-        TP = false,
-        TA = true,
-        REG = "US"
-      },
-      availableHDs = 2,
-      signalStrength = 4,
-      signalChangeThreshold = 22,
-      state = "MULTICAST",
-      sisData = {
-        stationShortName = "Name2",
-        stationIDNumber = {
-          countryCode = 200,
-          fccFacilityId = 200
-        },
-        stationLongName = "RadioStationLongName2",
-        stationLocation = {
-          longitudeDegrees = 20.1,
-          latitudeDegrees = 20.1,
-          altitude = 20.1
-        },
-        stationMessage = "station message 2"
-      }
-    }
-  elseif pModuleType == "AUDIO" then
-    out.audioControlData = {
-      equalizerSettings = { { channelName = "Channel 1" } }
-    }
-  end
-  return out
-end
-
-function c.getSettableModuleControlData(pModuleType)
-  local out = c.getModuleControlData(pModuleType)
-  local params_read_only = c.getModuleParams(c.getReadOnlyParamsByModule(pModuleType))
-  if params_read_only then
-    for p_read_only, p_read_only_value in pairs(params_read_only) do
-      if pModuleType == "AUDIO" then
-        for sub_read_only_key, sub_read_only_value in pairs(p_read_only_value) do
-          for sub_read_only_name in pairs(sub_read_only_value) do
-            c.getModuleParams(out)[p_read_only][sub_read_only_key][sub_read_only_name] = nil
-          end
-        end
-      else
-        c.getModuleParams(out)[p_read_only] = nil
-      end
-    end
-  end
-  return out
-end
-
--- RC RPCs structure
-local rcRPCs = {
-  SetInteriorVehicleData = {
-    appEventName = "SetInteriorVehicleData",
-    hmiEventName = "RC.SetInteriorVehicleData",
-    requestParams = function(pModuleType)
-      return {
-        moduleData = c.getSettableModuleControlData(pModuleType)
-      }
-    end,
-    hmiRequestParams = function(pModuleType, pAppId)
-      return {
-        appID = c.getHMIAppId(pAppId),
-        moduleData = c.getSettableModuleControlData(pModuleType)
-      }
-    end,
-    hmiResponseParams = function(pModuleType)
-      return {
-        moduleData = c.getSettableModuleControlData(pModuleType)
-      }
-    end,
-    responseParams = function(success, resultCode, pModuleType)
-      return {
-        success = success,
-        resultCode = resultCode,
-        moduleData = c.getSettableModuleControlData(pModuleType)
-      }
-    end
-  },
-  ButtonPress = {
-    appEventName = "ButtonPress",
-    hmiEventName = "Buttons.ButtonPress",
-    requestParams = function(pModuleType)
-      return {
-        moduleType = pModuleType,
-        buttonName = c.getButtonNameByModule(pModuleType),
-        buttonPressMode = "SHORT"
-      }
-    end,
-    hmiRequestParams = function(pModuleType, pAppId)
-      return {
-        appID = c.getHMIAppId(pAppId),
-        moduleType = pModuleType,
-        buttonName = c.getButtonNameByModule(pModuleType),
-        buttonPressMode = "SHORT"
-      }
-    end,
-    hmiResponseParams = function()
-      return {}
-    end,
-    responseParams = function(success, resultCode)
-      return {
-        success = success,
-        resultCode = resultCode
-      }
-    end
-  },
-  GetInteriorVehicleDataConsent = {
-    hmiEventName = "RC.GetInteriorVehicleDataConsent",
-    hmiRequestParams = function(pModuleType, pAppId)
-      return {
-        appID = c.getHMIAppId(pAppId),
-        moduleType = pModuleType
-      }
-    end,
-    hmiResponseParams = function(pAllowed)
-      return {
-        allowed = pAllowed
-      }
-    end,
-  },
-  OnRemoteControlSettings = {
-    hmiEventName = "RC.OnRemoteControlSettings",
-    hmiResponseParams = function(pAllowed, pAccessMode)
-      return {
-        allowed = pAllowed,
-        accessMode = pAccessMode
-      }
-    end
-  }
-}
-
-function c.getAppEventName(pRPC)
-  return rcRPCs[pRPC].appEventName
-end
-
-function c.getHMIEventName(pRPC)
-  return rcRPCs[pRPC].hmiEventName
-end
-
-function c.getAppRequestParams(pRPC, ...)
-  return rcRPCs[pRPC].requestParams(...)
-end
-
-function c.getAppResponseParams(pRPC, ...)
-  return rcRPCs[pRPC].responseParams(...)
-end
-
-function c.getHMIRequestParams(pRPC, ...)
-  return rcRPCs[pRPC].hmiRequestParams(...)
-end
-
-function c.getHMIResponseParams(pRPC, ...)
-  return rcRPCs[pRPC].hmiResponseParams(...)
-end
-
-function c.askDriver(pAllowed, pAccessMode)
-  local rpc = "OnRemoteControlSettings"
-  c.getHMIConnection():SendNotification(c.getHMIEventName(rpc), c.getHMIResponseParams(rpc, pAllowed, pAccessMode))
-end
-
-function c.rpcAllowedWithConsent(pModuleType, pAppId, pRPC, pRequestID, pMethodName, pResetPeriod, pWait)
+--[[ @sendLocation: Successful Processing of GetInteriorVehicleDataConsent RPC
+--! @parameters:
+--! pRequestID - Id between HMI and SDL which SDL used to send the request for method in question, for which timeout needs to be reset.
+--! pMethodName - Name of the function for which timeout needs to be reset.
+--! pResetPeriod - Timeout period in milliseconds, for the method for which timeout needs to be reset.
+--! pWait - Time in seconds after which HMI respond to received the request.
+--! pAppId - application number (1, 2, etc.)
+--! @return: none
+--]]
+function c.rpcAllowedWithConsent(pAppId, pRPC, pRequestID, pMethodName, pResetPeriod, pWait)
   if not pAppId then pAppId = 1 end
-  local cid = c.getMobileSession(pAppId):SendRPC(c.getAppEventName(pRPC), c.getAppRequestParams(pRPC, pModuleType))
+  if not pRPC then pRPC = "SetInteriorVehicleData" end
+  local cid = c.getMobileSession(pAppId):SendRPC(commonRC.getAppEventName(pRPC), commonRC.getAppRequestParams(pRPC, "CLIMATE"))
   local consentRPC = "GetInteriorVehicleDataConsent"
-  EXPECT_HMICALL(c.getHMIEventName(consentRPC), c.getHMIRequestParams(consentRPC, pModuleType, pAppId))
-  :Do(function()
-    c.hmiNotification(pRequestID, pMethodName, pResetPeriod)
-    RUN_AFTER(c.hmiNotification, pWait)
-  end)
+  EXPECT_HMICALL(commonRC.getHMIEventName(consentRPC), commonRC.getHMIRequestParams(consentRPC, "CLIMATE", pAppId))
   :Do(function(_, data)
-      c.getHMIConnection():SendResponse(data.id, data.method, "SUCCESS", c.getHMIResponseParams(consentRPC, true))
-      EXPECT_HMICALL(c.getHMIEventName(pRPC), c.getHMIRequestParams(pRPC, pModuleType, pAppId))
+      commonRC.getHMIConnection():SendResponse(data.id, data.method, "SUCCESS", commonRC.getHMIResponseParams(consentRPC, true))
+      EXPECT_HMICALL(commonRC.getHMIEventName(pRPC), commonRC.getHMIRequestParams(pRPC, "CLIMATE", pAppId))
       :Do(function(_, data2)
-          c.getHMIConnection():SendResponse(data2.id, data2.method, "SUCCESS", c.getHMIResponseParams(pRPC, pModuleType))
+        c.onResetTimeoutNotification(data2.id, pMethodName, pResetPeriod)
+        local function sendResponse()
+          commonRC.getHMIConnection():SendResponse(data2.id, data2.method, "SUCCESS", commonRC.getHMIResponseParams(pRPC, "CLIMATE"))
+        end
+        RUN_AFTER(sendResponse, pWait)
         end)
     end)
   c.getMobileSession(pAppId):ExpectResponse(cid, { success = true, resultCode = "SUCCESS" })
+  :Timeout(pResetPeriod)
 end
 
-function c.rpcAllowedWithConsentError(pModuleType, pAppId, pRPC, pRequestID, pMethodName, pResetPeriod, pWait)
+function c.rpcAllowedWithConsentError( pAppId, pRPC, pRequestID, pResetPeriod, pWait, pMethodName)
+  if not pMethodName then pMethodName = "SetInteriorVehicleData" end
   if not pAppId then pAppId = 1 end
-  local cid = c.getMobileSession(pAppId):SendRPC(c.getAppEventName(pRPC), c.getAppRequestParams(pRPC, pModuleType))
+  if not pRPC then pRPC = "SetInteriorVehicleData" end
+  local cid = c.getMobileSession(pAppId):SendRPC(commonRC.getAppEventName(pRPC), commonRC.getAppRequestParams(pRPC, "CLIMATE"))
   local consentRPC = "GetInteriorVehicleDataConsent"
-  EXPECT_HMICALL(c.getHMIEventName(consentRPC), c.getHMIRequestParams(consentRPC, pModuleType, pAppId))
-  :Do(function()
-    c.hmiNotification(pRequestID, pMethodName, pResetPeriod)
-    RUN_AFTER(c.hmiNotification, pWait)
+  EXPECT_HMICALL(commonRC.getHMIEventName(consentRPC), commonRC.getHMIRequestParams(consentRPC, "CLIMATE", pAppId))
+  :Do(function(_, data)
+    c.onResetTimeoutNotification(data.id, pMethodName, pResetPeriod)
+    local function withoutResponse(_, _)
+      -- HMI does not respond
+    end
+    RUN_AFTER(withoutResponse, pWait)
   end)
-  :Do(function(_, _)
-    -- HMI does not respond
-    end)
   c.getMobileSession(pAppId):ExpectResponse(cid, { success = false, resultCode = "GENERIC_ERROR" })
+  :Times(pWait)
 end
 
-function c.backupHMICapabilities()
-  local hmiCapabilitiesFile = commonFunctions:read_parameter_from_smart_device_link_ini("HMICapabilities")
-  commonPreconditions:BackupFile(hmiCapabilitiesFile)
-end
-
-local function audibleState(pAppId)
-  if not pAppId then pAppId = 1 end
-  local appParams = config["application" .. pAppId].registerAppInterfaceParams
-  local audibleStateValue
-  if appParams.isMediaApplication == true then
-    audibleStateValue = "AUDIBLE"
-  else
-    audibleStateValue = "NOT_AUDIBLE"
-  end
-  return audibleStateValue
-end
-
-function c.activateApp(pAppId)
-  if not pAppId then pAppId = 1 end
-  local pHMIAppId = c.getHMIAppId(pAppId)
-  local mobSession = c.getMobileSession(pAppId)
-  local requestId = test.hmiConnection:SendRequest("SDL.ActivateApp", { appID = pHMIAppId })
-  EXPECT_HMIRESPONSE(requestId)
-  mobSession:ExpectNotification("OnHMIStatus", { hmiLevel = "FULL", audioStreamingState = audibleState(pAppId),
-      systemContext = "MAIN" })
-  utils.wait()
-end
-
-function c.hmiNotification(pRequestID, pMethodName, pResetPeriod)
-  if not pResetPeriod then pResetPeriod = 3000 end
+--[[ @onResetTimeoutNotification: Notification from HMI  in case the results long processing on HMI
+--! @parameters:
+--! pRequestID - Id between HMI and SDL which SDL used to send the request for method in question, for which timeout needs to be reset.
+--! pMethodName - Name of the function for which timeout needs to be reset.
+--! pResetPeriod - Timeout period in milliseconds, for the method for which timeout needs to be reset.
+--! @return: none
+--]]
+function c.onResetTimeoutNotification(pRequestID, pMethodName, pResetPeriod)
   c.getHMIConnection():SendNotification("BasicCommunication.OnResetTimeout",
     { requestID = pRequestID,
     methodName = pMethodName,
@@ -601,33 +187,58 @@ function c.hmiNotification(pRequestID, pMethodName, pResetPeriod)
   })
 end
 
-function c.sendLocation( pMethodName, pResetPeriod, pWait )
+function c.SendLocation( pRequestID, pMethodName, pResetPeriod, pWait )
+  local sendLocationRequestParams = {
+    longitudeDegrees = 1.1,
+    latitudeDegrees = 1.1,
+    locationName = "location Name",
+    locationDescription = "location Description",
+    addressLines = {
+      "line1",
+      "line2",
+    },
+    phoneNumber = "phone Number"
+  }
   local cid = c.getMobileSession():SendRPC("SendLocation", sendLocationRequestParams)
   EXPECT_HMICALL("Navigation.SendLocation", { appID = c.getHMIAppId() })
   :Do(function(_, data)
-    c.hmiNotification(data.id, pMethodName, pResetPeriod)
-    RUN_AFTER(c.hmiNotification, pWait)
-  end)
-  :Do(function(_, data)
+    c.onResetTimeoutNotification(data.id, pMethodName, pResetPeriod)
+    local function sendresponse()
       c.getHMIConnection():SendResponse(data.id, data.method, "SUCCESS", {})
-    end)
+    end
+    RUN_AFTER(sendresponse, pWait)
+  end)
   c.getMobileSession():ExpectResponse(cid, { success = true, resultCode = "SUCCESS" })
+  :Timeout(pResetPeriod)
 end
 
-function c.sendLocationError( pMethodName, pResetPeriod, pWait )
+function c.sendLocationError( pRequestID, pResetPeriod, pWait, pMethodName )
+  if not pMethodName then pMethodName = "SendLocation" end
+  local sendLocationRequestParams = {
+    longitudeDegrees = 1.1,
+    latitudeDegrees = 1.1,
+    locationName = "location Name",
+    locationDescription = "location Description",
+    addressLines = {
+      "line1",
+      "line2",
+    },
+    phoneNumber = "phone Number"
+  }
   local cid = c.getMobileSession():SendRPC("SendLocation", sendLocationRequestParams)
   EXPECT_HMICALL("Navigation.SendLocation", { appID = c.getHMIAppId() })
   :Do(function(_, data)
-    c.hmiNotification(data.id, pMethodName, pResetPeriod)
-    RUN_AFTER(c.hmiNotification, pWait)
-  end)
-  :Do(function(_, _)
-    -- HMI does not respond
+    c.onResetTimeoutNotification(data.id, pMethodName, pResetPeriod)
+    local function withoutResponse(_, _)
+      -- HMI does not respond
+    end
+    RUN_AFTER(withoutResponse, pWait)
   end)
   c.getMobileSession():ExpectResponse(cid, { success = false, resultCode = "GENERIC_ERROR" })
+  :Timeout(pWait)
 end
 
-function c.alert( pMethodName, pResetPeriod, pWait )
+function c.Alert( pRequestID, pMethodName, pResetPeriod, pWait )
   local cid = c.getMobileSession():SendRPC("Alert",
     { ttsChunks = {
       { type = "TEXT",
@@ -644,17 +255,18 @@ function c.alert( pMethodName, pResetPeriod, pWait )
     appID = c.getHMIAppId()
   })
   :Do(function(_, data)
-    c.hmiNotification(data.id, pMethodName, pResetPeriod)
-    RUN_AFTER(c.hmiNotification, pWait)
+    c.onResetTimeoutNotification(data.id, pMethodName, pResetPeriod)
+    local function sendResponse()
+      c.getHMIConnection():SendResponse(data.id, data.method, "SUCCESS", {})
+    end
+    RUN_AFTER(sendResponse, pWait)
   end)
-  :Do(function(_, data)
-    c.getHMIConnection():SendResponse(data.id, data.method, "SUCCESS", {})
-  end)
-
   c.getMobileSession():ExpectResponse(cid, { success = true, resultCode = "SUCCESS"})
+  :Timeout(pResetPeriod)
 end
 
-function c.alertError( pMethodName, pResetPeriod, pWait )
+function c.alertError( pRequestID, pResetPeriod, pWait, pMethodName )
+  if not pMethodName then pMethodName = "Alert" end
   local cid = c.getMobileSession():SendRPC("Alert",
     { ttsChunks = {
       { type = "TEXT",
@@ -671,13 +283,14 @@ function c.alertError( pMethodName, pResetPeriod, pWait )
     appID = c.getHMIAppId()
   })
   :Do(function(_, data)
-    c.hmiNotification(data.id, pMethodName, pResetPeriod)
-    RUN_AFTER(c.hmiNotification, pWait)
-  end)
-  :Do(function(_, _)
-    -- HMI does not respond
+    c.onResetTimeoutNotification(data.id, pMethodName, pResetPeriod)
+    local function withoutResponse(_, _)
+      -- HMI does not respond
+    end
+    RUN_AFTER(withoutResponse, pWait)
   end)
   c.getMobileSession():ExpectResponse(cid, { success = false, resultCode = "GENERIC_ERROR" })
+  :Timeout(pWait)
 end
 
 function c.createInteractionChoiceSet()
@@ -699,7 +312,7 @@ function c.createInteractionChoiceSet()
   c.getMobileSession():ExpectResponse(corId, { success = true, resultCode = "SUCCESS" })
 end
 
-function c.performInteraction( pMethodName, pResetPeriod, pWait )
+function c.PerformInteraction( pRequestID, pMethodName, pResetPeriod, pWait )
   local params = {
     initialText = "StartPerformInteraction",
     interactionMode = "VR_ONLY",
@@ -711,12 +324,12 @@ function c.performInteraction( pMethodName, pResetPeriod, pWait )
   local corId = c.getMobileSession():SendRPC("PerformInteraction", params)
   c.getHMIConnection():ExpectRequest("UI.PerformInteraction")
   :Do(function(_, data)
-    c.hmiNotification(data.id, pMethodName, pResetPeriod)
-    RUN_AFTER(c.hmiNotification, pWait)
-  end)
-  :Do(function(_, data)
+    c.onResetTimeoutNotification(data.id, pMethodName, pResetPeriod)
+    local function sendResponse()
       c.getHMIConnection():SendResponse(data.id, data.method, "SUCCESS", {})
-    end)
+    end
+    RUN_AFTER(sendResponse, pWait)
+  end)
   c.getHMIConnection():ExpectRequest("VR.PerformInteraction", {
     initialPrompt = params.initialPrompt
   })
@@ -724,9 +337,11 @@ function c.performInteraction( pMethodName, pResetPeriod, pWait )
       c.getHMIConnection():SendResponse(data.id, data.method, "SUCCESS", {})
     end)
   c.getMobileSession():ExpectResponse(corId, { success = true, resultCode = "SUCCESS" })
+  :Timeout(pResetPeriod)
 end
 
-function c.performInteractionError( pMethodName, pResetPeriod, pWait )
+function c.performInteractionError( pRequestID, pResetPeriod, pWait, pMethodName )
+  if not pMethodName then pMethodName = "PerformInteraction" end
   local params = {
     initialText = "StartPerformInteraction",
     interactionMode = "VR_ONLY",
@@ -738,50 +353,53 @@ function c.performInteractionError( pMethodName, pResetPeriod, pWait )
   local corId = c.getMobileSession():SendRPC("PerformInteraction", params)
   c.getHMIConnection():ExpectRequest("UI.PerformInteraction")
   :Do(function(_, data)
-    c.hmiNotification(data.id, pMethodName, pResetPeriod)
-    RUN_AFTER(c.hmiNotification, pWait)
-  end)
-  :Do(function(_, data)
-    c.getHMIConnection():SendResponse(data.id, data.method, "SUCCESS", {})
+    c.onResetTimeoutNotification(data.id, pMethodName, pResetPeriod)
+    local function withoutResponse(_, _)
+      -- HMI does not respond
+    end
+    RUN_AFTER(withoutResponse, pWait)
   end)
   c.getHMIConnection():ExpectRequest("VR.PerformInteraction", {
     initialPrompt = params.initialPrompt
   })
-  :Do(function(_, _)
-    -- HMI does not respond
+  :Do(function(_, data)
+    c.getHMIConnection():SendResponse(data.id, data.method, "SUCCESS", {})
   end)
   c.getMobileSession():ExpectResponse(corId, { success = false, resultCode = "GENERIC_ERROR" })
+  :Timeout(pWait)
 end
 
-function c.dialNumber( pMethodName, pResetPeriod, pWait )
+function c.DialNumber( pRequestID, pMethodName, pResetPeriod, pWait )
   local cid = c.getMobileSession():SendRPC("DialNumber", { number = "#3804567654*" })
 
   EXPECT_HMICALL("BasicCommunication.DialNumber", { appID = c.getHMIAppId() })
   :Do(function(_, data)
-    c.hmiNotification(data.id, pMethodName, pResetPeriod)
-    RUN_AFTER(c.hmiNotification, pWait)
-  end)
-  :Do(function(_, data)
+    c.onResetTimeoutNotification(data.id, pMethodName, pResetPeriod)
+    local function sendResponse()
       c.getHMIConnection():SendResponse(data.id, data.method, "SUCCESS", { })
-    end)
+    end
+    RUN_AFTER(sendResponse, pWait)
+  end)
   c.getMobileSession():ExpectResponse(cid, { success = true, resultCode = "SUCCESS" })
+  :Timeout(pResetPeriod)
 end
 
-function c.dialNumberError( pMethodName, pResetPeriod, pWait )
+function c.dialNumberError( pRequestID, pResetPeriod, pWait, pMethodName )
+  if not pMethodName then pMethodName = "DialNumber" end
   local cid = c.getMobileSession():SendRPC("DialNumber", { number = "#3804567654*" })
   EXPECT_HMICALL("BasicCommunication.DialNumber", { appID = c.getHMIAppId() })
   :Do(function(_, data)
-    c.hmiNotification(data.id, pMethodName, pResetPeriod)
-    RUN_AFTER(c.hmiNotification, pWait)
+    c.onResetTimeoutNotification(data.id, pMethodName, pResetPeriod)
+    local function withoutResponse(_, _)
+      -- HMI does not respond
+    end
+    RUN_AFTER(withoutResponse, pWait)
   end)
-  :Do(function(_, _)
-    -- HMI does not respond
-  end)
-
   c.getMobileSession():ExpectResponse(cid, { success = false, resultCode = "GENERIC_ERROR" })
+  :Timeout(pWait)
 end
 
-function c.slider( pMethodName, pResetPeriod, pWait )
+function c.Slider( pRequestID, pMethodName, pResetPeriod, pWait )
   local cid = c.getMobileSession():SendRPC("Slider",
     {
       numTicks = 7,
@@ -792,23 +410,24 @@ function c.slider( pMethodName, pResetPeriod, pWait )
     })
   EXPECT_HMICALL("UI.Slider", { appID = c.getHMIAppId() })
   :Do(function(_, data)
-    c.hmiNotification(data.id, pMethodName, pResetPeriod)
-    RUN_AFTER(c.hmiNotification, pWait)
+    c.onResetTimeoutNotification(data.id, pMethodName, pResetPeriod)
+    local function sendReponse()
+      c.getHMIConnection():SendResponse(data.id, data.method, "SUCCESS", {sliderPosition = 1})
+      c.getHMIConnection():SendNotification("UI.OnSystemContext",
+        { appID = c.getHMIAppId(), systemContext = "MAIN" })
+    end
+    RUN_AFTER(sendReponse, pWait)
   end)
   :Do(function(_,data)
       c.getHMIConnection():SendNotification("UI.OnSystemContext",
         { appID = c.getHMIAppId(), systemContext = "HMI_OBSCURED" })
-      local function sendReponse()
-        c.getHMIConnection():SendResponse(data.id, data.method, "SUCCESS", {sliderPosition = 1})
-        c.getHMIConnection():SendNotification("UI.OnSystemContext",
-          { appID = c.getHMIAppId(), systemContext = "MAIN" })
-      end
-      RUN_AFTER(sendReponse, 1000)
     end)
   c.getMobileSession():ExpectResponse(cid, { success = true, resultCode = "SUCCESS", sliderPosition = 1 })
+  :Timeout(pResetPeriod)
 end
 
-function c.sliderError( pMethodName, pResetPeriod, pWait )
+function c.sliderError( pRequestID, pResetPeriod, pWait, pMethodName )
+  if not pMethodName then pMethodName = "Slider" end
   local cid = c.getMobileSession():SendRPC("Slider",
     {
       numTicks = 7,
@@ -819,16 +438,17 @@ function c.sliderError( pMethodName, pResetPeriod, pWait )
     })
   EXPECT_HMICALL("UI.Slider", { appID = c.getHMIAppId() })
   :Do(function(_, data)
-    c.hmiNotification(data.id, pMethodName, pResetPeriod)
-    RUN_AFTER(c.hmiNotification, pWait)
-  end)
-  :Do(function(_, _)
-    -- HMI does not respond
+    c.onResetTimeoutNotification(data.id, pMethodName, pResetPeriod)
+    local function withoutResponse(_, _)
+      -- HMI does not respond
+    end
+    RUN_AFTER(withoutResponse, pWait)
   end)
   c.getMobileSession():ExpectResponse(cid, { success = false, resultCode = "GENERIC_ERROR" })
+  :Timeout(pWait)
 end
 
-function c.speak( pMethodName, pResetPeriod, pWait )
+function c.Speak( pRequestID, pMethodName, pResetPeriod, pWait )
   local cid = c.getMobileSession():SendRPC("Speak",
     {
     ttsChunks = {
@@ -846,22 +466,19 @@ function c.speak( pMethodName, pResetPeriod, pWait )
     }
   })
   :Do(function(_, data)
-    c.hmiNotification(data.id, pMethodName, pResetPeriod)
-    RUN_AFTER(c.hmiNotification, pWait)
+    c.onResetTimeoutNotification(data.id, pMethodName, pResetPeriod)
+    local function sendSpeakResponse()
+      c.getHMIConnection():SendResponse(data.id, data.method, "SUCCESS", { })
+      c.getHMIConnection():SendNotification("TTS.Stopped")
+    end
+    RUN_AFTER(sendSpeakResponse, pWait)
   end)
-  :Do(function(_, data)
-      c.getHMIConnection():SendNotification("TTS.Started")
-      local function sendSpeakResponse()
-        c.getHMIConnection():SendResponse(data.id, data.method, "SUCCESS", { })
-        c.getHMIConnection():SendNotification("TTS.Stopped")
-      end
-      RUN_AFTER(sendSpeakResponse, 18000)
-    end)
   c.getMobileSession():ExpectResponse(cid, { success = true, resultCode = "SUCCESS" })
-  :Timeout(20000)
+  :Timeout(pResetPeriod)
 end
 
-function c.speakError( pMethodName, pResetPeriod, pWait )
+function c.speakError( pRequestID, pResetPeriod, pWait, pMethodName )
+  if not pMethodName then pMethodName = "Speak" end
   local cid = c.getMobileSession():SendRPC("Speak",
     {
     ttsChunks = {
@@ -879,16 +496,17 @@ function c.speakError( pMethodName, pResetPeriod, pWait )
     }
   })
   :Do(function(_, data)
-    c.hmiNotification(data.id, pMethodName, pResetPeriod)
-    RUN_AFTER(c.hmiNotification, pWait)
-  end)
-  :Do(function(_, _)
-    -- HMI does not respond
+    c.onResetTimeoutNotification(data.id, pMethodName, pResetPeriod)
+    local function withoutResponse(_, _)
+      -- HMI does not respond
+    end
+    RUN_AFTER(withoutResponse, pWait)
   end)
   c.getMobileSession():ExpectResponse(cid, { success = false, resultCode = "GENERIC_ERROR" })
+  :Timeout(pWait)
 end
 
-function c.diagnosticMessage( pMethodName, pResetPeriod, pWait )
+function c.DiagnosticMessage( pRequestID, pMethodName, pResetPeriod, pWait )
   local cid = c.getMobileSession():SendRPC("DiagnosticMessage",
   { targetID = 1,
     messageLength = 1,
@@ -900,16 +518,19 @@ function c.diagnosticMessage( pMethodName, pResetPeriod, pWait )
     messageData = { 1 }
   })
   :Do(function(_, data)
-    c.hmiNotification(data.id, pMethodName, pResetPeriod)
-    RUN_AFTER(c.hmiNotification, pWait)
-  end)
-  :Do(function(_,data)
-    c.getHMIConnection():SendResponse(data.id, data.method, "SUCCESS", {messageDataResult = {12}})
+    c.onResetTimeoutNotification(data.id, pMethodName, pResetPeriod)
+    local function sendResponse()
+      c.getHMIConnection():SendResponse(data.id, data.method, "SUCCESS", {messageDataResult = {12}})
+    end
+    RUN_AFTER(sendResponse, pWait)
   end)
   c.getMobileSession():ExpectResponse(cid, { success = true, resultCode = "SUCCESS" })
+  :Timeout(pResetPeriod)
 end
 
-function c.diagnosticMessageError( pMethodName, pResetPeriod, pWait )
+function c.diagnosticMessageError( pRequestID, pResetPeriod, pWait, pAppId, pMethodName )
+  if not pMethodName then pMethodName = "DiagnosticMessage" end
+  if not pAppId then pAppId = 1 end
   local cid = c.getMobileSession():SendRPC("DiagnosticMessage",
   { targetID = 1,
     messageLength = 1,
@@ -921,42 +542,46 @@ function c.diagnosticMessageError( pMethodName, pResetPeriod, pWait )
     messageData = { 1 }
   })
   :Do(function(_, data)
-    c.hmiNotification(data.id, pMethodName, pResetPeriod)
-    RUN_AFTER(c.hmiNotification, pWait)
-  end)
-  :Do(function(_, _)
-    -- HMI does not respond
+    c.onResetTimeoutNotification(data.id, pMethodName, pResetPeriod)
+    local function withoutResponse(_, _)
+      -- HMI does not respond
+    end
+    RUN_AFTER(withoutResponse, pWait)
   end)
   c.getMobileSession():ExpectResponse(cid, { success = false, resultCode = "GENERIC_ERROR" })
+  :Timeout(pWait)
 end
 
-function c.subscribeButton( pButtonName, pMethodName, pResetPeriod, pWait)
-  local cid = c.getMobileSession():SendRPC("SubscribeButton", { buttonName = pButtonName })
-  EXPECT_HMICALL("Buttons.SubscribeButton", { appID = c.getHMIAppId(), buttonName = pButtonName })
+function c.SubscribeButton( pRequestID, pMethodName, pResetPeriod, pWait)
+  local cid = c.getMobileSession():SendRPC("SubscribeButton", { buttonName = "OK" })
+  EXPECT_HMICALL("Buttons.SubscribeButton", { appID = c.getHMIAppId(), buttonName = "OK" })
   :Do(function(_, data)
-    c.hmiNotification(data.id, pMethodName, pResetPeriod)
-    RUN_AFTER(c.hmiNotification, pWait)
-  end)
-  :Do(function(_, data)
-    c.getHMIConnection():SendResponse(data.id, data.method, "SUCCESS", { })
+    c.onResetTimeoutNotification(data.id, pMethodName, pResetPeriod)
+    local function sendResponse()
+      c.getHMIConnection():SendResponse(data.id, data.method, "SUCCESS", { })
+    end
+    RUN_AFTER(sendResponse, pWait)
   end)
   c.getMobileSession():ExpectResponse(cid, { success = true, resultCode = "SUCCESS" })
+  :Timeout(pResetPeriod)
 end
 
-function c.subscribeButtonError( pButtonName, pMethodName, pResetPeriod, pWait)
-  local cid = c.getMobileSession():SendRPC("SubscribeButton", { buttonName = pButtonName })
-  EXPECT_HMICALL("Buttons.SubscribeButton", { appID = c.getHMIAppId(), buttonName = pButtonName })
+function c.subscribeButtonError( pRequestID, pResetPeriod, pWait, pMethodName )
+  if not pMethodName then pMethodName = "SubscribeButton" end
+  local cid = c.getMobileSession():SendRPC("SubscribeButton", { buttonName = "OK" })
+  EXPECT_HMICALL("Buttons.SubscribeButton", { appID = c.getHMIAppId(), buttonName = "OK" })
   :Do(function(_, data)
-    c.hmiNotification(data.id, pMethodName, pResetPeriod)
-    RUN_AFTER(c.hmiNotification, pWait)
-  end)
-  :Do(function(_, _)
-    -- HMI does not respond
+    c.onResetTimeoutNotification(data.id, pMethodName, pResetPeriod)
+    local function withoutResponse(_, _)
+      -- HMI does not respond
+    end
+    RUN_AFTER(withoutResponse, pWait)
   end)
   c.getMobileSession():ExpectResponse(cid, { success = false, resultCode = "GENERIC_ERROR" })
+  :Timeout(pWait)
 end
 
-function c.scrollableMessage( pMethodName, pResetPeriod, pWait )
+function c.ScrollableMessage( pRequestID, pMethodName, pResetPeriod, pWait )
   local requestParams = {
     scrollableMessageBody = "abc",
     timeout = 5000
@@ -970,24 +595,25 @@ function c.scrollableMessage( pMethodName, pResetPeriod, pWait )
     appID = c.getHMIAppId()
   })
   :Do(function(_, data)
-    c.hmiNotification(data.id, pMethodName, pResetPeriod)
-    RUN_AFTER(c.hmiNotification, pWait)
-  end)
-  :Do(function(_,data)
-    c.getHMIConnection():SendNotification("UI.OnSystemContext",
-    { appID = c.getHMIAppId(), systemContext = "HMI_OBSCURED" })
+    c.onResetTimeoutNotification(data.id, pMethodName, pResetPeriod)
     local function uiResponse()
       c.getHMIConnection():SendResponse(data.id, data.method, "SUCCESS", {})
 
       c.getHMIConnection():SendNotification("UI.OnSystemContext",
       { appID = c.getHMIAppId(), systemContext = "MAIN" })
     end
-    RUN_AFTER(uiResponse, 1000)
+    RUN_AFTER(uiResponse, pWait)
+  end)
+  :Do(function(_,data)
+    c.getHMIConnection():SendNotification("UI.OnSystemContext",
+    { appID = c.getHMIAppId(), systemContext = "HMI_OBSCURED" })
   end)
   c.getMobileSession():ExpectResponse(cid, { success = true, resultCode = "SUCCESS" })
+  :Timeout(pResetPeriod)
 end
 
-function c.scrollableMessageError( pMethodName, pResetPeriod, pWait )
+function c.scrollableMessageError( pRequestID, pResetPeriod, pWait, pMethodName )
+  if not pMethodName then pMethodName = "ScrollableMessage" end
   local requestParams = {
     scrollableMessageBody = "abc",
     timeout = 5000
@@ -1001,41 +627,43 @@ function c.scrollableMessageError( pMethodName, pResetPeriod, pWait )
     appID = c.getHMIAppId()
   })
   :Do(function(_, data)
-    c.hmiNotification(data.id, pMethodName, pResetPeriod)
-    RUN_AFTER(c.hmiNotification, pWait)
-  end)
-  :Do(function(_, _)
-    -- HMI does not respond
-  end)
-  c.getMobileSession():ExpectResponse(cid, { success = false, resultCode = "GENERIC_ERROR" })
-end
-
-function c.rpcAllowed( pModuleType, pAppId, pRPC, pMethodName, pResetPeriod, pWait )
-  if not pAppId then pAppId = 1 end
-  local mobSession = c.getMobileSession(pAppId)
-  local cid = mobSession:SendRPC(c.getAppEventName(pRPC), c.getAppRequestParams(pRPC, pModuleType ))
-  EXPECT_HMICALL(c.getHMIEventName(pRPC), c.getHMIRequestParams(pRPC, pModuleType, pAppId))
-  :Do(function(_, data)
-    c.hmiNotification(data.id, pMethodName, pResetPeriod)
-    RUN_AFTER(c.hmiNotification, pWait)
-  end)
-  :Do(function(_, data)
-      c.getHMIConnection(pAppId):SendResponse(data.id, data.method, "SUCCESS", c.getHMIResponseParams(pRPC, pModuleType))
-    end)
-  mobSession:ExpectResponse(cid, { success = true, resultCode = "SUCCESS" })
-end
-
-function c.setVehicleData( pModuleType, pRPC, pMethodName, pResetPeriod, pWait )
-  local cid = c.getMobileSession():SendRPC(c.getAppEventName(pRPC), c.getAppRequestParams(pRPC, pModuleType))
-  EXPECT_HMICALL(c.getHMIEventName(pRPC), c.getHMIRequestParams(pRPC, pModuleType))
-  :Do(function(_, data)
-    c.hmiNotification(data.id, pMethodName, pResetPeriod)
-    RUN_AFTER(c.hmiNotification, pWait)
-  end)
-  :Do(function(_, _)
-    -- HMI does not respond
+    c.onResetTimeoutNotification(data.id, pMethodName, pResetPeriod)
+    local function withoutResponse(_, _)
+      -- HMI does not respond
+    end
+    RUN_AFTER(withoutResponse, pWait)
   end)
   c.getMobileSession():ExpectResponse(cid, { success = false, resultCode = "GENERIC_ERROR" })
+  :Timeout(pWait)
+end
+
+function c.SetInteriorVehicleData( pRequestID, pMethodName, pResetPeriod, pWait )
+  local cid = c.getMobileSession():SendRPC(commonRC.getAppEventName("SetInteriorVehicleData"), commonRC.getAppRequestParams("SetInteriorVehicleData", "CLIMATE" ))
+  EXPECT_HMICALL(commonRC.getHMIEventName("SetInteriorVehicleData"), commonRC.getHMIRequestParams("SetInteriorVehicleData", "CLIMATE"))
+  :Do(function(_, data)
+    c.onResetTimeoutNotification(data.id, pMethodName, pResetPeriod)
+    local function sendResponse()
+      c.getHMIConnection():SendResponse(data.id, data.method, "SUCCESS", commonRC.getHMIResponseParams("SetInteriorVehicleData", "CLIMATE"))
+    end
+    RUN_AFTER(sendResponse, pWait)
+  end)
+  c.getMobileSession():ExpectResponse(cid, { success = true, resultCode = "SUCCESS" })
+  :Timeout(pResetPeriod)
+end
+
+function c.setInteriorVehicleDataError( pRequestID, pResetPeriod, pWait, pMethodName )
+  if not pMethodName then pMethodName = "SetInteriorVehicleData" end
+  local cid = c.getMobileSession():SendRPC(commonRC.getAppEventName("SetInteriorVehicleData"), commonRC.getAppRequestParams("SetInteriorVehicleData", "CLIMATE"))
+  EXPECT_HMICALL(commonRC.getHMIEventName("SetInteriorVehicleData"), commonRC.getHMIRequestParams("SetInteriorVehicleData", "CLIMATE"))
+  :Do(function(_, data)
+    c.onResetTimeoutNotification(data.id, pMethodName, pResetPeriod)
+    local function withoutResponse(_, _)
+      -- HMI does not respond
+    end
+    RUN_AFTER(withoutResponse, pWait)
+  end)
+  c.getMobileSession():ExpectResponse(cid, { success = false, resultCode = "GENERIC_ERROR" })
+  :Timeout(pWait)
 end
 
 return c

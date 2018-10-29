@@ -9,7 +9,10 @@
 -- In case:
 -- 1) RPC is requested
 -- 2) Some time after receiving RPC request on HMI is passed
--- 3) HMI sends BC.OnResetTimeout(resetPeriod = 3000) with right requestID but wrong methodName to SDL
+-- 3) HMI sends invalid BC.OnResetTimeout(resetPeriod = 13000)
+-- a) missing mandatory
+-- b) value out of bound
+-- c) invaid data type
 -- 4) HMI does not send response
 -- SDL does:
 -- 1) Respond in 10 seconds with GENERIC_ERROR resultCode to mobile app
@@ -22,10 +25,10 @@ local common = require('test_scripts/API/Restructuring_OnResetTimeout/common_OnR
 runner.testSettings.isSelfIncluded = false
 
 --[[ Local Variables ]]
-local pOnResetTO = {
+local pOnResetTimeOut = {
 	missingMandatory = { resetPeriod = 3000 },
 	outOfBounds = { requestID = 65536, methodName = 111, resetPeriod = 1000001 },
-	wrongType = { requestID = "wrongType", methodName = 111, resetPeriod = "wrongType" }
+	invaidType = { requestID = "wrongType", methodName = 111, resetPeriod = "wrongType" }
 }
 
 --[[ Local Functions ]]
@@ -68,8 +71,8 @@ runner.Step("App activation", common.activateApp)
 runner.Step("Create InteractionChoiceSet", common.createInteractionChoiceSet)
 
 runner.Title("Test")
-for k, v in pairs(pOnResetTO) do
-	runner.Step("Send PerformInteraction" .. k, performIError, { v })
+for k, v in pairs(pOnResetTimeOut) do
+	runner.Step("Send PerformInteraction " .. k, performIError, { v })
 end
 
 runner.Title("Postconditions")
