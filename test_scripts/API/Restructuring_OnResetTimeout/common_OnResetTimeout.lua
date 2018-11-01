@@ -172,6 +172,8 @@ function c.rpcAllowedWithConsentError( pAppId, pRPC, pRequestID, pResetPeriod, p
   :Times(pWait)
 end
 
+c.notificationTime = 0
+
 --[[ @onResetTimeoutNotification: Notification from HMI  in case the results long processing on HMI
 --! @parameters:
 --! pRequestID - Id between HMI and SDL which SDL used to send the request for method in question, for which timeout needs to be reset.
@@ -185,9 +187,22 @@ function c.onResetTimeoutNotification(pRequestID, pMethodName, pResetPeriod)
     methodName = pMethodName,
     resetPeriod = pResetPeriod
   })
+  c.notificationTime = timestamp()
 end
 
-function c.SendLocation( pRequestID, pMethodName, pResetPeriod, pWait )
+function c.responseWithOnResetTimeout(pData, pParams)
+  local function sendOnResetTimeout()
+    c.onResetTimeoutNotification(pData.id, pData.method, pParams.resetPeriod)
+  end
+  local function sendresponse()
+    c.getHMIConnection():SendResponse(pData.id, pData.method, "SUCCESS", {})
+  end
+  RUN_AFTER(sendresponse, pParams.respTime)
+  RUN_AFTER(sendOnResetTimeout, pParams.notificationTime)
+end
+
+function c.SendLocation( pRespExpect, pRespTime, pResponseFunc, pParams, pRespParams )
+  if not pRespParams then pRespParams = { success = true, resultCode = "SUCCESS" } end
   local sendLocationRequestParams = {
     longitudeDegrees = 1.1,
     latitudeDegrees = 1.1,
@@ -202,14 +217,20 @@ function c.SendLocation( pRequestID, pMethodName, pResetPeriod, pWait )
   local cid = c.getMobileSession():SendRPC("SendLocation", sendLocationRequestParams)
   EXPECT_HMICALL("Navigation.SendLocation", { appID = c.getHMIAppId() })
   :Do(function(_, data)
-    c.onResetTimeoutNotification(data.id, pMethodName, pResetPeriod)
-    local function sendresponse()
-      c.getHMIConnection():SendResponse(data.id, data.method, "SUCCESS", {})
-    end
-    RUN_AFTER(sendresponse, pWait)
+    pResponseFunc(data, pParams)
   end)
-  c.getMobileSession():ExpectResponse(cid, { success = true, resultCode = "SUCCESS" })
-  :Timeout(pResetPeriod)
+  c.getMobileSession():ExpectResponse(cid, pRespParams)
+  :Timeout(pRespExpect)
+  :ValidIf(function()
+    local respTime = timestamp()
+    local timeBetweenRespAndNot = respTime - c.notificationTime
+    if timeBetweenRespAndNot >= pRespTime - 500 and timeBetweenRespAndNot <= pRespTime + 500 then
+      return true
+    else
+      return false, "Response is received in some unexpected time. Actual time is " .. timeBetweenRespAndNot ..
+      ". Ecpected time is " .. pRespTime
+    end
+  end)
 end
 
 function c.sendLocationError( pRequestID, pResetPeriod, pWait, pMethodName )

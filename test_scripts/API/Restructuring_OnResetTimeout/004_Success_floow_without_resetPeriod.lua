@@ -22,6 +22,11 @@ local common = require('test_scripts/API/Restructuring_OnResetTimeout/common_OnR
 --[[ Test Configuration ]]
 runner.testSettings.isSelfIncluded = false
 
+local paramsForRespFunction = {
+	respTime = 11000,
+	notificationTime = 5000
+}
+
 --[[ Scenario ]]
 runner.Title("Preconditions")
 runner.Step("Clean environment", common.preconditions)
@@ -31,9 +36,8 @@ runner.Step("App activation", common.activateApp)
 runner.Step("Create InteractionChoiceSet", common.createInteractionChoiceSet)
 
 runner.Title("Test")
-for _, rpc in pairs(common.rpcs) do
-	runner.Step("Send " .. rpc , common[rpc], {_, rpc, _, 18000 })
-end
-
+runner.Step("Send SendLocation" , common.SendLocation,
+	{12000, 6000, common.responseWithOnResetTimeout, paramsForRespFunction })
 runner.Title("Postconditions")
+
 runner.Step("Stop SDL", common.postconditions)
