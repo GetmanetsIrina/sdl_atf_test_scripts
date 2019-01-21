@@ -32,35 +32,6 @@ runner.testSettings.isSelfIncluded = false
 config.application1.registerAppInterfaceParams.appHMIType = { "NAVIGATION" }
 
 -- [[ Local function ]]
-local function startServiceProtected(pServiceId)
-  common.getMobileSession():StartSecureService(pServiceId)
-  common.getHMIConnection():ExpectNotification("BasicCommunication.OnServiceUpdate", {
-    serviceEvent = "REQUEST_RECEIVED", serviceType = "VIDEO"
-  })
-  :Do(function()
-    common.getHMIConnection():ExpectNotification("SDL.OnStatusUpdate",
-    { status = "UPDATE_NEEDED" }, { status = "UPDATING" }, { status = "UP_TO_DATE" })
-    :Times(3)
-    :Do(function()
-      common.getHMIConnection():ExpectNotification("BasicCommunication.OnServiceUpdate", {
-        serviceEvent = "REQUEST_ACCEPTED", serviceType = "VIDEO"
-      })
-    end)
-  end)
-  common.getMobileSession():ExpectControlMessage(pServiceId, {
-    frameInfo = common.frameInfo.START_SERVICE_ACK,
-    encryption = true
-  })
-  common.getMobileSession():ExpectHandshakeMessage()
-  :Times(1)
-  local function ptUpdate(pTbl)
-    local filePath = "./files/Security/client_credential.pem"
-    local crt = common.readFile(filePath)
-    pTbl.policy_table.module_config.certificate = crt
-  end
-  common.policyTableUpdateSuccess(ptUpdate)
-end
-
 local function appStartVideoStreaming(pServiceId)
   common.getHMIConnection():ExpectRequest("Navigation.StartStream")
   :Do(function(_, data)
@@ -70,6 +41,37 @@ local function appStartVideoStreaming(pServiceId)
   end)
   common.getMobileSession():ExpectNotification("OnHMIStatus")
   :Times(0)
+end
+
+local function startServiceProtected(pServiceId)
+  common.getMobileSession():StartSecureService(pServiceId)
+  common.getHMIConnection():ExpectNotification("BasicCommunication.OnServiceUpdate",
+    { serviceEvent = "REQUEST_RECEIVED", serviceType = "VIDEO" },
+    { serviceEvent = "REQUEST_ACCEPTED", serviceType = "VIDEO" })
+  :Times(2)
+
+  common.getHMIConnection():ExpectNotification("SDL.OnStatusUpdate",
+  { status = "UPDATE_NEEDED" }, { status = "UPDATING" }, { status = "UP_TO_DATE" })
+  :Times(3)
+
+  common.getMobileSession():ExpectHandshakeMessage()
+  :Times(1)
+
+  common.getMobileSession():ExpectControlMessage(pServiceId, {
+    frameInfo = common.frameInfo.START_SERVICE_ACK,
+    encryption = true
+  })
+
+  local function ptUpdate(pTbl)
+    local filePath = "./files/Security/client_credential.pem"
+    local crt = common.readFile(filePath)
+    pTbl.policy_table.module_config.certificate = crt
+  end
+
+  common.policyTableUpdateSuccess(ptUpdate)
+
+  appStartVideoStreaming(pServiceId)
+
 end
 
 --[[ Scenario ]]
@@ -84,7 +86,7 @@ runner.Step("App activation", common.activateApp)
 
 runner.Title("Test")
 runner.Step("Start RPC Service protected", startServiceProtected, { 11 })
-runner.Step("Start streaming", appStartVideoStreaming, { 11 })
+-- runner.Step("Start streaming", appStartVideoStreaming, { 11 })
 
 runner.Title("Postconditions")
 runner.Step("Stop SDL", common.postconditions)
