@@ -119,11 +119,10 @@ function Test:Wait_20_sec()
   :Timeout(20000)
   EXPECT_EVENT(events.disconnectedEvent, "Disconnected")
   :Times(0)
-  commonTestCases:DelayedExp(20000)
   :Do(function()
       print("Disconnected!!!")
     end)
-  :Times(0)
+  commonTestCases:DelayedExp(20000)
 end
 
 function Test:Register_And_Resume_App_And_Data()
@@ -132,7 +131,7 @@ function Test:Register_And_Resume_App_And_Data()
   local on_rpc_service_started = mobileSession:StartRPC()
   on_rpc_service_started:Do(function()
     default_app_params.hashID = self.currentHashID
-    commonStepsResumption:Expect_Resumption_Data(default_app_params,1) -- remove parameter value 1 after resolving issue with resumtion of AddCommand
+    commonStepsResumption:Expect_Resumption_Data(default_app_params)
     commonStepsResumption:RegisterApp(default_app_params, commonStepsResumption.ExpectResumeAppFULL, true)
   end)
 end

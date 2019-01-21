@@ -91,7 +91,7 @@ function Test:Register_And_Resumes_App_And_Data()
   local on_rpc_service_started = mobileSession:StartRPC()
   on_rpc_service_started:Do(function()
     default_app_params.hashID = self.currentHashID
-    commonStepsResumption:Expect_Resumption_Data(default_app_params,1) -- removed parameter value 1 after resolving SDL issue with resumption od AddCommand
+    commonStepsResumption:Expect_Resumption_Data(default_app_params)
     commonStepsResumption:RegisterApp(default_app_params, commonStepsResumption.ExpectResumeAppLIMITED, true)
   end)
 end

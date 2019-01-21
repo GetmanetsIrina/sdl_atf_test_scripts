@@ -52,7 +52,6 @@ local requestParams = {
 		"DEFAULT",
 	},
 	appID = "123",
-	fullAppID = "123456",
 	deviceInfo = {
 		hardware = "hardware",
 		firmwareRev = "firmwareRev",
@@ -78,7 +77,7 @@ local function SetNotificationParams()
 		transportType = "WIFI",
 		isSDLAllowed = true
 	}
-	notificationParams.application.policyAppID = requestParams.fullAppID
+	notificationParams.application.policyAppID = requestParams.appID
 	notificationParams.ttsName = requestParams.ttsName
 	notificationParams.vrSynonyms = requestParams.vrSynonyms
 	return notificationParams

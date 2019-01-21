@@ -81,9 +81,9 @@ local requestParams = {
 	keyboardProperties = {
 		keyboardLayout = "QWERTY",
 		keypressMode = "SINGLE_KEYPRESS",
-		-- limitedCharacterList = {"a"}, -- commented because not supported now by SDL
+		limitedCharacterList = {"a"},
 		language = "EN-US",
-		-- autoCompleteText = "Daemon, Freedom" -- commented because not supported now by SDL
+		autoCompleteText = "Daemon, Freedom"
 	}
 }
 

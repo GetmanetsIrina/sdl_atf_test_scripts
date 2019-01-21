@@ -144,8 +144,7 @@ function Test:expect_Resumption_Data()
   end)
   local is_command_received = 20
   local is_choice_received = 20
-  local on_vr_commands_added = EXPECT_HMICALL("VR.AddCommand"):Times(20) -- Updated times from 40 to 20 because of SDL
-  -- issue, update to 40 after resolving issue
+  local on_vr_commands_added = EXPECT_HMICALL("VR.AddCommand"):Times(40)
   on_vr_commands_added:Do(function(_,data)
     self.hmiConnection:SendResponse(data.id, data.method, "SUCCESS")
   end)
@@ -178,13 +177,13 @@ end
 
 function Test:PerformInteraction()
   self.mobileSession:SendRPC("PerformInteraction",{
-                            initialText = "StartPerformInteraction",
-                            initialPrompt = {
-                              { text = "Makeyourchoice", type = "TEXT"}},
-                            interactionMode = "BOTH",
-                            interactionChoiceSetIDList = { 20 },
-                            timeout = 5000
-                          })
+    initialText = "StartPerformInteraction",
+    initialPrompt = {
+      { text = "Makeyourchoice", type = "TEXT"}},
+    interactionMode = "BOTH",
+    interactionChoiceSetIDList = { 20 },
+    timeout = 5000
+  })
   EXPECT_HMICALL("VR.PerformInteraction", { appID = default_app_params.hmi_app_id }):Do(function(_,data)
     self.hmiConnection:SendResponse(data.id, data.method, "SUCCESS", { choiceID = 20 })
   end)

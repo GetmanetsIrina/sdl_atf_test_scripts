@@ -22,11 +22,11 @@ config.defaultProtocolVersion = 2
 --[[ Required Shared libraries ]]
 local runner = require('user_modules/script_runner')
 local commonSmoke = require('test_scripts/Smoke/commonSmoke')
-local commonFunctions = require('user_modules/shared_testcases/commonFunctions')
--- local commonSteps = require('user_modules/shared_testcases/commonSteps')
 local mobile_session = require('mobile_session')
-local SDL = require('SDL')
 local commonTestCases = require("user_modules/shared_testcases/commonTestCases")
+local utils = require('user_modules/utils')
+local actions = require('user_modules/sequences/actions')
+local events = require("events")
 
 --[[ Local Variables ]]
 -- Hash id of AddCommand before MASTER_RESET
@@ -58,20 +58,45 @@ local function addCommand(self)
   end)
 end
 
-local function shutDown_MASTER_RESET(self)
-  self.hmiConnection:SendNotification("BasicCommunication.OnExitAllApplications",
-    { reason = "MASTER_RESET" })
-  self.mobileSession1:ExpectNotification("OnAppInterfaceUnregistered", { reason = "MASTER_RESET" })
-  EXPECT_HMINOTIFICATION("BasicCommunication.OnAppUnregistered", { unexpectedDisconnect = false })
+local function ShutDown_MASTER_RESET(self)
+  local timeout = 5000
+  local function removeSessions()
+    for i = 1, actions.getAppsCount() do
+      self.mobileSession[i] = nil
+    end
+  end
+  local event = events.Event()
+  event.matches = function(event1, event2) return event1 == event2 end
+  EXPECT_EVENT(event, "SDL shutdown")
   :Do(function()
-    SDL:DeleteFile()
-    commonFunctions:SDLForceStop() -- removed after uncommentig OnSDLClose, SDLForceStop because of SDL issue
-  end)
-  -- EXPECT_HMINOTIFICATION("BasicCommunication.OnSDLClose") -- commented because of SDL issue
-  -- :Do(function()
-  --   SDL:StopSDL()
-  -- end)
-  commonTestCases:DelayedExp(1000)
+      removeSessions()
+      StopSDL()
+      utils.wait(1000)
+    end)
+  actions.getHMIConnection():SendNotification("BasicCommunication.OnExitAllApplications", { reason = "MASTER_RESET" })
+  EXPECT_HMINOTIFICATION("BasicCommunication.OnSDLPersistenceComplete")
+  :Do(function()
+      for i = 1, actions.getAppsCount() do
+        actions.getMobileSession(i):ExpectNotification("OnAppInterfaceUnregistered", { reason = "MASTER_RESET" })
+      end
+    end)
+  EXPECT_HMINOTIFICATION("BasicCommunication.OnAppUnregistered", { unexpectedDisconnect = false })
+  :Times(actions.getAppsCount())
+  local isSDLShutDownSuccessfully = false
+  EXPECT_HMINOTIFICATION("BasicCommunication.OnSDLClose")
+  :Do(function()
+      utils.cprint(35, "SDL was shutdown successfully")
+      isSDLShutDownSuccessfully = true
+      RAISE_EVENT(event, event)
+    end)
+  :Timeout(timeout)
+  local function forceStopSDL()
+    if isSDLShutDownSuccessfully == false then
+      utils.cprint(35, "SDL was shutdown forcibly")
+      RAISE_EVENT(event, event)
+    end
+  end
+  RUN_AFTER(forceStopSDL, timeout + 500)
 end
 
 --- Check SDL will not resume application when the same application registers.
@@ -99,9 +124,9 @@ local function Check_Application_Not_Resume_When_Register_Again(self)
       local cid1 = self.mobileSession1:SendRPC("ListFiles", {})
       self.mobileSession1:ExpectResponse(cid1, { success = true, resultCode = "SUCCESS" })
       :ValidIf (function(_,data)
-        -- if data.payload.filenames then
-          -- return false, "Files are not removed from system by MASTER_RESET" -- commented because of SDL issue
-        -- end
+        if data.payload.filenames then
+          return false, "Files are not removed from system by MASTER_RESET" -- commented because of SDL issue
+        end
         return true
       end)
       EXPECT_HMICALL("BasicCommunication.ActivateApp"):Times(0)
@@ -121,7 +146,7 @@ runner.Step("Upload icon file", commonSmoke.putFile, {putFileParams})
 runner.Step("AddCommand", addCommand)
 
 runner.Title("Test")
-runner.Step("Check that SDL finish it's work properly by MASTER_RESET", shutDown_MASTER_RESET)
+runner.Step("Check that SDL finish it's work properly by MASTER_RESET", ShutDown_MASTER_RESET)
 runner.Step("Start SDL, HMI, connect Mobile, start Session", commonSmoke.start)
 runner.Step("Check application not resume when register again", Check_Application_Not_Resume_When_Register_Again)
 

@@ -1,4 +1,4 @@
-./test_scripts/Smoke/HeartBeat/ATF_HeartBeat_no_heartbeat_v2_protocol.lua
-./test_scripts/Smoke/HeartBeat/ATF_HeartBeat_App_send_HB.lua
-./test_scripts/Smoke/HeartBeat/ATF_HeartBeat_App_does_not_send_HB_but_respond.lua
-./test_scripts/Smoke/HeartBeat/ATF_HeartBeat_App_does_not_send_HB_and_does_not_respond.lua
+./test_scripts/Smoke/HeartBeat/001_HeartBeat_App_does_not_send_HB_and_does_not_respond.lua
+./test_scripts/Smoke/HeartBeat/002_HeartBeat_App_does_not_send_HB_but_respond.lua
+./test_scripts/Smoke/HeartBeat/003_HeartBeat_App_send_HB.lua
+./test_scripts/Smoke/HeartBeat/004_HeartBeat_no_heartbeat_v2_protocol.lua

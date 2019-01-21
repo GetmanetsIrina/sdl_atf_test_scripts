@@ -29,7 +29,6 @@ local commonFunctions = require('user_modules/shared_testcases/commonFunctions')
 local commonSteps = require('user_modules/shared_testcases/commonSteps')
 local commonStepsResumption = require('user_modules/shared_testcases/commonStepsResumption')
 local mobile_session = require('mobile_session')
-local SDL = require('SDL')
 local commonSmoke = require('test_scripts/Smoke/commonSmoke')
 
 --[[ General Settings for configuration ]]
@@ -39,7 +38,6 @@ require('user_modules/AppTypes')
 
 -- [[ Local variables]]
 local default_app_params = config.application1.registerAppInterfaceParams
-local default_app = nil -- will be initialized after application registration
 
 -- [[ Local Functions ]]
 local function Start_SDL_And_Add_Mobile_Connection()
@@ -62,17 +60,25 @@ commonFunctions:newTestCasesGroup("Preconditions")
 commonSteps:DeletePolicyTable()
 commonSteps:DeleteLogsFiles()
 
-function Test.Start_SDL_Add_Mobile_Connection()
-  Start_SDL_And_Add_Mobile_Connection()
-end
-
-function Test:Start_Session_And_Register_App()
-  self:startSession():Do(function()
-    commonFunctions:userPrint(35, "App is registered")
-    default_app = self.applications[default_app_params.appName]
-    commonSmoke.AppActivationForResumption(self, default_app)
-    EXPECT_NOTIFICATION("OnHMIStatus", {hmiLevel = "FULL",audioStreamingState = "AUDIBLE", systemContext = "MAIN"})
-    commonFunctions:userPrint(35, "App is activated")
+function Test:Start_SDL_With_One_Activated_App()
+  self:runSDL()
+  commonFunctions:waitForSDLStart(self):Do(function()
+    self:initHMI():Do(function()
+      commonFunctions:userPrint(35, "HMI initialized")
+      self:initHMI_onReady():Do(function ()
+        commonFunctions:userPrint(35, "HMI is ready")
+        self:connectMobile():Do(function ()
+          commonFunctions:userPrint(35, "Mobile Connected")
+          self:startSession():Do(function ()
+            commonFunctions:userPrint(35, "App is registered")
+           commonSmoke.AppActivationForResumption(self, self.applications[default_app_params.appName])
+            EXPECT_NOTIFICATION("OnHMIStatus",
+              {hmiLevel = "FULL",audioStreamingState = commonSmoke.GetAudibleState(), systemContext = "MAIN"})
+            commonFunctions:userPrint(35, "App is activated")
+          end)
+        end)
+      end)
+    end)
   end)
 end
 
@@ -92,23 +98,7 @@ end
 commonFunctions:newTestCasesGroup("SDL should perform data resumption application is registered within 3 ign cycles")
 
 function Test:IGNITION_OFF()
-  self.hmiConnection:SendNotification("BasicCommunication.OnExitAllApplications",
-    { reason = "SUSPEND" })
-  EXPECT_HMINOTIFICATION("BasicCommunication.OnSDLPersistenceComplete"):Do(function()
-    SDL:DeleteFile()
-    self.hmiConnection:SendNotification("BasicCommunication.OnExitAllApplications",
-      { reason = "IGNITION_OFF" })
-    EXPECT_NOTIFICATION("OnAppInterfaceUnregistered", { reason = "IGNITION_OFF" })
-    EXPECT_HMINOTIFICATION("BasicCommunication.OnAppUnregistered", { unexpectedDisconnect = false })
-    -- EXPECT_HMINOTIFICATION("BasicCommunication.OnSDLClose") -- commented because of SDL issue
-    -- :Do(function()
-    --     SDL:StopSDL()
-    --   end)
-    end)
-end
-
-function Test.Stop_SDL() -- remove after uncomment OnSDLClose
-  StopSDL()
+  commonSmoke.ShutDown_IGNITION_OFF(self)
 end
 
 function Test.Restart_SDL_And_Add_Mobile_Connection()
@@ -116,28 +106,14 @@ function Test.Restart_SDL_And_Add_Mobile_Connection()
 end
 
 function Test:IGNITION_OFF()
-  self.hmiConnection:SendNotification("BasicCommunication.OnExitAllApplications",
-    { reason = "SUSPEND" })
-  EXPECT_HMINOTIFICATION("BasicCommunication.OnSDLPersistenceComplete"):Do(function()
-    SDL:DeleteFile()
-    self.hmiConnection:SendNotification("BasicCommunication.OnExitAllApplications",
-      { reason = "IGNITION_OFF" })
-    -- EXPECT_HMINOTIFICATION("BasicCommunication.OnSDLClose") -- commented because of SDL issue
-    -- :Do(function()
-        -- SDL:StopSDL()
-      -- end)
-  end)
-end
-
-function Test.Stop_SDL() -- remove after uncomment OnSDLClose
-  StopSDL()
+  commonSmoke.ShutDown_IGNITION_OFF(self)
 end
 
 function Test.Restart_SDL_And_Add_Mobile_Connection()
   Start_SDL_And_Add_Mobile_Connection()
 end
 
-function Test:Register_And_No_Resume_App()
+function Test:Register_And_No_Resume_HMI_level_App()
   local mobile_session1 = mobile_session.MobileSession(self, self.mobileConnection)
   local on_rpc_service_started = mobile_session1:StartRPC()
   on_rpc_service_started:Do(function()

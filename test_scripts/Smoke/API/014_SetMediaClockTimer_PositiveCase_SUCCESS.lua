@@ -48,13 +48,10 @@ local requestParams = {
   }
 }
 
-local indicator = {"PLAY_PAUSE", "PLAY", "PAUSE", "STOP"}
-
 --[[ Local Functions ]]
-local function SetMediaClockTimer(pParams, pMode, pIndicator, self)
+local function SetMediaClockTimer(pParams, pMode, self)
   local Parameters = commonFunctions:cloneTable(pParams)
   Parameters.updateMode = pMode
-  Parameters.audioStreamingIndicator = pIndicator
   if pMode == "COUNTDOWN" then
     Parameters.endTime.minutes = Parameters.startTime.minutes - 1
   end
@@ -76,9 +73,7 @@ runner.Step("Activate App", commonSmoke.activateApp)
 
 runner.Title("Test")
 for _, value in pairs (updateMode) do
-  for _, value2 in pairs (indicator) do
-    runner.Step("SetMediaClockTimer Positive Case with udate mode " .. value .. " " .. value2 , SetMediaClockTimer, { requestParams,value,value2 })
-  end
+    runner.Step("SetMediaClockTimer Positive Case with udate mode " .. value, SetMediaClockTimer, { requestParams,value })
 end
 
 runner.Title("Postconditions")

@@ -87,9 +87,11 @@ local function getDisplayCapImageFieldsValues()
 		"menuIcon",
 		"cmdIcon",
 		"graphic",
-		"secondaryGraphic",
+		-- "secondaryGraphic", -- value is missed in ImageFieldName
 		"showConstantTBTIcon",
-		"showConstantTBTNextTurnIcon"
+		"showConstantTBTNextTurnIcon",
+		"locationImage",
+		"appIcon"
 	}
 	local values = { }
 	for _, v in pairs(names) do
@@ -113,38 +115,38 @@ end
 local function getDisplayCapTextFieldsValues()
 	-- some text fields are excluded due to SDL issue
   local names = {
-		"alertText1",
-		"alertText2",
-		"alertText3",
-		"audioPassThruDisplayText1",
-		"audioPassThruDisplayText2",
-		"ETA",
-		"initialInteractionText",
-		-- "phoneNumber",
 		"mainField1",
 		"mainField2",
 		"mainField3",
 		"mainField4",
+		"statusBar",
 		"mediaClock",
 		"mediaTrack",
-		"menuName",
-		"menuTitle",
-		-- "addressLines",
-		-- "locationName",
+		"alertText1",
+		"alertText2",
+		"alertText3",
+		"scrollableMessageBody",
+		"initialInteractionText",
 		"navigationText1",
 		"navigationText2",
-		-- "locationDescription",
-		"scrollableMessageBody",
-		"secondaryText",
-		"sliderFooter",
-		"sliderHeader",
-		"statusBar",
-		"tertiaryText",
+		"ETA",
 		"totalDistance",
-		-- "notificationText",
-		-- "navigationText",
-		-- "timeToDestination",
-		-- "turnText"
+		"audioPassThruDisplayText1",
+		"audioPassThruDisplayText2",
+		"sliderHeader",
+		"sliderFooter",
+		"menuName",
+		"secondaryText",
+		"tertiaryText",
+		"menuTitle",
+		"timeToDestination",
+		"navigationText",
+		"notificationText",
+		"locationName",
+		"locationDescription",
+		"addressLines",
+		"phoneNumber",
+		"turnText"
 	}
 	local values = { }
 	for _, v in pairs(names) do
@@ -163,12 +165,11 @@ local function getDisplayCapValues()
 	-- some capabilities are excluded due to SDL issue
 	return {
 		displayType = "GEN2_8_DMA",
-		displayName = "GENERIC_DISPLAY",
 		graphicSupported = true,
-		-- imageCapabilities = {
-		-- 	"DYNAMIC",
-		-- 	"STATIC"
-		-- },
+		imageCapabilities = {
+			"DYNAMIC",
+			"STATIC"
+		 },
 		imageFields = getDisplayCapImageFieldsValues(),
 		mediaClockFormats =	{
 			"CLOCK1",

@@ -102,7 +102,7 @@ function Test:Register_And_No_Resume_App_BACKGROUND_And_Resumes_Data()
   local on_rpc_service_started = mobileSession:StartRPC()
   default_app_params1.hashID = self.currentHashID
   on_rpc_service_started:Do(function()
-    commonStepsResumption:Expect_Resumption_Data(default_app_params1, 1) --removed parameter value 1 after resolving issue with resumtion of AddCommand
+    commonStepsResumption:Expect_Resumption_Data(default_app_params1)
     commonStepsResumption:RegisterApp(default_app_params1, commonStepsResumption.ExpectNoResumeApp, true)
   end)
 end

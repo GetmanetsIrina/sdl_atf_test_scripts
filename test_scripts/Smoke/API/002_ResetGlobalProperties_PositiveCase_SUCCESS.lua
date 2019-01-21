@@ -36,6 +36,7 @@
 --[[ Required Shared libraries ]]
 local runner = require('user_modules/script_runner')
 local commonSmoke = require('test_scripts/Smoke/commonSmoke')
+local actions = require('user_modules/sequences/actions')
 
 --[[ Local Variables ]]
 local requestParams = {
@@ -52,7 +53,7 @@ local requestParams = {
 
 local responseUiParams = {
 	menuTitle = "",
-	vrHelpTitle = "Test Application",
+	vrHelpTitle = actions.getConfigAppParams(1).appName,
 	keyboardProperties = {
 		keyboardLayout = "QWERTY",
 		autoCompleteText = "",
@@ -61,7 +62,7 @@ local responseUiParams = {
 	vrHelp = {
 		{
 			position = 1,
-			text = "Test Application"
+			text = actions.getConfigAppParams(1).appName
 		}
 	}
 }

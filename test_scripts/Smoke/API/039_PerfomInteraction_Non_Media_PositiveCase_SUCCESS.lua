@@ -33,6 +33,7 @@
 local runner = require('user_modules/script_runner')
 local commonSmoke = require('test_scripts/Smoke/commonSmoke')
 local commonPreconditions = require('user_modules/shared_testcases/commonPreconditions')
+local utils = require('user_modules/utils')
 
 config.application1.registerAppInterfaceParams.isMediaApplication = false
 config.application1.registerAppInterfaceParams.appHMIType = { "DEFAULT" }
@@ -49,10 +50,10 @@ local putFileParams = {
 }
 
 local storagePath = commonPreconditions:GetPathToSDL() .. "storage/" ..
-config.application1.registerAppInterfaceParams.fullAppID .. "_" .. commonSmoke.getDeviceMAC() .. "/"
+config.application1.registerAppInterfaceParams.appID .. "_" .. commonSmoke.getDeviceMAC() .. "/"
 
 local ImageValue = {
-  value = storagePath .. "icon.png",
+  value = "icon.png",
   imageType = "DYNAMIC",
 }
 
@@ -94,13 +95,27 @@ local requestParams = {
   interactionLayout = "ICON_ONLY"
 }
 
+local requestParams_noVR = {
+  initialText = "StartPerformInteraction",
+  initialPrompt = initialPromptValue,
+  interactionMode = "BOTH",
+  interactionChoiceSetIDList = {
+    100, 200, 300, 400
+  },
+  helpPrompt = helpPromptValue,
+  timeoutPrompt = timeoutPromptValue,
+  timeout = 5000,
+  vrHelp = vrHelpvalue,
+  interactionLayout = "ICON_ONLY"
+}
+
 --[[ Local Functions ]]
 
---! @setChoiseSet: Creates Choice structure
+--! @setChoiceSet: Creates Choice structure
 --! @parameters:
 --! choiceIDValue - Id for created choice
 --! @return: table of created choice structure
-local function setChoiseSet(choiceIDValue)
+local function setChoiceSet(choiceIDValue)
   local temp = {
     {
       choiceID = choiceIDValue,
@@ -108,6 +123,24 @@ local function setChoiseSet(choiceIDValue)
       vrCommands = {
         "VrChoice" .. tostring(choiceIDValue),
       },
+      image = {
+        value ="icon.png",
+        imageType ="STATIC",
+      }
+    }
+  }
+  return temp
+end
+
+--! @setChoiceSet_noVR: Creates Choice structure without VRcommands
+--! @parameters:
+--! choiceIDValue - Id for created choice
+--! @return: table of created choice structure
+local function setChoiceSet_noVR(choiceIDValue)
+  local temp = {
+    {
+      choiceID = choiceIDValue,
+      menuName ="Choice" .. tostring(choiceIDValue),
       image = {
         value ="icon.png",
         imageType ="STATIC",
@@ -127,11 +160,11 @@ local function SendOnSystemContext(self, ctx)
     { appID = commonSmoke.getHMIAppId(), systemContext = ctx })
 end
 
---! @setExChoiseSet: ChoiceSet structure for UI.PerformInteraction request
+--! @setExChoiceSet: ChoiceSet structure for UI.PerformInteraction request
 --! @parameters:
 --! choiceIDValues - value of choice id
 --! @return: none
-local function setExChoiseSet(choiceIDValues)
+local function setExChoiceSet(choiceIDValues)
   local exChoiceSet = { }
   for i = 1, #choiceIDValues do
     exChoiceSet[i] = {
@@ -180,7 +213,7 @@ local function CreateInteractionChoiceSet(choiceSetID, self)
   local choiceID = choiceSetID
   local cid = self.mobileSession1:SendRPC("CreateInteractionChoiceSet", {
       interactionChoiceSetID = choiceSetID,
-      choiceSet = setChoiseSet(choiceID),
+      choiceSet = setChoiceSet(choiceID),
     })
   EXPECT_HMICALL("VR.AddCommand", {
       cmdID = choiceID,
@@ -191,6 +224,34 @@ local function CreateInteractionChoiceSet(choiceSetID, self)
       self.hmiConnection:SendResponse(data.id, data.method, "SUCCESS", { })
     end)
   self.mobileSession1:ExpectResponse(cid, { resultCode = "SUCCESS", success = true })
+end
+
+--! @CreateInteractionChoiceSet_noVR: Creation of Choice Set with no vrCommands
+--! @parameters:
+--! choiceSetID - id for choice set
+--! self - test object
+--! @return: none
+local function CreateInteractionChoiceSet_noVR(choiceSetID, self)
+  local choiceID = choiceSetID
+  local cid = self.mobileSession1:SendRPC("CreateInteractionChoiceSet", {
+      interactionChoiceSetID = choiceSetID,
+      choiceSet = setChoiceSet_noVR(choiceID),
+    })
+  self.mobileSession1:ExpectResponse(cid, { resultCode = "SUCCESS", success = true })
+end
+
+--! @SetImageValue: Set full image path in vrHelp array
+--! @parameters:
+--! vrHelp - array of the vrHelp items
+--! @return: vrHelp array with full image path
+local function SetImageValue(vrHelp)
+  local tmp = utils.cloneTable(vrHelp)
+  for i, value in pairs(tmp)  do
+    if value.image then
+      tmp[i].image.value = storagePath .. tmp[i].image.value
+    end
+  end
+  return tmp
 end
 
 --! @PI_PerformViaVR_ONLY: Processing PI with interaction mode VR_ONLY with performing selection
@@ -208,30 +269,37 @@ local function PI_PerformViaVR_ONLY(paramsSend, self)
       timeoutPrompt = paramsSend.timeoutPrompt
     })
   :Do(function(_,data)
-      local function vrResponse()
-        self.hmiConnection:SendNotification("TTS.Started")
-        self.hmiConnection:SendNotification("VR.Started")
-        SendOnSystemContext(self, "VRSESSION")
-        self.hmiConnection:SendResponse(data.id, data.method, "SUCCESS",
-          { choiceID = paramsSend.interactionChoiceSetIDList[1] })
-        self.hmiConnection:SendNotification("TTS.Stopped")
-        self.hmiConnection:SendNotification("VR.Stopped")
-        SendOnSystemContext(self, "MAIN")
-      end
-      RUN_AFTER(vrResponse, 1000)
-    end)
+    local function vrResponse()
+      self.hmiConnection:SendNotification("TTS.Started")
+      self.hmiConnection:SendNotification("VR.Started")
+      SendOnSystemContext(self, "VRSESSION")
+      self.hmiConnection:SendResponse(data.id, data.method, "SUCCESS",
+        { choiceID = paramsSend.interactionChoiceSetIDList[1] })
+      self.hmiConnection:SendNotification("TTS.Stopped")
+      self.hmiConnection:SendNotification("VR.Stopped")
+      SendOnSystemContext(self, "MAIN")
+    end
+    RUN_AFTER(vrResponse, 1000)
+  end)
 
   EXPECT_HMICALL("UI.PerformInteraction", {
-      timeout = paramsSend.timeout,
-      vrHelp = paramsSend.vrHelp,
-      vrHelpTitle = paramsSend.initialText,
-    })
+    timeout = paramsSend.timeout,
+    vrHelp = SetImageValue(paramsSend.vrHelp),
+    vrHelpTitle = paramsSend.initialText,
+  })
   :Do(function(_,data)
+    local function uiResponse()
       self.hmiConnection:SendResponse( data.id, data.method, "SUCCESS", { } )
-    end)
+    end
+    RUN_AFTER(uiResponse,1000) -- Added delay for response sending because of SD issue
+  end)
   ExpectOnHMIStatusWithAudioStateChanged_PI(self, "VR")
   self.mobileSession1:ExpectResponse(cid,
-    { success = true, resultCode = "SUCCESS", choiceID = paramsSend.interactionChoiceSetIDList[1] })
+    { success = true,
+      resultCode = "SUCCESS",
+      choiceID = paramsSend.interactionChoiceSetIDList[1],
+      triggerSource = "VR"
+    })
 end
 
 --! @PI_PerformViaMANUAL_ONLY: Processing PI with interaction mode MANUAL_ONLY with performing selection
@@ -254,7 +322,7 @@ local function PI_PerformViaMANUAL_ONLY(paramsSend, self)
     end)
   EXPECT_HMICALL("UI.PerformInteraction", {
       timeout = paramsSend.timeout,
-      choiceSet = setExChoiseSet(paramsSend.interactionChoiceSetIDList),
+      choiceSet = setExChoiceSet(paramsSend.interactionChoiceSetIDList),
       initialText = {
         fieldName = "initialInteractionText",
         fieldText = paramsSend.initialText
@@ -272,7 +340,12 @@ local function PI_PerformViaMANUAL_ONLY(paramsSend, self)
     end)
   ExpectOnHMIStatusWithAudioStateChanged_PI(self, "MANUAL")
   self.mobileSession1:ExpectResponse(cid,
-    { success = true, resultCode = "SUCCESS", choiceID = paramsSend.interactionChoiceSetIDList[1] })
+    {
+      success = true,
+      resultCode = "SUCCESS",
+      choiceID = paramsSend.interactionChoiceSetIDList[1],
+      triggerSource = "MENU"
+    })
 end
 
 --! @PI_PerformViaBOTH: Processing PI with interaction mode BOTH with timeout on VR and IU
@@ -306,12 +379,12 @@ local function PI_PerformViaBOTH(paramsSend, self)
     end)
   EXPECT_HMICALL("UI.PerformInteraction", {
       timeout = paramsSend.timeout,
-      choiceSet = setExChoiseSet(paramsSend.interactionChoiceSetIDList),
+      choiceSet = setExChoiceSet(paramsSend.interactionChoiceSetIDList),
       initialText = {
         fieldName = "initialInteractionText",
         fieldText = paramsSend.initialText
       },
-      vrHelp = paramsSend.vrHelp,
+      vrHelp = SetImageValue(paramsSend.vrHelp),
       vrHelpTitle = paramsSend.initialText
     })
   :Do(function(_,data)
@@ -340,10 +413,12 @@ runner.Step("Upload icon file", commonSmoke.putFile, {putFileParams})
 runner.Step("CreateInteractionChoiceSet with id 100", CreateInteractionChoiceSet, {100})
 runner.Step("CreateInteractionChoiceSet with id 200", CreateInteractionChoiceSet, {200})
 runner.Step("CreateInteractionChoiceSet with id 300", CreateInteractionChoiceSet, {300})
+runner.Step("CreateInteractionChoiceSet no VR commands with id 400", CreateInteractionChoiceSet_noVR, {400})
 
 runner.Title("Test")
 runner.Step("PerformInteraction with VR_ONLY interaction mode", PI_PerformViaVR_ONLY, {requestParams})
 runner.Step("PerformInteraction with MANUAL_ONLY interaction mode", PI_PerformViaMANUAL_ONLY, {requestParams})
+runner.Step("PerformInteraction with MANUAL_ONLY interaction mode no VR commands", PI_PerformViaMANUAL_ONLY, {requestParams_noVR})
 runner.Step("PerformInteraction with BOTH interaction mode", PI_PerformViaBOTH, {requestParams})
 
 runner.Title("Postconditions")

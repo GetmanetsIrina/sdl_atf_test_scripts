@@ -306,7 +306,6 @@ local function raiPTU(self)
           :Do(function()
               log("SDL->MOB: N: OnPermissionsChange")
             end)
-          :Times(2)
         end)
     end)
 end

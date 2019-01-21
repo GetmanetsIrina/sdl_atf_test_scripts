@@ -24,24 +24,54 @@ config.defaultProtocolVersion = 2
 
 --[[ Required Shared libraries ]]
 local runner = require('user_modules/script_runner')
-local SDL = require('SDL')
 local commonSmoke = require('test_scripts/Smoke/commonSmoke')
+local utils = require('user_modules/utils')
+local actions = require('user_modules/sequences/actions')
+local events = require("events")
 
 --[[ Local Functions ]]
 local function ShutDown_IGNITION_OFF(self)
-  self.hmiConnection:SendNotification("BasicCommunication.OnExitAllApplications",
-    { reason = "SUSPEND" })
-  EXPECT_HMINOTIFICATION("BasicCommunication.OnSDLPersistenceComplete"):Do(function()
-    SDL:DeleteFile()
-    self.hmiConnection:SendNotification("BasicCommunication.OnExitAllApplications",
-      { reason = "IGNITION_OFF" })
-    self.mobileSession1:ExpectNotification("OnAppInterfaceUnregistered", { reason = "IGNITION_OFF" })
-    EXPECT_HMINOTIFICATION("BasicCommunication.OnAppUnregistered", { unexpectedDisconnect = false })
-    -- EXPECT_HMINOTIFICATION("BasicCommunication.OnSDLClose") -- commented because of SDL issue
-    :Do(function()
-      SDL:StopSDL()
+  local timeout = 5000
+  local function removeSessions()
+    for i = 1, actions.getAppsCount() do
+      self.mobileSession[i] = nil
+    end
+  end
+  local event = events.Event()
+  event.matches = function(event1, event2) return event1 == event2 end
+  EXPECT_EVENT(event, "SDL shutdown")
+  :Do(function()
+      removeSessions()
+      StopSDL()
+      utils.wait(1000)
     end)
-  end)
+  actions.getHMIConnection():SendNotification("BasicCommunication.OnExitAllApplications", { reason = "SUSPEND" })
+  EXPECT_HMINOTIFICATION("BasicCommunication.OnSDLPersistenceComplete")
+  :Do(function()
+      actions.getHMIConnection():SendNotification("BasicCommunication.OnExitAllApplications",{ reason = "IGNITION_OFF" })
+      for i = 1, actions.getAppsCount() do
+        actions.getMobileSession(i):ExpectNotification("OnAppInterfaceUnregistered", { reason = "IGNITION_OFF" })
+      end
+    end)
+  EXPECT_HMINOTIFICATION("BasicCommunication.OnAppUnregistered", { unexpectedDisconnect = false })
+  :Times(actions.getAppsCount())
+  local isSDLShutDownSuccessfully = false
+  EXPECT_HMINOTIFICATION("BasicCommunication.OnSDLClose")
+  :Do(function()
+      utils.cprint(35, "SDL was shutdown successfully")
+      isSDLShutDownSuccessfully = true
+      RAISE_EVENT(event, event)
+    end)
+  :Timeout(timeout)
+  local function forceStopSDL()
+    if isSDLShutDownSuccessfully == false then
+      utils.cprint(35, "SDL was shutdown forcibly")
+      RAISE_EVENT(event, event)
+      self:FailTestCase("SDL was shutdown forcibly")
+    end
+  end
+  RUN_AFTER(forceStopSDL, timeout + 500)
+  utils.wait(timeout + 500)
 end
 
 --[[ Scenario ]]

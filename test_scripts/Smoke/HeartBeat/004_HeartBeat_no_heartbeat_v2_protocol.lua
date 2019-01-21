@@ -34,6 +34,10 @@ local events = require("events")
 Test = require('user_modules/dummy_connecttest')
 require('cardinalities')
 require('user_modules/AppTypes')
+local SDL = require("SDL")
+
+SDL.buildOptions.remoteControl = "OFF"
+SDL.buildOptions.extendedPolicy = "EXTERNAL_PROPRIETARY"
 
 -- [[Local variables]]
 local default_app_params = config.application1.registerAppInterfaceParams

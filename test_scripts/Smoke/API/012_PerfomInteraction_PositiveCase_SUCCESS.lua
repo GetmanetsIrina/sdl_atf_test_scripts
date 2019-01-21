@@ -33,6 +33,7 @@
 local runner = require('user_modules/script_runner')
 local commonSmoke = require('test_scripts/Smoke/commonSmoke')
 local commonPreconditions = require('user_modules/shared_testcases/commonPreconditions')
+local utils = require('user_modules/utils')
 
 config.application1.registerAppInterfaceParams.syncMsgVersion.majorVersion = 5
 config.application1.registerAppInterfaceParams.syncMsgVersion.minorVersion = 0
@@ -49,10 +50,10 @@ local putFileParams = {
 }
 
 local storagePath = commonPreconditions:GetPathToSDL() .. "storage/" ..
-config.application1.registerAppInterfaceParams.fullAppID .. "_" .. commonSmoke.getDeviceMAC() .. "/"
+config.application1.registerAppInterfaceParams.appID .. "_" .. commonSmoke.getDeviceMAC() .. "/"
 
 local ImageValue = {
-  value = storagePath .. "icon.png",
+  value = "icon.png",
   imageType = "DYNAMIC",
 }
 
@@ -248,6 +249,20 @@ local function CreateInteractionChoiceSet_noVR(choiceSetID, self)
   self.mobileSession1:ExpectResponse(cid, { resultCode = "SUCCESS", success = true })
 end
 
+--! @SetImageValue: Set full image path in vrHelp array
+--! @parameters:
+--! vrHelp - array of the vrHelp items
+--! @return: vrHelp array with full image path
+local function SetImageValue(vrHelp)
+  local tmp = utils.cloneTable(vrHelp)
+  for i, value in pairs(tmp)  do
+    if value.image then
+      tmp[i].image.value = storagePath .. tmp[i].image.value
+    end
+  end
+  return tmp
+end
+
 --! @PI_PerformViaVR_ONLY: Processing PI with interaction mode VR_ONLY with performing selection
 --! @parameters:
 --! paramsSend - parameters for PI request
@@ -278,7 +293,7 @@ local function PI_PerformViaVR_ONLY(paramsSend, self)
 
   EXPECT_HMICALL("UI.PerformInteraction", {
     timeout = paramsSend.timeout,
-    vrHelp = paramsSend.vrHelp,
+    vrHelp = SetImageValue(paramsSend.vrHelp),
     vrHelpTitle = paramsSend.initialText,
   })
   :Do(function(_,data)
@@ -378,7 +393,7 @@ local function PI_PerformViaBOTH(paramsSend, self)
         fieldName = "initialInteractionText",
         fieldText = paramsSend.initialText
       },
-      vrHelp = paramsSend.vrHelp,
+      vrHelp = SetImageValue(paramsSend.vrHelp),
       vrHelpTitle = paramsSend.initialText
     })
   :Do(function(_,data)

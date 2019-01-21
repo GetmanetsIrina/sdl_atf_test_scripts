@@ -1,6 +1,6 @@
-./test_scripts/Smoke/Registration/ATF_Register_App.lua
-./test_scripts/Smoke/Registration/ATF_Register_5_session.lua
-./test_scripts/Smoke/Registration/ATF_Register_5_connection.lua
-./test_scripts/Smoke/Registration/ATF_Reregister_App.lua
-./test_scripts/Smoke/Registration/ATF_Reregister_App_after_disconnect.lua
-./test_scripts/Smoke/Registration/ATF_Reregister_App_if_two_apps_are_registered.lua
+./test_scripts/Smoke/Registration/001_Register_5_connection.lua
+./test_scripts/Smoke/Registration/002_Register_5_session.lua
+./test_scripts/Smoke/Registration/003_Register_App.lua
+./test_scripts/Smoke/Registration/004_Reregister_App.lua
+./test_scripts/Smoke/Registration/005_Reregister_App_after_disconnect.lua
+./test_scripts/Smoke/Registration/006_Reregister_App_if_two_apps_are_registered.lua

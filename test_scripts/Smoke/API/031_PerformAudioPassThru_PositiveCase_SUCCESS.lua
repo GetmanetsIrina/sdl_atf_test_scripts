@@ -113,7 +113,7 @@ local function performAudioPassThru(pParams, self)
       self.hmiConnection:SendResponse(data.id, data.method, "SUCCESS", {})
       sendOnSystemContext(self, "MAIN", pParams.requestUiParams.appID)
     end
-    RUN_AFTER(uiResponse, 1500)
+    RUN_AFTER(uiResponse, 2500)
   end)
   EXPECT_HMINOTIFICATION("UI.OnRecordStart", {appID = pParams.requestUiParams.appID})
   self.mobileSession1:ExpectNotification("OnHMIStatus",

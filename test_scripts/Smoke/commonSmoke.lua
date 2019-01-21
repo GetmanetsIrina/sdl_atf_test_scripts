@@ -12,16 +12,20 @@ local json = require("modules/json")
 local consts = require("user_modules/consts")
 local commonFunctions = require("user_modules/shared_testcases/commonFunctions")
 local commonSteps = require("user_modules/shared_testcases/commonSteps")
--- local commonTestCases = require("user_modules/shared_testcases/commonTestCases")
+local commonTestCases = require("user_modules/shared_testcases/commonTestCases")
 local commonPreconditions = require('user_modules/shared_testcases/commonPreconditions')
 local utils = require('user_modules/utils')
+local actions = require('user_modules/sequences/actions')
+local SDL = require("SDL")
+
+SDL.buildOptions.remoteControl = "OFF"
+SDL.buildOptions.extendedPolicy = "EXTERNAL_PROPRIETARY"
 
 --[[ Local Variables ]]
 local events = require("events")
 local sdl = require("SDL")
 
 --[[ Local Variables ]]
--- local ptu_table = {}
 local hmiAppIds = {}
 local preloadedPT = commonFunctions:read_parameter_from_smart_device_link_ini("PreloadedPT")
 
@@ -35,14 +39,12 @@ commonSmoke.timeout = 5000
 commonSmoke.minTimeout = 500
 
 local function allowSDL(self)
-  self.hmiConnection:SendNotification("SDL.OnAllowSDLFunctionality",
-    { allowed = true, source = "GUI", device = { id = commonSmoke.getDeviceMAC(), name = commonSmoke.getDeviceName() }})
   local RequestId = self.hmiConnection:SendRequest("SDL.GetUserFriendlyMessage",
     {language = "EN-US", messageCodes = {"DataConsent"}})
   EXPECT_HMIRESPONSE(RequestId)
   :Do(function()
     self.hmiConnection:SendNotification("SDL.OnAllowSDLFunctionality",
-      {allowed = true, source = "GUI", device = {id = config.deviceMAC, name = "127.0.0.1"}})
+    { allowed = true, source = "GUI", device = { id = commonSmoke.getDeviceMAC(), name = commonSmoke.getDeviceName() }})
   end)
 end
 
@@ -73,7 +75,7 @@ function commonSmoke.preconditions()
 end
 
 function commonSmoke.getDeviceName()
-  return config.mobileHost .. ":" .. config.mobilePort
+  return config.mobileHost
 end
 
 function commonSmoke.getDeviceMAC()
@@ -90,7 +92,7 @@ end
 
 function commonSmoke.getMobileAppId(pAppId)
   if not pAppId then pAppId = 1 end
-  return config["application" .. pAppId].registerAppInterfaceParams.fullAppID
+  return config["application" .. pAppId].registerAppInterfaceParams.appID
 end
 
 function commonSmoke.getSelfAndParams(...)
@@ -115,7 +117,7 @@ end
 
 function commonSmoke.getHMIAppId(pAppId)
   if not pAppId then pAppId = 1 end
-  return hmiAppIds[config["application" .. pAppId].registerAppInterfaceParams.fullAppID]
+  return hmiAppIds[config["application" .. pAppId].registerAppInterfaceParams.appID]
 end
 
 function commonSmoke.getPathToFileInStorage(fileName)
@@ -131,12 +133,6 @@ function commonSmoke.getMobileSession(pAppId, self)
     self["mobileSession" .. pAppId] = mobile_session.MobileSession(self, self.mobileConnection)
   end
   return self["mobileSession" .. pAppId]
-end
-
-function commonSmoke.getMobileSession(self, pId)
-  self, pId = commonSmoke.getSelfAndParams(pId, self)
-  if not pId then pId = 1 end
-  return self["mobileSession" .. pId]
 end
 
 function commonSmoke.getSmokeAppPoliciesConfig()
@@ -225,12 +221,13 @@ end
 function commonSmoke.activateApp(pAppId, self)
   self, pAppId = commonSmoke.getSelfAndParams(pAppId, self)
   if not pAppId then pAppId = 1 end
-  local pHMIAppId = hmiAppIds[config["application" .. pAppId].registerAppInterfaceParams.fullAppID]
+  local pHMIAppId = hmiAppIds[config["application" .. pAppId].registerAppInterfaceParams.appID]
   local mobSession = commonSmoke.getMobileSession(pAppId, self)
   local requestId = self.hmiConnection:SendRequest("SDL.ActivateApp", { appID = pHMIAppId })
   EXPECT_HMIRESPONSE(requestId)
   mobSession:ExpectNotification("OnHMIStatus",
     {hmiLevel = "FULL", audioStreamingState = commonSmoke.GetAudibleState(pAppId), systemContext = "MAIN"})
+  mobSession:ExpectNotification("OnDriverDistraction")
   commonTestCases:DelayedExp(commonSmoke.minTimeout)
 end
 
@@ -245,6 +242,7 @@ function commonSmoke.start(pHMIParams, self)
       self:initHMI_onReady(pHMIParams)
       :Do(function()
         commonFunctions:userPrint(consts.color.magenta, "HMI is ready")
+        self.hmiConnection:SendNotification("UI.OnDriverDistraction", { state = "DD_OFF" })
         self:connectMobile()
         :Do(function()
           commonFunctions:userPrint(consts.color.magenta, "Mobile connected")
@@ -436,35 +434,7 @@ end
 
 function commonSmoke.registerApplicationWithPTU(pAppId, pUpdateFunction, self)
   self, pAppId, pUpdateFunction = commonSmoke.getSelfAndParams(pAppId, pUpdateFunction, self)
-  raiPTU(self, pUpdateFunction)
-end
-
-function commonSmoke.activateApp(pAppId, self)
-  self, pAppId = commonSmoke.getSelfAndParams(pAppId, self)
-  if not pAppId then pAppId = 1 end
-  print (pAppId)
-  local pHMIAppId = commonSmoke.getHMIAppId()
-  -- local mobSession = self["mobileSession" .. pAppId]
-  local requestId = self.hmiConnection:SendRequest("SDL.ActivateApp", { appID = pHMIAppId })
-  self["mobileSession" .. pAppId]:ExpectNotification("OnHMIStatus",
-    {hmiLevel = "FULL", audioStreamingState = commonSmoke.GetAudibleState(pAppId), systemContext = "MAIN"})
-  EXPECT_HMIRESPONSE(requestId)
-    :Do(function(_,data)
-      if
-        data.result.isSDLAllowed ~= true then
-        local RequestId = self.hmiConnection:SendRequest("SDL.GetUserFriendlyMessage",
-          {language = "EN-US", messageCodes = {"DataConsent"}})
-        EXPECT_HMIRESPONSE(RequestId)
-        :Do(function()
-          self.hmiConnection:SendNotification("SDL.OnAllowSDLFunctionality",
-            {allowed = true, source = "GUI", device = {id = config.deviceMAC, name = "127.0.0.1"}})
-          EXPECT_HMICALL("BasicCommunication.ActivateApp")
-          :Do(function()
-            self.hmiConnection:SendResponse(data.id,"BasicCommunication.ActivateApp", "SUCCESS", {})
-          end)
-        end)
-      end
-    end)
+  raiPTU(self, pUpdateFunction, pAppId)
 end
 
 function commonSmoke.AppActivationForResumption(self, pHMIid)
@@ -478,7 +448,7 @@ function commonSmoke.AppActivationForResumption(self, pHMIid)
         EXPECT_HMIRESPONSE(RequestId)
         :Do(function()
           self.hmiConnection:SendNotification("SDL.OnAllowSDLFunctionality",
-            {allowed = true, source = "GUI", device = {id = config.deviceMAC, name = "127.0.0.1"}})
+            { allowed = true, source = "GUI", device = { id = commonSmoke.getDeviceMAC(), name = commonSmoke.getDeviceName() }})
           local requestId2 = self.hmiConnection:SendRequest("SDL.ActivateApp", { appID = pHMIid })
           EXPECT_HMIRESPONSE(requestId2)
         end)
@@ -546,10 +516,11 @@ function commonSmoke.updatePreloadedPT()
       hmi_levels = { "BACKGROUND", "FULL", "LIMITED" }
     }
   end
-  pt.policy_table.app_policies["0000001"] = utils.cloneTable(pt.policy_table.app_policies.default)
-  pt.policy_table.app_policies["0000001"].groups = { "Base-4", "NewTestCaseGroup" }
-  pt.policy_table.app_policies["0000001"].keep_context = true
-  pt.policy_table.app_policies["0000001"].steal_focus = true
+  local appID = actions.getConfigAppParams(1).appID
+  pt.policy_table.app_policies[appID] = utils.cloneTable(pt.policy_table.app_policies.default)
+  pt.policy_table.app_policies[appID].groups = { "Base-4", "NewTestCaseGroup" }
+  pt.policy_table.app_policies[appID].keep_context = true
+  pt.policy_table.app_policies[appID].steal_focus = true
   utils.tableToJsonFile(pt, preloadedFile)
 end
 
@@ -563,16 +534,57 @@ function commonSmoke.registerApp(pAppId, self)
       EXPECT_HMINOTIFICATION("BasicCommunication.OnAppRegistered",
         { application = { appName = config["application" .. pAppId].registerAppInterfaceParams.appName } })
       :Do(function(_, data)
-          hmiAppIds[config["application" .. pAppId].registerAppInterfaceParams.fullAppID] = data.params.application.appID
+          hmiAppIds[config["application" .. pAppId].registerAppInterfaceParams.appID] = data.params.application.appID
         end)
       mobSession:ExpectResponse(corId, { success = true, resultCode = "SUCCESS" })
       :Do(function()
           mobSession:ExpectNotification("OnHMIStatus",
             { hmiLevel = "NONE", audioStreamingState = "NOT_AUDIBLE", systemContext = "MAIN" })
           mobSession:ExpectNotification("OnPermissionsChange"):Times(AtLeast(1))
-          mobSession:ExpectNotification("OnDriverDistraction", { state = "DD_OFF" })
         end)
     end)
+end
+
+function commonSmoke.ShutDown_IGNITION_OFF(self)
+  local timeout = 5000
+  local function removeSessions()
+    for i = 1, actions.getAppsCount() do
+      self.mobileSession[i] = nil
+    end
+  end
+  local event = events.Event()
+  event.matches = function(event1, event2) return event1 == event2 end
+  EXPECT_EVENT(event, "SDL shutdown")
+  :Do(function()
+      removeSessions()
+      StopSDL()
+      utils.wait(1000)
+    end)
+  actions.getHMIConnection():SendNotification("BasicCommunication.OnExitAllApplications", { reason = "SUSPEND" })
+  EXPECT_HMINOTIFICATION("BasicCommunication.OnSDLPersistenceComplete")
+  :Do(function()
+      actions.getHMIConnection():SendNotification("BasicCommunication.OnExitAllApplications",{ reason = "IGNITION_OFF" })
+      for i = 1, actions.getAppsCount() do
+        actions.getMobileSession(i):ExpectNotification("OnAppInterfaceUnregistered", { reason = "IGNITION_OFF" })
+      end
+    end)
+  EXPECT_HMINOTIFICATION("BasicCommunication.OnAppUnregistered", { unexpectedDisconnect = false })
+  :Times(actions.getAppsCount())
+  local isSDLShutDownSuccessfully = false
+  EXPECT_HMINOTIFICATION("BasicCommunication.OnSDLClose")
+  :Do(function()
+      utils.cprint(35, "SDL was shutdown successfully")
+      isSDLShutDownSuccessfully = true
+      RAISE_EVENT(event, event)
+    end)
+  :Timeout(timeout)
+  local function forceStopSDL()
+    if isSDLShutDownSuccessfully == false then
+      utils.cprint(35, "SDL was shutdown forcibly")
+      RAISE_EVENT(event, event)
+    end
+  end
+  RUN_AFTER(forceStopSDL, timeout + 500)
 end
 
 return commonSmoke
