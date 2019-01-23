@@ -26,10 +26,12 @@ function m.ptUpdate(pTbl)
 end
 
 local preconditionsOrig = common.preconditions
-function m.preconditions(pForceProtectedServices)
+function m.preconditions(pForceProtectedServices, pForceUnprotectedServices)
   preconditionsOrig()
   if not pForceProtectedServices then pForceProtectedServices = "Non" end
+  if not pForceUnprotectedServices then pForceUnprotectedServices = "Non" end
   m.setSDLIniParameter("ForceProtectedService", pForceProtectedServices)
+  m.setSDLIniParameter("ForceUnprotectedService", pForceUnprotectedServices)
 end
 
 local postconditionsOrig = common.postconditions
@@ -70,7 +72,7 @@ function m.policyTableUpdateUnsuccess()
             :Do(function(_, d3)
                 m.getHMIConnection():SendError(d3.id, "BasicCommunication.SystemRequest", "REJECTED", { })
               end)
-            m.getMobileSession(id):ExpectResponse(corIdSystemRequest, { success = true, resultCode = "SUCCESS" })
+            m.getMobileSession(id):ExpectResponse(corIdSystemRequest, { success = false, resultCode = "REJECTED" })
             utils.cprint(35, "App ".. id .. " was used for PTU")
             m.getHMIConnection():RaiseEvent(event, "PTU event")
           end)
@@ -192,6 +194,149 @@ function m.startServiceUnprotected(pServiceId, pAppId)
   })
   :Do(function(_, data)
     if data.frameInfo == m.frameInfo.START_SERVICE_ACK then
+      streamingFunc()
+    end
+  end)
+
+end
+
+function m.startServiceProtectedGetSystemTimeUnsuccessNACK(pServiceId, pGetSystemTimeResFunc)
+
+  common.getMobileSession():StartSecureService(pServiceId)
+
+  local serviceTypeValue
+  if pServiceId == 11 then
+    common.startStream()
+    serviceTypeValue = "VIDEO"
+  elseif pServiceId == 10 then
+    common.startAudioStream()
+    serviceTypeValue = "AUDIO"
+  else
+    serviceTypeValue = "RPC"
+  end
+
+  common.getHMIConnection():ExpectNotification("BasicCommunication.OnServiceUpdate",
+    { serviceEvent = "REQUEST_RECEIVED", serviceType = serviceTypeValue, appID = common.getHMIAppId() },
+    { serviceEvent = "REQUEST_REJECTED", serviceType = serviceTypeValue, reason = "INVALID_TIME", appID = common.getHMIAppId() })
+  :Times(2)
+
+  local startserviceEvent = events.Event()
+  startserviceEvent.level = 3
+    startserviceEvent.matches = function(_, data)
+      return
+      data.method == "BasicCommunication.GetSystemTime"
+    end
+
+  common.getHMIConnection():ExpectEvent(startserviceEvent, "GetSystemTime")
+  :Do(function(_, data)
+      pGetSystemTimeResFunc(data)
+    end)
+
+  common.getMobileSession():ExpectHandshakeMessage()
+  :Times(0)
+
+  common.getMobileSession():ExpectControlMessage(pServiceId, {
+    frameInfo = common.frameInfo.START_SERVICE_NACK,
+    encryption = false
+  })
+
+end
+
+function m.startServiceProtectedGetSystemTimeUnsuccessACK(pServiceId, pGetSystemTimeResFunc)
+
+  common.getMobileSession():StartSecureService(pServiceId)
+
+  local serviceTypeValue
+  local streamingFunc
+  if pServiceId == 11 then
+    m.startStream()
+    serviceTypeValue = "VIDEO"
+    streamingFunc = m.startVideoStreaming
+  elseif pServiceId == 10 then
+    m.startAudioStream()
+    serviceTypeValue = "AUDIO"
+    streamingFunc = m.startAudioStreaming
+  end
+
+  common.getHMIConnection():ExpectNotification("BasicCommunication.OnServiceUpdate",
+    { serviceEvent = "REQUEST_RECEIVED", serviceType = serviceTypeValue, appID = common.getHMIAppId() },
+    { serviceEvent = "REQUEST_ACCEPTED", serviceType = serviceTypeValue, appID = common.getHMIAppId() })
+  :Times(2)
+  :ValidIf(function(_, data)
+    if data.params.reason then
+      return false, "SDL sends unexpected parameter 'reason' in OnServiceUpdate notification"
+    end
+    return true
+  end)
+
+  local startserviceEvent = events.Event()
+  startserviceEvent.level = 3
+    startserviceEvent.matches = function(_, data)
+      return
+      data.method == "BasicCommunication.GetSystemTime"
+    end
+
+  common.getHMIConnection():ExpectEvent(startserviceEvent, "GetSystemTime")
+  :Do(function(_, data)
+      pGetSystemTimeResFunc(data)
+    end)
+
+  common.getMobileSession():ExpectHandshakeMessage()
+  :Times(0)
+
+  common.getMobileSession():ExpectControlMessage(pServiceId, {
+    frameInfo = common.frameInfo.START_SERVICE_ACK,
+    encryption = false
+  })
+  :Do(function(_, data)
+    if data.frameInfo == m.frameInfo.START_SERVICE_ACK then
+      streamingFunc()
+    end
+  end)
+
+end
+
+
+function m.startServiceProtectedUnsuccessPTU(pServiceId, pAppId)
+
+  m.getMobileSession():StartSecureService(pServiceId)
+
+  local serviceTypeValue
+  local streamingFunc
+  if pServiceId == 11 then
+    m.startStream()
+    serviceTypeValue = "VIDEO"
+    streamingFunc = m.startVideoStreaming
+  elseif pServiceId == 10 then
+    m.startAudioStream()
+    serviceTypeValue = "AUDIO"
+    streamingFunc = m.startAudioStreaming
+  else
+    serviceTypeValue = "RPC"
+  end
+
+  m.getHMIConnection():ExpectNotification("BasicCommunication.OnServiceUpdate",
+    { serviceEvent = "REQUEST_RECEIVED", serviceType = serviceTypeValue, appID = m.getHMIAppId(pAppId) },
+    { serviceEvent = "REQUEST_REJECTED",reason = "PTU_FAILED", serviceType = serviceTypeValue, appID = m.getHMIAppId(pAppId) })
+  :Times(2)
+
+  m.getHMIConnection():ExpectNotification("SDL.OnStatusUpdate",
+  { status = "UPDATE_NEEDED" }, { status = "UPDATING" },
+  { status = "UPDATE_NEEDED" }, { status = "UPDATING" })
+  :Times(4)
+
+  m.getMobileSession():ExpectHandshakeMessage()
+  :Times(0)
+
+  m.policyTableUpdateUnsuccess()
+
+  m.getMobileSession():ExpectControlMessage(pServiceId, {
+    frameInfo = m.frameInfo.START_SERVICE_ACK,
+    encryption = true
+  })
+  :Do(function(_, data)
+    if data.frameInfo == m.frameInfo.START_SERVICE_ACK and
+    (data.serviceType == 10 or data.serviceType == 11) then
       streamingFunc()
     end
   end)
