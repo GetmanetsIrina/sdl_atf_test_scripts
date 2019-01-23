@@ -11,28 +11,21 @@ local common = require('test_scripts/API/ServiceStatusUpdateToHMI/common')
 --[[ Test Configuration ]]
 runner.testSettings.isSelfIncluded = false
 
---[[ Local Function]]
-local function startRPCServiceUnprotected()
+-- [[ Local function ]]
+function common.startServiceFunc(pServiceId)
+  common.getMobileSession():StartService(pServiceId)
+end
 
-  common.getMobileSession():StartService(7)
+function common.serviceResponseFunc(pServiceId)
+  common.getMobileSession():ExpectControlMessage(pServiceId, {
+    frameInfo = common.frameInfo.START_SERVICE_ACK,
+    encryption = false
+  })
+end
 
-  common.getHMIConnection():ExpectNotification("BasicCommunication.OnServiceUpdate",
-    { serviceEvent = "REQUEST_RECEIVED", serviceType = "RPC" },
-    { serviceEvent = "REQUEST_ACCEPTED", serviceType = "RPC" })
-  :Times(2)
-  :ValidIf(function(_, data)
-    if data.payload.appID then
-      return false, "SDL sends OnServiceUpdate notification with appID during the first RPC StartService request"
-    end
-    return true
-  end)
-
+function common.policyTableUpdateFunc()
   common.getHMIConnection():ExpectNotification("SDL.OnStatusUpdate")
   :Times(0)
-
-  common.getMobileSession():ExpectHandshakeMessage()
-  :Times(0)
-
 end
 
 --[[ Scenario ]]
@@ -41,7 +34,7 @@ runner.Step("Clean environment", common.preconditions)
 runner.Step("Start SDL, HMI, connect Mobile, start Session", common.start)
 
 runner.Title("Test")
-runner.Step("Start Audio Service unprotected", startRPCServiceUnprotected )
+runner.Step("Start Audio Service unprotected", common.startServiceWithOnServiceUpdate, { 7, 0 } )
 
 runner.Title("Postconditions")
 runner.Step("Stop SDL", common.postconditions)

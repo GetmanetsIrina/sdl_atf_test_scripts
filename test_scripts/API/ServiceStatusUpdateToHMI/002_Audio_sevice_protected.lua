@@ -22,7 +22,7 @@ runner.Step("PolicyTableUpdate", common.policyTableUpdate)
 runner.Step("App activation", common.activateApp)
 
 runner.Title("Test")
-runner.Step("Start Audio Service protected", common.startServiceProtected, { 10 })
+runner.Step("Start Audio Service protected", common.startServiceWithOnServiceUpdate, { 10 })
 
 runner.Title("Postconditions")
 runner.Step("Stop SDL", common.postconditions)

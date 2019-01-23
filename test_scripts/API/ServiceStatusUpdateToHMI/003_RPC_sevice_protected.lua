@@ -22,7 +22,7 @@ runner.Step("PolicyTableUpdate", common.policyTableUpdate)
 runner.Step("App activation", common.activateApp)
 
 runner.Title("Test")
-runner.Step("Start RPC Service protected", common.startServiceProtected, { 7 })
+runner.Step("Start RPC Service protected", common.startServiceWithOnServiceUpdate, { 7 })
 
 runner.Title("Postconditions")
 runner.Step("Stop SDL", common.postconditions)
