@@ -12,18 +12,13 @@ local utils = require("user_modules/utils")
 --[[ Test Configuration ]]
 runner.testSettings.isSelfIncluded = false
 
---[[ Local Functions ]]
-function common.ptUpdate(pTbl)
-  local filePath = "./files/Security/client_credential_expired.pem"
-  local crt = utils.readFile(filePath)
-  pTbl.policy_table.module_config.certificate = crt
-end
-
+--[[ Local Functions]]
 function common.onServiceUpdateFunc(pServiceTypeValue)
   common.getHMIConnection():ExpectNotification("BasicCommunication.OnServiceUpdate",
     { serviceEvent = "REQUEST_RECEIVED", serviceType = pServiceTypeValue, appID = common.getHMIAppId() },
-    { serviceEvent = "REQUEST_REJECTED", serviceType = pServiceTypeValue, reason = "INVALID_CERT", appID = common.getHMIAppId() })
+    { serviceEvent = "REQUEST_REJECTED", serviceType = pServiceTypeValue, reason = "PTU_FAILED", appID = common.getHMIAppId() })
   :Times(2)
+  :Timeout(65000)
 end
 
 function common.serviceResponseFunc(pServiceId)
@@ -31,6 +26,24 @@ function common.serviceResponseFunc(pServiceId)
     frameInfo = common.frameInfo.START_SERVICE_NACK,
     encryption = false
   })
+  :Timeout(65000)
+end
+
+function common.policyTableUpdateFunc()
+  common.getHMIConnection():ExpectNotification("SDL.OnStatusUpdate",
+  { status = "UPDATE_NEEDED" }, { status = "UPDATING" },
+  { status = "UPDATE_NEEDED" }, { status = "UPDATING" })
+  :Times(4)
+  :Timeout(65000)
+  :Do(function(exp, data)
+    if exp.occurences == 2 and data.params.status == "UPDATING" then
+      utils.cprint(35, "Waiting for PTU retry")
+    end
+  end)
+
+  common.policyTableUpdateUnsuccess()
+
+  common.wait(65000)
 end
 
 --[[ Scenario ]]
@@ -44,7 +57,7 @@ runner.Step("PolicyTableUpdate", common.policyTableUpdate)
 runner.Step("App activation", common.activateApp)
 
 runner.Title("Test")
-runner.Step("Start Video Service protected", common.startServiceWithOnServiceUpdate, { 11, 0 })
+runner.Step("Start Audio Service protected", common.startServiceWithOnServiceUpdate, { 10, 0 })
 
 runner.Title("Postconditions")
 runner.Step("Stop SDL", common.postconditions)

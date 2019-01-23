@@ -6,6 +6,7 @@ config.SecurityProtocol = "DTLS"
 config.application1.registerAppInterfaceParams.appName = "server"
 config.application1.registerAppInterfaceParams.fullAppID = "SPT"
 config.application1.registerAppInterfaceParams.appHMIType = { "NAVIGATION" }
+config.application2.registerAppInterfaceParams.appHMIType = { "NAVIGATION" }
 
 --[[ Required Shared libraries ]]
 local actions = require("user_modules/sequences/actions")
@@ -91,22 +92,22 @@ function m.startAudioStream()
   end)
 end
 
-function m.startVideoStreaming()
-  m.getMobileSession():StartStreaming(11, "files/SampleVideo_5mb.mp4")
+function m.startVideoStreaming(pAppId)
+  m.getMobileSession(pAppId):StartStreaming(11, "files/SampleVideo_5mb.mp4")
   m.getHMIConnection():ExpectNotification("Navigation.OnVideoDataStreaming", { available = true })
-  m.getMobileSession():ExpectNotification("OnHMIStatus")
+  m.getMobileSession(pAppId):ExpectNotification("OnHMIStatus")
   :Times(0)
 end
 
-function m.startAudioStreaming()
-  m.getMobileSession():StartStreaming(10, "files/tone_mp3.mp3")
+function m.startAudioStreaming(pAppId)
+  m.getMobileSession(pAppId):StartStreaming(10, "files/tone_mp3.mp3")
   m.getHMIConnection():ExpectNotification("Navigation.OnAudioDataStreaming", { available = true })
-  m.getMobileSession():ExpectNotification("OnHMIStatus")
+  m.getMobileSession(pAppId):ExpectNotification("OnHMIStatus")
   :Times(0)
 end
 
-function m.startServiceFunc(pServiceId)
-  m.getMobileSession():StartSecureService(pServiceId)
+function m.startServiceFunc(pServiceId, pAppId)
+  m.getMobileSession(pAppId):StartSecureService(pServiceId)
 end
 
 function m.serviceConditionsFunc(pServiceId)
@@ -141,26 +142,25 @@ function m.policyTableUpdateFunc()
   m.policyTableUpdateSuccess(m.ptUpdate)
 end
 
-function m.serviceResponseFunc(pServiceId, pStreamingFunc)
-  m.getMobileSession():ExpectControlMessage(pServiceId, {
+function m.serviceResponseFunc(pServiceId, pStreamingFunc, pAppId)
+  m.getMobileSession(pAppId):ExpectControlMessage(pServiceId, {
     frameInfo = m.frameInfo.START_SERVICE_ACK,
     encryption = true
   })
   :Do(function(_, data)
     if data.frameInfo == m.frameInfo.START_SERVICE_ACK and
     (data.serviceType == 10 or data.serviceType == 11) then
-      pStreamingFunc()
+      pStreamingFunc(pAppId)
     end
   end)
 end
 
 function m.startServiceWithOnServiceUpdate(pServiceId, pHandShakeExpecTimes, pAppId)
-
   local serviceTypeValue
   local streamingFunc
   if not pHandShakeExpecTimes then pHandShakeExpecTimes = 1 end
 
-  m.startServiceFunc(pServiceId)
+  m.startServiceFunc(pServiceId, pAppId)
 
   serviceTypeValue, streamingFunc = m.serviceConditionsFunc(pServiceId)
 
@@ -171,12 +171,10 @@ function m.startServiceWithOnServiceUpdate(pServiceId, pHandShakeExpecTimes, pAp
   m.getMobileSession():ExpectHandshakeMessage()
   :Times(pHandShakeExpecTimes)
 
-  m.serviceResponseFunc(pServiceId, streamingFunc)
-
+  m.serviceResponseFunc(pServiceId, streamingFunc, pAppId)
 end
 
 function m.serviceStatusWithGetSystemTimeUnsuccess(pServiceTypeValue, pAppId)
-
   common.getHMIConnection():ExpectNotification("BasicCommunication.OnServiceUpdate",
     { serviceEvent = "REQUEST_RECEIVED", serviceType = pServiceTypeValue, appID = common.getHMIAppId(pAppId) },
     { serviceEvent = "REQUEST_REJECTED", serviceType = pServiceTypeValue, reason = "INVALID_TIME", appID = common.getHMIAppId(pAppId) })
@@ -193,6 +191,28 @@ function m.serviceStatusWithGetSystemTimeUnsuccess(pServiceTypeValue, pAppId)
   :Do(function(_, data)
       m.getSystemTimeRes(data)
     end)
+end
+
+function common.serviceResponseWithACKandNACK(pServiceId, pStreamingFunc, pTimeout)
+  if not pTimeout then pTimeout = 10000 end
+  if pServiceId ~= 7 then
+    common.getMobileSession():ExpectControlMessage(pServiceId, {
+      frameInfo = common.frameInfo.START_SERVICE_ACK,
+      encryption = false
+    })
+    :Timeout(pTimeout)
+    :Do(function(_, data)
+      if data.frameInfo == common.frameInfo.START_SERVICE_ACK then
+        pStreamingFunc()
+      end
+    end)
+  else
+    common.getMobileSession():ExpectControlMessage(pServiceId, {
+      frameInfo = common.frameInfo.START_SERVICE_NACK,
+      encryption = false
+    })
+    :Timeout(pTimeout)
+  end
 end
 
 

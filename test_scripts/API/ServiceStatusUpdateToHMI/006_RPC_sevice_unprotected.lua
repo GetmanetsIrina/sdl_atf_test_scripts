@@ -16,6 +16,19 @@ function common.startServiceFunc(pServiceId)
   common.getMobileSession():StartService(pServiceId)
 end
 
+function common.onServiceUpdateFunc(pServiceTypeValue)
+  common.getHMIConnection():ExpectNotification("BasicCommunication.OnServiceUpdate",
+    { serviceEvent = "REQUEST_RECEIVED", serviceType = pServiceTypeValue },
+    { serviceEvent = "REQUEST_ACCEPTED", serviceType = pServiceTypeValue })
+  :Times(2)
+  :ValidIf(function(_, data)
+    if data.params.appID then
+      return false, "OnServiceUpdate notification contains unexpected appID"
+    end
+    return true
+  end)
+end
+
 function common.serviceResponseFunc(pServiceId)
   common.getMobileSession():ExpectControlMessage(pServiceId, {
     frameInfo = common.frameInfo.START_SERVICE_ACK,

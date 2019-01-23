@@ -12,13 +12,27 @@ local common = require('test_scripts/API/ServiceStatusUpdateToHMI/common')
 runner.testSettings.isSelfIncluded = false
 
 -- [[ Local function ]]
-local function getSystemTimeRes()
-  -- no response
+function common.getSystemTimeRes(pData)
+  common.getHMIConnection():SendError(pData.id, pData.method, "WRONG_ENUM", "Time is not provided")
 end
+
+function common.onServiceUpdateFunc(pServiceTypeValue)
+  common.serviceStatusWithGetSystemTimeUnsuccess(pServiceTypeValue)
+end
+
+function common.serviceResponseFunc(pServiceId)
+  common.getMobileSession():ExpectControlMessage(pServiceId, {
+    frameInfo = common.frameInfo.START_SERVICE_NACK,
+    encryption = false
+  })
+  :Timeout(11000)
+end
+
+common.policyTableUpdateFunc = function() end
 
 --[[ Scenario ]]
 runner.Title("Preconditions")
-runner.Step("Clean environment", common.preconditions, { "0x0B, 0x0A, 0x07" })
+runner.Step("Clean environment", common.preconditions, { "0x0B, 0x0A" })
 runner.Step("Init SDL certificates", common.initSDLCertificates,
   { "./files/Security/client_credential_expired.pem", false })
 runner.Step("Start SDL, HMI, connect Mobile, start Session", common.start)
@@ -27,12 +41,12 @@ runner.Step("PolicyTableUpdate", common.policyTableUpdate)
 runner.Step("App activation", common.activateApp)
 
 runner.Title("Test")
-runner.Step("Start Video Service protected with rejected GetSystemTime request",
-  common.startServiceProtectedGetSystemTimeUnsuccessNACK, { 11, getSystemTimeRes })
-runner.Step("Start Audio Service protected with rejected GetSystemTime request",
-  common.startServiceProtectedGetSystemTimeUnsuccessNACK, { 10, getSystemTimeRes })
-runner.Step("Start RPC Service protected with rejected GetSystemTime request",
-  common.startServiceProtectedGetSystemTimeUnsuccessNACK, { 7, getSystemTimeRes })
+runner.Step("Start Video Service protected with invalid response to GetSystemTime request",
+  common.startServiceWithOnServiceUpdate, { 11, 0 })
+runner.Step("Start Audio Service protected with invalid response to request",
+  common.startServiceWithOnServiceUpdate, { 10, 0 })
+runner.Step("Start RPC Service protected with invalid response to GetSystemTime request",
+  common.startServiceWithOnServiceUpdate, { 7, 0 })
 
 runner.Title("Postconditions")
 runner.Step("Stop SDL", common.postconditions)
