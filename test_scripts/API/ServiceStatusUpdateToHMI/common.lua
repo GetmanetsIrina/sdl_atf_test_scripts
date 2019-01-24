@@ -13,7 +13,6 @@ local actions = require("user_modules/sequences/actions")
 local utils = require("user_modules/utils")
 local common = require("test_scripts/Security/SSLHandshakeFlow/common")
 local events = require("events")
-local constants = require("protocol_handler/ford_protocol_constants")
 
 --[[ Variables ]]
 local m = actions

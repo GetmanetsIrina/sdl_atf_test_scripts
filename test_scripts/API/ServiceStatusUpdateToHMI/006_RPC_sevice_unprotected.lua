@@ -1,7 +1,7 @@
 ---------------------------------------------------------------------------------------------------
 -- Proposal:
 -- https://github.com/smartdevicelink/sdl_evolution/blob/master/proposals/0211-ServiceStatusUpdateToHMI.md
--- Description:
+-- Description: Opening of the not protected RPC service with succeeded OnStatusUpdate notifications
 -- Precondition:
 ---------------------------------------------------------------------------------------------------
 --[[ Required Shared libraries ]]
@@ -47,7 +47,7 @@ runner.Step("Clean environment", common.preconditions)
 runner.Step("Start SDL, HMI, connect Mobile, start Session", common.start)
 
 runner.Title("Test")
-runner.Step("Start Audio Service unprotected", common.startServiceWithOnServiceUpdate, { 7, 0 } )
+runner.Step("Start RPC Service unprotected", common.startServiceWithOnServiceUpdate, { 7, 0 } )
 
 runner.Title("Postconditions")
 runner.Step("Stop SDL", common.postconditions)

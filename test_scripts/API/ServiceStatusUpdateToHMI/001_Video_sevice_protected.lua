@@ -1,7 +1,7 @@
 ---------------------------------------------------------------------------------------------------
 -- Proposal:
 -- https://github.com/smartdevicelink/sdl_evolution/blob/master/proposals/0211-ServiceStatusUpdateToHMI.md
--- Description:
+-- Description: Opening of the protected Video service with succeeded OnStatusUpdate notifications
 -- Precondition:
 -- 1) App is registered with NAVIGATION appHMIType and activated.
 -- In case:

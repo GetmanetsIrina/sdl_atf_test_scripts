@@ -1,7 +1,8 @@
 ---------------------------------------------------------------------------------------------------
 -- Proposal:
 -- https://github.com/smartdevicelink/sdl_evolution/blob/master/proposals/0211-ServiceStatusUpdateToHMI.md
--- Description:
+-- Description: The attempt to open the protected Video, Audio, RPC services with unsuccessful OnStatusUpdate(REQUEST_REJECTED, INVALID_CERT) notification
+--   in case certification in DB after update is not valid and services are force protected
 -- Precondition:
 ---------------------------------------------------------------------------------------------------
 --[[ Required Shared libraries ]]

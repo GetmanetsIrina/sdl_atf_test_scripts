@@ -1,7 +1,9 @@
 ---------------------------------------------------------------------------------------------------
 -- Proposal:
 -- https://github.com/smartdevicelink/sdl_evolution/blob/master/proposals/0211-ServiceStatusUpdateToHMI.md
--- Description:
+-- Description: The attempt to open the protected Video, Audio, RPC services with unsuccessful
+--  OnStatusUpdate(REQUEST_REJECTED, INVALID_TIME) in case GetSystemTime response is not received from HMI
+--  and services are force protected
 -- Precondition:
 ---------------------------------------------------------------------------------------------------
 --[[ Required Shared libraries ]]
@@ -11,7 +13,7 @@ local common = require('test_scripts/API/ServiceStatusUpdateToHMI/common')
 --[[ Test Configuration ]]
 runner.testSettings.isSelfIncluded = false
 
--- [[ Local function ]]
+--[[ Local Function ]]
 function common.getSystemTimeRes()
   -- no response
 end

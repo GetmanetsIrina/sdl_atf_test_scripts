@@ -1,7 +1,8 @@
 ---------------------------------------------------------------------------------------------------
 -- Proposal:
 -- https://github.com/smartdevicelink/sdl_evolution/blob/master/proposals/0211-ServiceStatusUpdateToHMI.md
--- Description:
+-- Description: The attempt to open the protected Video service with unsuccessful OnStatusUpdate(REQUEST_REJECTED, PTU_FAILED) notification
+--   by unsuccessful PTU
 -- Precondition:
 ---------------------------------------------------------------------------------------------------
 --[[ Required Shared libraries ]]

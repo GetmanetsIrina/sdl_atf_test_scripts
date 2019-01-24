@@ -1,7 +1,7 @@
 ---------------------------------------------------------------------------------------------------
 -- Proposal:
 -- https://github.com/smartdevicelink/sdl_evolution/blob/master/proposals/0211-ServiceStatusUpdateToHMI.md
--- Description:
+-- Description: Opening of the not protected Audio service with succeeded OnStatusUpdate notifications
 -- Precondition:
 ---------------------------------------------------------------------------------------------------
 --[[ Required Shared libraries ]]
