@@ -4,7 +4,7 @@
 -- Item: Use Case 1: Main Flow
 --
 -- Requirement summary:
--- [SDL_RC] Current module status data GetInteriorVehicleData
+-- [SDL_RC] Current module status data GetInteriorVehicleData - не соответствующее описание
 --
 -- Description:
 -- Preconditions:
@@ -31,7 +31,7 @@ local params = {
   "false",
   ""
 }
-
+-- нужно использовать функци из коммона isSubscribed и переопределять локально посылаемые параметры
 --[[ Local Functions ]]
 local function onInteriorVehicleData(pParams)
   local paramsNotification = {
@@ -56,6 +56,7 @@ runner.Step("Subscribe app to module CLIMATE", commonRC.subscribeToModule, { "CL
 
 runner.Title("Test")
 for _, v in pairs(params) do
+-- зачем добавлять пустое значение к имени кейса)
   runner.Step("OnInteriorVehicleData with invalid param climateEnable " .. _, onInteriorVehicleData, { v })
 end
 

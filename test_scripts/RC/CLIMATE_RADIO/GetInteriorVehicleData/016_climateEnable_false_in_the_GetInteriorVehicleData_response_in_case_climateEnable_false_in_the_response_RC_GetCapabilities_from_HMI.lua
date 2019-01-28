@@ -58,6 +58,7 @@ function commonRC.getModuleControlData(module_type)
   return out
 end
 
+-- можно не переопределять getModuleControlData, а обнулить climateEnable уже в actualInteriorDataStateOnHMI, так же описание скрипта не соответсвует кейсу
 commonRC.actualInteriorDataStateOnHMI = {CLIMATE = commonRC.cloneTable(commonRC.getModuleControlData("CLIMATE"))}
 
 --[[ Scenario ]]

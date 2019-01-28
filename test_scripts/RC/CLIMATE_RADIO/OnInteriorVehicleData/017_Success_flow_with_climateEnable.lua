@@ -30,7 +30,7 @@ local params = {
   false,
   true
 }
-
+-- нужно использовать функци из коммона isSubscribed и переопределять локально посылаемые параметры
 --[[ Local Functions ]]
 local function onInteriorVehicleData(pParams)
   local paramsNotification = {

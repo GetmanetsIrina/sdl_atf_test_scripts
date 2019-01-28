@@ -38,6 +38,7 @@ function commonRC.getModuleControlData(module_type)
   return out
 end
 
+--  можно сразу actualInteriorDataStateOnHMI переопределить
 commonRC.actualInteriorDataStateOnHMI = {CLIMATE = commonRC.cloneTable(commonRC.getModuleControlData("CLIMATE"))}
 
 --[[ Scenario ]]

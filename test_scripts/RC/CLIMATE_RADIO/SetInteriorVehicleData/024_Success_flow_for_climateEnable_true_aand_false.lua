@@ -35,6 +35,8 @@ local params = {
   false
 }
 
+
+-- тут можно переопределить getModuleControlData, и передавать параметры
 local function setVehicleData(pParams)
   local mobSession = commonRC.getMobileSession()
   local cid = mobSession:SendRPC("SetInteriorVehicleData", {
@@ -73,6 +75,7 @@ runner.Step("Activate App", commonRC.activateApp)
 runner.Title("Test")
 
 for _, v in pairs(params) do
+  -- к имени кейса должно присоединяться описание кейса, сейчас пустота присоеднияется
   runner.Step("SetInteriorVehicleData climateEnable " .. _, setVehicleData, { v })
 end
 
