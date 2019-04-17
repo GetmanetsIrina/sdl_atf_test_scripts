@@ -7,9 +7,8 @@
 local commonTestCases = {}
 local commonFunctions = require('user_modules/shared_testcases/commonFunctions')
 local commonSteps = require('user_modules/shared_testcases/commonSteps')
-local policyTable = require('user_modules/shared_testcases/testCasesForPolicyTable')
 local mobile_session = require('mobile_session')
-
+local events = require('events')
 
 
 
@@ -84,7 +83,7 @@ function commonTestCases:DelayedExp(time)
   local event = events.Event()
   event.matches = function(self, e) return self == e end
   EXPECT_EVENT(event, "Delayed event")
-  	:Timeout(time+1000)
+  	:Timeout(time+5000)
   RUN_AFTER(function()
               RAISE_EVENT(event, event)
             end, time)
@@ -216,7 +215,6 @@ function commonTestCases:verifyResultCode_APPLICATION_NOT_REGISTERED()
 																self,
 																self.mobileConnection
 															)
-		self.mobileSession2:StartService(7)
 	end
 
 	Test[APIName .."_resultCode_APPLICATION_NOT_REGISTERED"] = function(self)
@@ -245,7 +243,8 @@ function commonTestCases:verifyResultCode_TOO_MANY_PENDING_REQUESTS(numberOfRequ
 		--mobile side: expect response
 		EXPECT_RESPONSE(APIName)
 		:ValidIf(function(exp,data)
-			if data.payload.resultCode == "TOO_MANY_PENDING_REQUESTS" then
+			if
+				data.payload.resultCode == "TOO_MANY_PENDING_REQUESTS" then
 				n = n+1
 					print(" \27[32m "..APIName.." response came with resultCode TOO_MANY_PENDING_REQUESTS \27[0m")
 					return true
