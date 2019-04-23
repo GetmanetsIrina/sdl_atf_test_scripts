@@ -1,0 +1,14 @@
+./test_scripts/Defects/489_1_language_change.lua
+./test_scripts/Defects/489_2_language_change_with_delay.lua
+./test_scripts/Defects/489_3_language_change_with_delay.lua
+./test_scripts/Defects/489_4_language_change_interfaces.lua
+./test_scripts/Defects/489_5_language_change_Languages.lua
+./test_scripts/Defects/489_6_language_change_different_languages_for_UI_and_VR_TTS.lua
+./test_scripts/Defects/499_1_user_exit.lua
+./test_scripts/Defects/499_2_user_exit_in_resumption_timeout_NONE.lua
+./test_scripts/Defects/499_3_user_exit_in_resumption_timeout_BACKGROUND.lua
+./test_scripts/Defects/499_4_user_exitbefore_activateApp_response_from_vr_session_NONE.lua
+./test_scripts/Defects/499_5_user_exitbefore_activateApp_response_from_vr_session_BACKGROUND.lua
+./test_scripts/Defects/499_6_user_exit_before_activateApp_response_from_vr_session_with_audio_source_change_NONE.lua
+./test_scripts/Defects/499_7_user_exit_before_activateApp_response_from_vr_session_with_audio_source_change_BACKGROUND.lua
+./test_scripts/Defects/516_app_without_activation_during_ign_cycle.lua
