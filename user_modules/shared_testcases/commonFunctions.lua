@@ -934,7 +934,7 @@ function commonFunctions:write_parameter_to_smart_device_link_ini(param_name, pa
     end
     new_file_content = new_file_content..line.."\n"
   end
-  
+
   if is_find_string == true then
     local file = io.open(path_to_ini_file, "w")
     if file then
