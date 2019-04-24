@@ -12,11 +12,14 @@ local events = require('events')
 local commonFunctions = require('user_modules/shared_testcases/commonFunctions')
 local commonPreconditions = require('user_modules/shared_testcases/commonPreconditions')
 local json = require("modules/json")
+local SDL = require("SDL")
 
 --[[ Local Variables ]]
 local commonDefect = actions
 commonDefect.wait = utils.wait
 local preloadedPT = commonFunctions:read_parameter_from_smart_device_link_ini("PreloadedPT")
+SDL.buildOptions.remoteControl = "OFF"
+SDL.buildOptions.extendedPolicy = "EXTERNAL_PROPRIETARY"
 
 --[[ @unexpectedDisconnect: closing connection
 --! @parameters: none
