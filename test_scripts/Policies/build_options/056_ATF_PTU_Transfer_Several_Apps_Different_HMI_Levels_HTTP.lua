@@ -36,7 +36,6 @@ local hmiLevels = { }
 
 --[[ Local Functions ]]
 local function SetTimeout()
-  os.setlocale("C")
   local pathToFile = commonPreconditions:GetPathToSDL() .. 'sdl_preloaded_pt.json'
   local file = io.open(pathToFile, "r")
   local json_data = file:read("*all")
@@ -172,8 +171,7 @@ for time = 1, 5 do
   function Test:TestStep_CheckOnSystemRequest_AppLevel()
     print("Check OnSystemRequest sent to application. Time: "..time.."/10")
     local received_onsystemrequest = 0
-    -- local requestId = self.hmiConnection:SendRequest("SDL.GetPolicyConfigurationData",
-    --   { policyType = "module_config", property = "endpoints" })
+    -- local requestId = self.hmiConnection:SendRequest("SDL.GetURLS", { service = 7 })
     -- EXPECT_HMIRESPONSE(requestId)
     -- :Do(function()
     self.hmiConnection:SendNotification("BasicCommunication.OnSystemRequest", { requestType = "HTTP", fileName = "PolicyTableUpdate" })

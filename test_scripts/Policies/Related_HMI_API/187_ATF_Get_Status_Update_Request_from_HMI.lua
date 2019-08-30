@@ -67,8 +67,7 @@ function Test:Test_2_UPDATING()
   local policy_file_path = "/tmp/fs/mp/images/ivsu_cache/"
   local policy_file_name = "PolicyTableUpdate"
   local ptu_file = "files/ptu_general.json"
-  local requestId = self.hmiConnection:SendRequest("SDL.GetPolicyConfigurationData",
-      { policyType = "module_config", property = "endpoints" })
+  local requestId = self.hmiConnection:SendRequest("SDL.GetURLS", { service = 7 })
   EXPECT_HMIRESPONSE(requestId)
   self.hmiConnection:SendNotification("BasicCommunication.OnSystemRequest", {requestType = "PROPRIETARY", fileName = policy_file_name})
   EXPECT_NOTIFICATION("OnSystemRequest", { requestType = "PROPRIETARY" })

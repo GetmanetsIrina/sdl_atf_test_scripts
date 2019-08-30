@@ -103,8 +103,7 @@ commonFunctions:newTestCasesGroup("Test")
 
 function Test:TestStep_PTU()
 
-  local requestId = self.hmiConnection:SendRequest("SDL.GetPolicyConfigurationData",
-      { policyType = "module_config", property = "endpoints" })
+  local requestId = self.hmiConnection:SendRequest("SDL.GetURLS", { service = 7 })
 
   EXPECT_HMIRESPONSE(requestId)
   :Do(function(_, _)

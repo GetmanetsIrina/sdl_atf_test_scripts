@@ -78,7 +78,7 @@ local function processRPCSubscribeSuccess(self)
       self.hmiConnection:SendResponse(data.id, data.method, "SUCCESS", vehicleDataResults)
     end)
 
-  local responseParams = common.cloneTable(vehicleDataResults)
+  local responseParams = vehicleDataResults
   responseParams.success = true
   responseParams.resultCode = "SUCCESS"
   mobileSession:ExpectResponse(cid, responseParams)

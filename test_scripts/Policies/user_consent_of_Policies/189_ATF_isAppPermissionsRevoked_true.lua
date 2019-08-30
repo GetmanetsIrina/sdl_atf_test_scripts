@@ -54,9 +54,8 @@ function Test:Precondition_trigger_getting_device_consent()
 end
 
 function Test:TestStep_PTU_appPermissionsConsentNeeded_true()
-  local requestId = self.hmiConnection:SendRequest("SDL.GetPolicyConfigurationData",
-      { policyType = "module_config", property = "endpoints" })
-  EXPECT_HMIRESPONSE(requestId)
+  local RequestIdGetURLS = self.hmiConnection:SendRequest("SDL.GetURLS", { service = 7 })
+  EXPECT_HMIRESPONSE(RequestIdGetURLS)
   :Do(function(_,_)
       self.hmiConnection:SendNotification("BasicCommunication.OnSystemRequest", { requestType = "PROPRIETARY", fileName = "filename"})
 
@@ -126,9 +125,8 @@ end
 
 function Test:Precondition_PTU_revoke_app_group()
   HMIAppID = self.applications[config.application1.registerAppInterfaceParams.appName]
-  local requestId = self.hmiConnection:SendRequest("SDL.GetPolicyConfigurationData",
-      { policyType = "module_config", property = "endpoints" })
-  EXPECT_HMIRESPONSE(requestId)
+  local RequestIdGetURLS = self.hmiConnection:SendRequest("SDL.GetURLS", { service = 7 })
+  EXPECT_HMIRESPONSE(RequestIdGetURLS)
   :Do(function()
       self.hmiConnection:SendNotification("BasicCommunication.OnSystemRequest", { requestType = "PROPRIETARY", fileName = "filename"})
 

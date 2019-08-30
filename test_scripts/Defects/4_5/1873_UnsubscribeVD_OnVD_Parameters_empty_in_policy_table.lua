@@ -67,9 +67,7 @@ local function SubscribeVD(self)
   EXPECT_HMICALL("VehicleInfo.SubscribeVehicleData")
   :Do(function(_,data)
       -- Send SubscribeVehicleData response from HMI to SDL with resultCode SUCCESS
-      self.hmiConnection:SendResponse(data.id, data.method, "SUCCESS", {
-        gps = { resultCode = "SUCCESS", dataType = "VEHICLEDATA_GPS" }
-      })
+      self.hmiConnection:SendResponse(data.id, data.method, "SUCCESS", {})
     end)
   -- Expect successful SubscribeVehicleData response on mobile app
   self.mobileSession1:ExpectResponse(cid, { success = true, resultCode = "SUCCESS" })

@@ -83,8 +83,7 @@ function Test:Precondition_UpdatePolicy()
   local policy_file_path = commonFunctions:read_parameter_from_smart_device_link_ini("SystemFilesPath")
 
   EXPECT_HMINOTIFICATION("SDL.OnStatusUpdate", { status = "UPDATING" }, { status = "UP_TO_DATE" }):Times(2)
-  local requestId = self.hmiConnection:SendRequest("SDL.GetPolicyConfigurationData",
-      { policyType = "module_config", property = "endpoints" })
+  local requestId = self.hmiConnection:SendRequest("SDL.GetURLS", { service = 7 })
   EXPECT_HMIRESPONSE(requestId)
   :Do(function()
 

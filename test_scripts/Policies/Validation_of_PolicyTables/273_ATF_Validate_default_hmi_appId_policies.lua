@@ -78,9 +78,8 @@ end
 commonFunctions:newTestCasesGroup("Test")
 
 function Test:TestStep_Validate_default_hmi_upon_PTU()
-  local requestId = self.hmiConnection:SendRequest("SDL.GetPolicyConfigurationData",
-      { policyType = "module_config", property = "endpoints" })
-  EXPECT_HMIRESPONSE(requestId)
+  local RequestIdGetURLS = self.hmiConnection:SendRequest("SDL.GetURLS", { service = 7 })
+  EXPECT_HMIRESPONSE(RequestIdGetURLS)
   :Do(function(_,data)
     self.hmiConnection:SendNotification("BasicCommunication.OnSystemRequest",
     {

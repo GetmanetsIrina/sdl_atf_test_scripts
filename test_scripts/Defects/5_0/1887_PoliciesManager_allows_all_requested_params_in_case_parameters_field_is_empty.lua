@@ -68,9 +68,7 @@ local function SubscribeVD()
     local cid = common.getMobileSession():SendRPC("SubscribeVehicleData", {gps = true})
     EXPECT_HMICALL("VehicleInfo.SubscribeVehicleData")
     :Do(function(_,data)
-        common.getHMIConnection():SendResponse(data.id, data.method, "SUCCESS", {
-        gps = { resultCode = "SUCCESS", dataType = "VEHICLEDATA_GPS" }
-      })
+        common.getHMIConnection():SendResponse(data.id, data.method, "SUCCESS", {})
     end)
     common.getMobileSession():ExpectResponse(cid, { success = true, resultCode = "SUCCESS" })
 end

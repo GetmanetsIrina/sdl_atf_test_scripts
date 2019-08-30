@@ -63,8 +63,7 @@ function Test:RAI_PTU()
       :Do(
         function(_, d)
           self.hmiConnection:SendResponse(d.id, d.method, "SUCCESS", { })
-          local requestId = self.hmiConnection:SendRequest("SDL.GetPolicyConfigurationData",
-              { policyType = "module_config", property = "endpoints" })
+          local requestId = self.hmiConnection:SendRequest("SDL.GetURLS", { service = 7 })
           EXPECT_HMIRESPONSE(requestId)
           :Do(
             function()

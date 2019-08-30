@@ -71,13 +71,13 @@ function Test:Precondition_trigger_getting_device_consent()
 end
 
 function Test:Precondition_PolicyUpdateStarted()
-  local requestId = self.hmiConnection:SendRequest("SDL.GetPolicyConfigurationData",
-      { policyType = "module_config", property = "endpoints" })
-  EXPECT_HMIRESPONSE(requestId)
-  :Do(function(_, _)
+  local RequestIdGetURLS = self.hmiConnection:SendRequest("SDL.GetURLS", { service = 7 })
+  EXPECT_HMIRESPONSE(RequestIdGetURLS)
+  :Do(function(_, data)
       self.hmiConnection:SendNotification("BasicCommunication.OnSystemRequest",
         {
           requestType = "PROPRIETARY",
+          url = data.result.urls[1].url,
           appID = self.applications [config.application1.registerAppInterfaceParams.appName],
           fileName = "sdl_snapshot.json"
         })
@@ -165,10 +165,9 @@ function Test:TestStep_CheckThatAppID_BothApps_Present_In_DataBase()
 end
 
 function Test:TestStep_Start_New_PolicyUpdate_For_SecondApplication()
-  local requestId = self.hmiConnection:SendRequest("SDL.GetPolicyConfigurationData",
-      { policyType = "module_config", property = "endpoints" })
+  local RequestIdGetURLS = self.hmiConnection:SendRequest("SDL.GetURLS", { service = 7 })
   EXPECT_HMINOTIFICATION("SDL.OnStatusUpdate", {status = "UPDATING"}, {status = "UP_TO_DATE"}):Times(2)
-  EXPECT_HMIRESPONSE(requestId)
+  EXPECT_HMIRESPONSE(RequestIdGetURLS)
   :Do(function()
       self.hmiConnection:SendNotification("BasicCommunication.OnSystemRequest",
         {

@@ -137,8 +137,7 @@ function Test:updatePolicyTable(pathToPolicyFile)
     end)
   :Times(Between(1,2))
 
-  local requestId = self.hmiConnection:SendRequest("SDL.GetPolicyConfigurationData",
-      { policyType = "module_config", property = "endpoints" })
+  local requestId = self.hmiConnection:SendRequest("SDL.GetURLS", { service = 7 })
 
   EXPECT_HMIRESPONSE(requestId)
   :Do(function(_, _)

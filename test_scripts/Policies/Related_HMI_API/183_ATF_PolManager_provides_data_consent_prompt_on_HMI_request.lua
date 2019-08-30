@@ -92,9 +92,8 @@ function Test:TestStep_PTU_SUCCESS_StatusPending_StatusUpToDate()
       end
     end)
 
-  local requestId = self.hmiConnection:SendRequest("SDL.GetPolicyConfigurationData",
-      { policyType = "module_config", property = "endpoints" })
-  EXPECT_HMIRESPONSE(requestId,{ result = { code = 0, method = "SDL.GetPolicyConfigurationData" } })
+  local RequestId_GetUrls = self.hmiConnection:SendRequest("SDL.GetURLS", { service = 7 })
+  EXPECT_HMIRESPONSE(RequestId_GetUrls,{ result = { code = 0, method = "SDL.GetURLS" } })
   :Do(function()
       self.hmiConnection:SendNotification("BasicCommunication.OnSystemRequest",{ requestType = "PROPRIETARY", fileName = "PolicyTableUpdate" })
       EXPECT_NOTIFICATION("OnSystemRequest", { requestType = "PROPRIETARY" })

@@ -65,9 +65,8 @@ Test = require('connecttest')
 --[[ Preconditions ]]
 commonFunctions:newTestCasesGroup("Preconditions")
 function Test:Precondition_PolicyUpdateStarted_ForDefaultApplication()
-  local requestId = self.hmiConnection:SendRequest("SDL.GetPolicyConfigurationData",
-      { policyType = "module_config", property = "endpoints" })
-  EXPECT_HMIRESPONSE(requestId)
+  local RequestIdGetURLS = self.hmiConnection:SendRequest("SDL.GetURLS", { service = 7 })
+  EXPECT_HMIRESPONSE(RequestIdGetURLS)
   :Do(function(_,_)
       self.hmiConnection:SendNotification("BasicCommunication.OnSystemRequest",
         {
@@ -117,8 +116,7 @@ function Test:TestStep_PolicyUpdateFinished_ForDefaultApplication()
 
   EXPECT_HMINOTIFICATION("SDL.OnStatusUpdate", {status = "UP_TO_DATE"}, {status = "UPDATE_NEEDED"}, {status = "UPDATING"}):Times(3)
 
-  local requestId = self.hmiConnection:SendRequest("SDL.GetPolicyConfigurationData",
-      { policyType = "module_config", property = "endpoints" })
+  local requestId = self.hmiConnection:SendRequest("SDL.GetURLS", { service = 7 })
 
   EXPECT_HMIRESPONSE(requestId)
   :Do(function()

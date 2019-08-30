@@ -16,7 +16,6 @@
 --[[ Required Shared libraries ]]
 local runner = require('user_modules/script_runner')
 local common = require('test_scripts/API/VehicleData/commonVehicleData')
-local utils = require('user_modules/utils')
 
 --[[ Local Variables ]]
 local audioSources = {
@@ -66,7 +65,7 @@ local function processRPCSubscribeSuccess(self)
       self.hmiConnection:SendResponse(data.id, data.method, "SUCCESS", vehicleDataResults)
     end)
 
-  local responseParams = utils.cloneTable(vehicleDataResults)
+  local responseParams = vehicleDataResults
   responseParams.success = true
   responseParams.resultCode = "SUCCESS"
   mobileSession:ExpectResponse(cid, responseParams)

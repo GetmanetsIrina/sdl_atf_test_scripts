@@ -79,9 +79,7 @@ local function CheckGroup001IsConsentedAndGroup002IsConsented()
     local cid = self.mobileSession:SendRPC("SubscribeVehicleData",{rpm = true})
     EXPECT_HMICALL("VehicleInfo.SubscribeVehicleData")
     :Do(function(_,data)
-        self.hmiConnection:SendResponse(data.id, data.method, "SUCCESS", {
-        rpm = { resultCode = "SUCCESS", dataType = "VEHICLEDATA_RPM" }
-      })
+        self.hmiConnection:SendResponse(data.id, data.method, "SUCCESS",{})
       end)
     EXPECT_RESPONSE(cid, {success = true , resultCode = "SUCCESS"})
     EXPECT_NOTIFICATION("OnHashChange")

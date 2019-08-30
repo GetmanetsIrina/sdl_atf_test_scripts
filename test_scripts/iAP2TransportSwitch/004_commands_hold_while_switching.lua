@@ -79,9 +79,7 @@ local function addVehicleInfoSubscription(self)
   local cid = sessionBluetooth:SendRPC("SubscribeVehicleData", { odometer = true })
   EXPECT_HMICALL("VehicleInfo.SubscribeVehicleData")
   :Do(function(_, data)
-      self.hmiConnection:SendResponse(data.id, data.method, "SUCCESS", {
-        odometer = { resultCode = "SUCCESS", dataType = "VEHICLEDATA_ODOMETER" }
-      })
+      self.hmiConnection:SendResponse(data.id, data.method, "SUCCESS", { })
     end)
   sessionBluetooth:ExpectResponse(cid, { success = true, resultCode = "SUCCESS" })
   sessionBluetooth:ExpectNotification("OnHashChange")

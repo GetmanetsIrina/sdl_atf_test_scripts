@@ -174,9 +174,8 @@ end
 function Test:updatePolicyInDifferentSessions(PTName, appName, mobileSession)
 
   local iappID = self.applications[appName]
-  local requestId = self.hmiConnection:SendRequest("SDL.GetPolicyConfigurationData",
-      { policyType = "module_config", property = "endpoints" })
-  EXPECT_HMIRESPONSE(requestId)
+  local RequestIdGetURLS = self.hmiConnection:SendRequest("SDL.GetURLS", { service = 7 })
+  EXPECT_HMIRESPONSE(RequestIdGetURLS)
   :Do(function(_,_)
       self.hmiConnection:SendNotification("BasicCommunication.OnSystemRequest",
         {

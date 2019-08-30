@@ -200,8 +200,7 @@ local function PI_PerformViaVR_ONLY(paramsSend)
       vrHelpTitle = paramsSend.initialText,
     })
   :Do(function(_,data)
-      common.getHMIConnection():SendResponse( data.id, data.method, "WARNINGS",
-        { info = "Requested image(s) not found." } )
+      common.getHMIConnection():SendError( data.id, data.method, "WARNINGS", "Requested image(s) not found" )
     end)
   ExpectOnHMIStatusWithAudioStateChanged_PI("VR")
   common.getMobileSession():ExpectResponse(cid,
@@ -295,8 +294,7 @@ local function PI_PerformViaBOTH(paramsSend)
       RUN_AFTER(choiceIconDisplayed, 25)
       local function uiResponse()
         common.getHMIConnection():SendNotification("TTS.Stopped")
-        common.getHMIConnection():SendResponse(data.id, data.method, "WARNINGS",
-          { info = "Requested image(s) not found." })
+        common.getHMIConnection():SendError(data.id, data.method, "WARNINGS", "Requested image(s) not found")
         SendOnSystemContext("MAIN")
       end
       RUN_AFTER(uiResponse, 30)

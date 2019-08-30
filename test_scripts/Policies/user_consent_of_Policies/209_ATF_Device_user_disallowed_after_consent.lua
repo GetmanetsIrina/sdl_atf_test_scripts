@@ -56,7 +56,6 @@ end
 function Test:Precondition_Disallow_device()
   self.hmiConnection:SendNotification("SDL.OnAllowSDLFunctionality",
     {allowed = false, source = "GUI", device = {id = utils.getDeviceMAC() , name = utils.getDeviceName()}})
-  EXPECT_NOTIFICATION("OnPermissionsChange")
 end
 
 --[[ Test ]]
