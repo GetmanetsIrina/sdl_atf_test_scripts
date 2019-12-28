@@ -16,9 +16,6 @@
 local runner = require('user_modules/script_runner')
 local mobile_session = require("mobile_session")
 local common = require('test_scripts/Defects/4_5/commonDefects')
-local sdl = require('SDL')
-
---[[ Local Variables ]]
 
 --[[ Local Functions ]]
 -- Successful processing AddCommand request from mobile app

@@ -9,6 +9,9 @@ local mobile_session = require("mobile_session")
 local common = require("test_scripts/Defects/4_5/commonDefects")
 local color = require("user_modules/consts").color
 
+--[[ General configuration parameters ]]
+runner.testSettings.restrictions.sdlBuildOptions = { { extendedPolicy = { "PROPRIETARY", "HTTP" } } }
+
 --[[ Local Functions ]]
 --[[ @registerApplicationAndWaitPTUStart: create mobile session, start RPC service, register mobile application
 --! and check that 'SDL.OnStatusUpdate' notification is sent to HMI with 'UPDATE_NEEDED' status

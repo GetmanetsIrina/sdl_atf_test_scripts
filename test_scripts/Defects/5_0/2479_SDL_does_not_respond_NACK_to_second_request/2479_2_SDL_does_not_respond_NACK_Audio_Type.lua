@@ -16,7 +16,7 @@ local runner = require('user_modules/script_runner')
 runner.testSettings.isSelfIncluded = false
 
 -- [[ Local function ]]
-function startServiceProtectedSecond(pServiceId)
+local function startServiceProtectedSecond(pServiceId)
   common.getMobileSession():StartSecureService(pServiceId)
   common.getMobileSession():ExpectHandshakeMessage()
   :Times(0)

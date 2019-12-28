@@ -18,6 +18,7 @@ local sdl = require("SDL")
 local mobile_session = require("mobile_session")
 local events = require("events")
 local json = require("modules/json")
+local utils = require("user_modules/utils")
 
 --[[ Local Variables ]]
 
@@ -400,9 +401,8 @@ end
 --! self - test object
 --! @return: none
 --]]
-function commonDefect.unsuccessfulPTU(ptu_update_func, self)
-  EXPECT_HMINOTIFICATION("SDL.OnStatusUpdate", { status = "UPDATE_NEEDED" }, { status = "UPDATING" })
-  :Times(2)
+function commonDefect.unsuccessfulPTU(ptu_update_func, expec_func, self)
+  expec_func()
   ptu(self, ptu_update_func)
 end
 
