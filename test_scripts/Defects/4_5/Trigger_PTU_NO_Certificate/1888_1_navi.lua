@@ -32,8 +32,6 @@ local function startServiceSecured(pData)
   if pData.encryption == true then handshakeOccurences = 1 end
   common.getMobileSession():ExpectHandshakeMessage()
   :Times(handshakeOccurences)
-
-  common.delayedExp()
 end
 
 local function sendRPCAddCommandSecured()
@@ -57,6 +55,8 @@ end
 runner.Title("Preconditions")
 runner.Step("Clean environment", common.preconditions)
 runner.Step("Set ForceProtectedService OFF", common.setForceProtectedServiceParam, { "Non" })
+runner.Step("Init SDL certificates", common.initSDLCertificates,
+  { "./files/Security/client_credential_expired.pem", false })
 runner.Step("Start SDL, HMI, connect Mobile, start Session", common.start)
 
 runner.Title("Test")
@@ -64,15 +64,16 @@ runner.Title("Test")
 runner.Step("Register App", common.registerApp)
 runner.Step("Activate App", common.activateApp)
 
+runner.Step("PolicyTableUpdate", common.policyTableUpdate)
+
 runner.Step("StartService Secured NACK", startServiceSecured, { {
   frameInfo = common.frameInfo.START_SERVICE_NACK,
   encryption = false } })
 
 runner.Step("PolicyTableUpdate with certificate", common.policyTableUpdate, { ptUpdate })
 
-runner.Step("StartService Secured ACK", startServiceSecured, { {
-  frameInfo = common.frameInfo.START_SERVICE_ACK,
-  encryption = true } })
+runner.Step("StartService Secured ACK", startServiceSecured,
+  { {frameInfo = common.frameInfo.START_SERVICE_ACK, encryption = true } })
 
 runner.Step("AddCommand Secured", sendRPCAddCommandSecured)
 

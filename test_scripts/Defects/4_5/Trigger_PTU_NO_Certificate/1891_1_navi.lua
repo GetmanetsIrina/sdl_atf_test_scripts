@@ -37,6 +37,11 @@ local function expNotificationFunc()
   :Times(2)
 end
 
+local function expNotificationFuncFailedPTU()
+  common.getHMIConnection():ExpectNotification("SDL.OnStatusUpdate",
+    { status = "UPDATE_NEEDED" })
+end
+
 --[[ Scenario ]]
 runner.Title("Preconditions")
 runner.Step("Clean environment", common.preconditions)
@@ -44,8 +49,8 @@ runner.Step("Set ForceProtectedService OFF", common.setForceProtectedServicePara
 runner.Step("Start SDL, HMI, connect Mobile, start Session", common.start)
 
 runner.Title("Test")
-runner.Step("Register App", common.registerApp)
-runner.Step("PolicyTableUpdate fails", common.policyTableUpdate, { ptUpdate, expNotificationFunc })
+runner.Step("Register App", common.registerApp, { 1, expNotificationFunc })
+runner.Step("PolicyTableUpdate fails", common.policyTableUpdate, { ptUpdate, expNotificationFuncFailedPTU })
 runner.Step("StartService Secured NACK, no Handshake", startServiceSecured)
 
 runner.Title("Postconditions")

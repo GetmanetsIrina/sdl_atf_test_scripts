@@ -29,6 +29,9 @@ local function startServiceSecured()
     { status = "UPDATE_NEEDED" }, { status = "UPDATING" })
   :Times(2)
   common.getHMIConnection():ExpectRequest("BasicCommunication.PolicyUpdate")
+  :Do(function(_, data)
+      common.getHMIConnection():SendResponse(data.id, data.method, "SUCCESS", { })
+    end)
 
   common.delayedExp()
 end

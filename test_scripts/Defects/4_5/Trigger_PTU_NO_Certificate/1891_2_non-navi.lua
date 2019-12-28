@@ -35,9 +35,8 @@ local function startServiceSecured()
 
   local function expNotificationFunc()
     common.getHMIConnection():ExpectNotification("SDL.OnStatusUpdate",
-      { status = "UPDATE_NEEDED" }, { status = "UPDATING" },
-      { status = "UPDATE_NEEDED" }, { status = "UPDATING" })
-    :Times(4)
+      { status = "UPDATE_NEEDED" }, { status = "UPDATING" }, { status = "UPDATE_NEEDED" })
+    :Times(3)
   end
 
   common.policyTableUpdate(ptUpdateUnssucess, expNotificationFunc)
@@ -52,7 +51,7 @@ runner.Step("Start SDL, HMI, connect Mobile, start Session", common.start)
 
 runner.Title("Test")
 runner.Step("Register App", common.registerApp)
-runner.Step("PolicyTableUpdate fails", common.policyTableUpdate, { ptUpdateSuccess })
+runner.Step("PolicyTableUpdate", common.policyTableUpdate, { ptUpdateSuccess })
 runner.Step("StartService Secured, PTU started and fails, NACK, no Handshake", startServiceSecured)
 
 runner.Title("Postconditions")

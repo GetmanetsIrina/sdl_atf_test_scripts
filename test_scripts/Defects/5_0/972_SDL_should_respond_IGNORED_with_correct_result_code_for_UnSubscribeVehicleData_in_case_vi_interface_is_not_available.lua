@@ -66,7 +66,12 @@ local function setUnsubscribeVehicleDataIgnored(self)
   local cid = self.mobileSession1:SendRPC("UnsubscribeVehicleData", pParams)
   EXPECT_HMICALL("VehicleInfo.UnsubscribeVehicleData")
   :Times(0)
-  self.mobileSession1:ExpectResponse(cid, {success = false, resultCode = "IGNORED", info = "Some provided VehicleData was not subscribed."})
+  self.mobileSession1:ExpectResponse(cid, {
+    success = false,
+    resultCode = "IGNORED",
+    info = "Was not subscribed on any VehicleData.",
+    gps = { dataType = "VEHICLEDATA_GPS", resultCode = "DATA_NOT_SUBSCRIBED"
+  }})
 end
 
 --[[ Scenario ]]

@@ -46,7 +46,7 @@ local function startServiceSecured(pData)
     :Times(3)
   end
 
-  common.policyTableUpdate(ptUpdateCertificate, expNotificationFunc)
+  common.policyTableUpdateSuccess(ptUpdateCertificate, expNotificationFunc)
   common.delayedExp()
 end
 
@@ -71,6 +71,8 @@ end
 runner.Title("Preconditions")
 runner.Step("Clean environment", common.preconditions)
 runner.Step("Set ForceProtectedService OFF", common.setForceProtectedServiceParam, { "Non" })
+runner.Step("Init SDL certificates", common.initSDLCertificates,
+  { "./files/Security/client_credential_expired.pem", false })
 runner.Step("Start SDL, HMI, connect Mobile, start Session", common.start)
 
 runner.Title("Test")

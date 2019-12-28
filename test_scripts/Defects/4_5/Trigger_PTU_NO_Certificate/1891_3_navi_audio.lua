@@ -26,6 +26,11 @@ local function expNotificationFunc()
   :Times(2)
 end
 
+local function expNotificationFuncFailedPTU()
+  common.getHMIConnection():ExpectNotification("SDL.OnStatusUpdate",
+    { status = "UPDATE_NEEDED" })
+end
+
 local function startServiceSecured()
   common.getMobileSession():StartSecureService(serviceId)
   common.getMobileSession():ExpectControlMessage(serviceId, {
@@ -45,8 +50,8 @@ runner.Step("Set ForceProtectedService OFF", common.setForceProtectedServicePara
 runner.Step("Start SDL, HMI, connect Mobile, start Session", common.start)
 
 runner.Title("Test")
-runner.Step("Register App", common.registerApp)
-runner.Step("PolicyTableUpdate fails", common.policyTableUpdate, { ptUpdate, expNotificationFunc })
+runner.Step("Register App", common.registerApp, { 1, expNotificationFunc })
+runner.Step("PolicyTableUpdate fails", common.policyTableUpdate, { ptUpdate, expNotificationFuncFailedPTU })
 runner.Step("Activate App", common.activateApp)
 runner.Step("StartService Secured ACK, no encryption, no Handshake", startServiceSecured)
 
