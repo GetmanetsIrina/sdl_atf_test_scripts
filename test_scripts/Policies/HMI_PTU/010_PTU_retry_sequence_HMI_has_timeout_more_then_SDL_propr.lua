@@ -10,20 +10,20 @@
 -- 4. PTU via HMI is started
 -- SDL does:
 --   a. start timeout_after_x_seconds timeout
--- 5. Timeout is expired
+-- 5. Timeout expired
 -- SDL does:
 --   a. start retry strategy
 --   b. send SDL.OnStatusUpdate(UPDATE_NEDDED) to HMI
 --   c. send OnSystemRequest(Proprietary) to mobile app
 --   d. sends SDL.OnStatusUpdate(UPDATING) to HMI
 --   i. start timeout_for_first_try = timeout_after_x_seconds + secondsBetweenRetries[1]
--- 6. Timeout is expired
+-- 6. Timeout expired
 -- SDL does:
 --   a. send SDL.OnStatusUpdate(UPDATE_NEDDED) to HMI
 --   b. send OnSystemRequest(Proprietary) to mobile app
 --   c. sends SDL.OnStatusUpdate(UPDATING) to HMI
 --   d. start timeout_for_second_try = timeout_for_first_try + secondsBetweenRetries[2]
--- 7. Timeout is expired
+-- 7. Timeout expired
 -- SDL does:
 --   a. send SDL.OnStatusUpdate(UPDATE_NEDDED) to HMI
 ---------------------------------------------------------------------------------------------------
@@ -38,17 +38,18 @@ runner.testSettings.isSelfIncluded = false
 runner.testSettings.restrictions.sdlBuildOptions = { { extendedPolicy = { "PROPRIETARY" } } }
 
 --[[ Local Variables ]]
-local secondsBetweenRetries = { 1, 2 }
-local timeout_after_x_seconds = 4
+local secondsBetweenRetries = { 1, 2 } -- in sec
+local timeout_after_x_seconds = 4 -- in sec
 local retryNotificationTime = {}
-local expectedTimeRetry = {
+local expectedTimeRetry = { -- in msec
   timeout_after_x_seconds*1000,
   (timeout_after_x_seconds + secondsBetweenRetries[1])*1000,
   (timeout_after_x_seconds*#secondsBetweenRetries + secondsBetweenRetries[1] + secondsBetweenRetries[2])*1000
 }
+local inaccuracy = 500 -- in msec
 
 --[[ Local Functions ]]
-local function preloadedTupd(pTbl)
+local function updatePreloadedTimeout(pTbl)
   pTbl.policy_table.module_config.timeout_after_x_seconds = timeout_after_x_seconds
   pTbl.policy_table.module_config.seconds_between_retries = secondsBetweenRetries
 end
@@ -108,7 +109,7 @@ local function checkOnStatusUpdateNotificationTimers()
   end
 
   for key, retryTime in pairs(actualCheckTime) do
-    if retryTime > expectedTimeRetry[key] + 500 or retryTime < expectedTimeRetry[key] - 500
+    if retryTime > expectedTimeRetry[key] + inaccuracy or retryTime < expectedTimeRetry[key] - inaccuracy
       then
         test:FailTestCase("Time between messages UPDATING and UPDATE_NEEDED is not equal to expected.\n"
           .. "Expected time is " .. expectedTimeRetry[key] .. ", actual time is " .. retryTime)
@@ -119,7 +120,7 @@ end
 --[[ Scenario ]]
 runner.Title("Preconditions")
 runner.Step("Clean environment", common.preconditions)
-runner.Step("Preloaded update with retry parameters", common.updatePreloaded, { preloadedTupd })
+runner.Step("Preloaded update with retry parameters", common.updatePreloaded, { updatePreloadedTimeout })
 runner.Step("Start SDL, HMI, connect Mobile, start Session", common.start)
 
 runner.Title("Test")

@@ -10,32 +10,32 @@
 -- 4. PTU via HMI is started
 -- SDL does:
 --   a. start timeout_after_x_seconds timeout
--- 5. Timeout is expired
+-- 5. Timeout expired
 -- SDL does:
---   a. send SDL.OnStatusUpdate(UPDATE_NEDDED) to HMI
+--   a. send SDL.OnStatusUpdate(UPDATE_NEEDED) to HMI
 -- 6. SDL receives OnSystemRequest(Proprietary) from HMI
 -- SDL does:
---   a. SDL sends PTU status to updating
---   b. starts timeout_after_x_seconds timeout
--- 7. All timeouts are expired
+--   a. send PTU status to updating
+--   b. start timeout_after_x_seconds timeout
+-- 7. All timeouts expired
 -- SDL does:
---   a. send SDL.OnStatusUpdate(UPDATE_NEDDED) to HMI
--- 8. SDL receives OnSystemRequest(Proprietary) from HMI in timeout_after_x_seconds after fist notification
+--   a. send SDL.OnStatusUpdate(UPDATE_NEEDED) to HMI
+-- 8. SDL receives OnSystemRequest(Proprietary) from HMI in timeout_after_x_seconds after the first notification
 -- SDL does:
---   a. SDL sends PTU status to updating
---   b. starts timeout_after_x_seconds timeout
--- 9. All timeouts are expired
+--   a. send PTU status to updating
+--   b. start timeout_after_x_seconds timeout
+-- 9. All timeouts expired
 -- SDL does:
---   a. send SDL.OnStatusUpdate(UPDATE_NEDDED) to HMI
+--   a. send SDL.OnStatusUpdate(UPDATE_NEEDED) to HMI
 -- 10. SDL receives OnSystemRequest(Proprietary) from HMI in secondsBetweenRetries[1] after second notification
 -- SDL does:
---   a. SDL sends PTU status to updating
---   b. starts timeout_after_x_seconds timeout
--- 11. All timeouts are expired
+--   a. send PTU status to updating
+--   b. start timeout_after_x_seconds timeout
+-- 11. All timeouts expired
 -- SDL does:
---   a. send SDL.OnStatusUpdate(UPDATE_NEDDED) to HMI
+--   a. send SDL.OnStatusUpdate(UPDATE_NEEDED) to HMI
 -- 12. SDL receives OnSystemRequest(Proprietary) from HMI in secondsBetweenRetries[2] after third notification
--- Retry strategy is finishes, HMI does not sent OnSystemRequest notification any more till next ignition cycle
+-- Retry strategy is finished, HMI does not sent OnSystemRequest notification any more till next ignition cycle
 ---------------------------------------------------------------------------------------------------
 
 --[[ Required Shared libraries ]]
@@ -48,21 +48,22 @@ runner.testSettings.isSelfIncluded = false
 runner.testSettings.restrictions.sdlBuildOptions = { { extendedPolicy = { "EXTERNAL_PROPRIETARY" } } }
 
 --[[ Local Variables ]]
-local secondsBetweenRetries = { 1, 2 }
-local timeout_after_x_seconds = 4
+local secondsBetweenRetries = { 1, 2 } -- in sec
+local timeout_after_x_seconds = 4 -- in sec
 local timeToCheckOnSystemNot = {}
 local retryNotificationTime = {}
-local expectedTime = {
+local expectedTime = { -- in msec
   timeout_after_x_seconds*1000,
   (timeout_after_x_seconds + secondsBetweenRetries[1])*1000,
   (timeout_after_x_seconds  + secondsBetweenRetries[2])*1000 }
-local expectedTimeRetry = {
+local expectedTimeRetry = { -- in msec
   (timeout_after_x_seconds + secondsBetweenRetries[1])*1000,
   (timeout_after_x_seconds + secondsBetweenRetries[2])*1000
 }
+local inaccuracy = 500 -- in msec
 
 --[[ Local Functions ]]
-local function preloadedTupd(pTbl)
+local function updatePreloadedTimeout(pTbl)
   pTbl.policy_table.module_config.timeout_after_x_seconds = timeout_after_x_seconds
   pTbl.policy_table.module_config.seconds_between_retries = secondsBetweenRetries
 end
@@ -94,7 +95,9 @@ local function startRetrySequece()
 end
 
 local function retrySequence()
-  local reserveTime = timeout_after_x_seconds*1000 + 1000
+  local inaccuracyOneSec = 1000
+  -- timeout_after_x_seconds*1000 - convert timeout_after_x_seconds from sec to msec
+  local reserveTime = timeout_after_x_seconds*1000 + inaccuracyOneSec
   local timeout = expectedTime[1] + expectedTime[2] + expectedTime[3] + reserveTime
   common.mobile():ExpectNotification("OnSystemRequest", { requestType = "PROPRIETARY" })
   :Times(3)
@@ -146,7 +149,8 @@ local function checkOnStatusUpdateNotificationTimers()
   end
 
   for _, retryTime in pairs(actualCheckTime) do
-    if retryTime > timeout_after_x_seconds*1000 + 500 or retryTime < timeout_after_x_seconds*1000 - 500
+    -- timeout_after_x_seconds*1000 - convert timeout_after_x_seconds from sec to msec
+    if retryTime > timeout_after_x_seconds*1000 + inaccuracy or retryTime < timeout_after_x_seconds*1000 - inaccuracy
       then
         test:FailTestCase("Time between messages UPDATING and UPDATE_NEEDED is not equal to timeout_after_x_seconds.\n"
           .. "Expected time is " .. timeout_after_x_seconds*1000 , ", actual time is " .. retryTime)
@@ -163,7 +167,7 @@ local function checkOnSystemRequestTimers()
   end
 
   for key, _ in pairs(actualTime) do
-    if actualTime[key] > expectedTime[key] + 500 or actualTime[key] < expectedTime[key] - 500 then
+    if actualTime[key] > expectedTime[key] + inaccuracy or actualTime[key] < expectedTime[key] - inaccuracy then
       test:FailTestCase("Time between messages is not equal to retry timeouts.\nExpected result: " .. expectedTime[key]
         .. ". Actual Result: " .. actualTime[key])
     end
@@ -173,7 +177,7 @@ end
 --[[ Scenario ]]
 runner.Title("Preconditions")
 runner.Step("Clean environment", common.preconditions)
-runner.Step("Preloaded update with retry parameters", common.updatePreloaded, { preloadedTupd })
+runner.Step("Preloaded update with retry parameters", common.updatePreloaded, { updatePreloadedTimeout })
 runner.Step("Start SDL, HMI, connect Mobile, start Session", common.start)
 
 runner.Title("Test")

@@ -7,6 +7,7 @@ config.checkAllValidations = true
 
 --[[ Required Shared libraries ]]
 local utils = require('user_modules/utils')
+local consts = require('user_modules/consts')
 local actions = require("user_modules/sequences/actions")
 local commonPreconditions = require('user_modules/shared_testcases/commonPreconditions')
 local atf_logger = require("atf_logger")
@@ -38,7 +39,7 @@ m.runAfter = actions.run.runAfter
 local function getPTUFromPTS()
   local pTbl = m.getPTS()
   if pTbl == nil then
-    utils.cprint(35, "PTS file was not found, PreloadedPT is used instead")
+    utils.cprint(consts.color.magenta, "PTS file was not found, PreloadedPT is used instead")
     local appConfigFolder = m.getSDLIniParameter("AppConfigFolder")
     if appConfigFolder == nil or appConfigFolder == "" then
       appConfigFolder = commonPreconditions:GetPathToSDL()
@@ -48,7 +49,7 @@ local function getPTUFromPTS()
     if utils.isFileExist(ptsFile) then
       pTbl = utils.jsonFileToTable(ptsFile)
     else
-      utils.cprint(35, "PreloadedPT was not found, PTS is not created")
+      utils.cprint(consts.color.magenta, "PreloadedPT was not found, PTS is not created")
     end
   end
   if next(pTbl) ~= nil then
@@ -166,7 +167,7 @@ function m.log(...)
     if i == 1 then delimiter = " " end
     str = str .. delimiter .. p
   end
-  utils.cprint(35, str)
+  utils.cprint(consts.color.magenta, str)
 end
 
 --[[ @checkPTUStatus: verify status of PTU

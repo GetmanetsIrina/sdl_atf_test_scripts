@@ -30,11 +30,11 @@ runner.testSettings.isSelfIncluded = false
 runner.testSettings.restrictions.sdlBuildOptions = { { extendedPolicy = { "EXTERNAL_PROPRIETARY" } } }
 
 --[[ Local Variables ]]
-local secondsBetweenRetries = { 1, 2 }
-local timeout_after_x_seconds = 4
+local secondsBetweenRetries = { 1, 2 } -- in sec
+local timeout_after_x_seconds = 4 -- in sec
 
 --[[ Local Functions ]]
-local function preloadedTupd(pTbl)
+local function updatePreloadedTimeout(pTbl)
   pTbl.policy_table.module_config.timeout_after_x_seconds = timeout_after_x_seconds
   pTbl.policy_table.module_config.seconds_between_retries = secondsBetweenRetries
 end
@@ -87,7 +87,7 @@ end
 --[[ Scenario ]]
 runner.Title("Preconditions")
 runner.Step("Clean environment", common.preconditions)
-runner.Step("Preloaded update with retry parameters", common.updatePreloaded, { preloadedTupd })
+runner.Step("Preloaded update with retry parameters", common.updatePreloaded, { updatePreloadedTimeout })
 runner.Step("Start SDL, HMI, connect Mobile, start Session", common.start)
 
 runner.Title("Test")

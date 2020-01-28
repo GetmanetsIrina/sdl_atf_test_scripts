@@ -41,7 +41,7 @@ local function registerApp()
         local timeBetweenResNot = updatingNotificationTime - actualResponseSendingTime
 
         if timeBetweenResNot < 0 and timeBetweenResNot > 200 then
-          return false, "UPDATING notification is received not right after BC.PolicyUpdate response.\n"
+          return false, "UPDATING notification is not received right after BC.PolicyUpdate response.\n"
             .. "Actual time is " .. timeBetweenResNot
         end
         return true

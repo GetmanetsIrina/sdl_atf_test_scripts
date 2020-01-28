@@ -28,7 +28,7 @@ runner.testSettings.restrictions.sdlBuildOptions = { { extendedPolicy = { "PROPR
 
 --[[Local Variables]]
 local requestData = { fuelLevel = true }
-local responseData = { actual = false, fuelLevel = 34 }
+local responseData = { fuelLevel = 34 }
 
 --[[Local Functions]]
 local function sendAllowedRPC(pRequestData, pResponseData)
@@ -37,7 +37,8 @@ local function sendAllowedRPC(pRequestData, pResponseData)
   :Do(function(_, data)
       common.hmi():SendResponse(data.id, data.method, "SUCCESS", pResponseData)
     end)
-  common.mobile():ExpectResponse(cid, { success = true, resultCode = "SUCCESS" })
+
+  common.mobile():ExpectResponse(cid, { success = true, resultCode = "SUCCESS", fuelLevel = pResponseData.fuelLevel })
 end
 
 --[[ Scenario ]]

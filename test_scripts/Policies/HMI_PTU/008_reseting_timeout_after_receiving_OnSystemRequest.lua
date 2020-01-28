@@ -25,10 +25,11 @@ runner.testSettings.isSelfIncluded = false
 runner.testSettings.restrictions.sdlBuildOptions = { { extendedPolicy = { "PROPRIETARY", "EXTERNAL_PROPRIETARY" } } }
 
 --[[ Local Variables ]]
-local timeout_after_x_seconds = 6
+local timeout_after_x_seconds = 6 -- in sec
+local inaccuracy = 500 -- in msec
 
 --[[ Local Functions ]]
-local function preloadedTupd(pTbl)
+local function updatePreloadedTimeout(pTbl)
   pTbl.policy_table.module_config.timeout_after_x_seconds = timeout_after_x_seconds
 end
 
@@ -40,8 +41,10 @@ local function resetTimeoutAfterOnSystemRequest()
   common.hmi():ExpectNotification("SDL.OnStatusUpdate", { status = "UPDATE_NEEDED" })
   :ValidIf(function()
     local updateNeddedTime = timestamp()
-    local passedTime = updateNeddedTime - systemRequestTime
-    if passedTime > timeout_after_x_seconds*1000 + 500 or passedTime < timeout_after_x_seconds*1000 - 500 then
+    local passedTime = updateNeddedTime - systemRequestTime -- in msec
+    -- timeout_after_x_seconds*1000 - convert timeout_after_x_seconds from sec to msec
+    if passedTime > timeout_after_x_seconds*1000 + inaccuracy or
+      passedTime < timeout_after_x_seconds*1000 - inaccuracy then
       return false , "SDL timer was not updated. Expected time " .. timeout_after_x_seconds*1000 .. " ms. Actual time "
       .. passedTime
     end
@@ -52,7 +55,7 @@ end
 --[[ Scenario ]]
 runner.Title("Preconditions")
 runner.Step("Clean environment", common.preconditions)
-runner.Step("Preloaded update with retry parameters", common.updatePreloaded, { preloadedTupd })
+runner.Step("Preloaded update with retry parameters", common.updatePreloaded, { updatePreloadedTimeout })
 runner.Step("Start SDL, HMI, connect Mobile, start Session", common.start)
 runner.Step("RAI", common.registerApp)
 

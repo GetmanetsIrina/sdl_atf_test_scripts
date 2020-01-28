@@ -17,11 +17,11 @@
 --   a) send SDL.OnStatusUpdate(UPDATING) notification to the HMI
 -- 3) HMI requests endpoints for service 7 by sending GetPolicyConfigurationData rpc to the SDL
 -- SDL does:
---   a) send GetPolicyConfigurationData response with endpoints for the requested service 7
--- 4) PTU via HMI is failed
+--   a) send GetPolicyConfigurationData response with the endpoints for the requested service 7
+-- 4) PTU via HMI fails
 -- 5) HMI starts the PTU via a mobile app and sends BC.OnSystemRequest notification to the SDL
 -- SDL does:
---   a) send BC.OnSystemRequest notification to the app
+--   a) send an OnSystemRequest notification to the app
 -- 6) App gets PTU file and sends SystemRequest request with received file to the SDL
 -- SDL does:
 --   a) send BC.SystemRequest to HMI
