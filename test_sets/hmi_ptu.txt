@@ -13,5 +13,6 @@
 ./test_scripts/Policies/HMI_PTU/013_UPDATING_status_absence_after_timeout_expired_for_PolicyUpdate_response.lua
 ./test_scripts/Policies/HMI_PTU/014_Successful_PTU_after_failed_retry_consequtive_trigger_ext.lua
 ./test_scripts/Policies/HMI_PTU/015_Successful_PTU_after_failed_retry_consequtive_trigger_propr.lua
+; Tests 016 and 017 should be omitted until core issue #3136 is fixed
 ;./test_scripts/Policies/HMI_PTU/016_Successful_PTU_after_failed_retry_parallel_trigger_ext.lua https://github.com/smartdevicelink/sdl_core/issues/3136
 ;./test_scripts/Policies/HMI_PTU/017_Successful_PTU_after_failed_retry_parallel_trigger_propr.lua https://github.com/smartdevicelink/sdl_core/issues/3136
