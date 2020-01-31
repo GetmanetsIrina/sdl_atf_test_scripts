@@ -89,6 +89,7 @@ function Test:TestStep_User_consent_on_activate_app()
     end)
 
   EXPECT_NOTIFICATION("OnHMIStatus", {hmiLevel = "FULL", systemContext = "MAIN"})
+  EXPECT_HMINOTIFICATION("SDL.OnStatusUpdate", { status = "UPDATE_NEEDED" })
 end
 
 function Test:TestStep_check_LocalPT_for_updates()

@@ -33,6 +33,8 @@ config.defaultProtocolVersion = 2
 --[[ Required Shared Libraries ]]
 local commonFunctions = require('user_modules/shared_testcases/commonFunctions')
 local commonSteps = require('user_modules/shared_testcases/commonSteps')
+local commonPreconditions = require('user_modules/shared_testcases/commonPreconditions')
+local json = require("modules/json")
 local testCasesForExternalUCS = require('user_modules/shared_testcases/testCasesForExternalUCS')
 local utils = require ('user_modules/utils')
 
@@ -42,8 +44,14 @@ local grpId = "Location-1"
 local checkedSection = "external_consent_status_groups"
 
 --[[ Local Functions ]]
-local function ptuFunc(pTable)
-  pTable.policy_table.app_policies[appId] = {
+local function replaceSDLPreloadedPtFile()
+  local preloadedFile = commonPreconditions:GetPathToSDL() ..
+  commonFunctions:read_parameter_from_smart_device_link_ini("PreloadedPT")
+  local preloadedTable = testCasesForExternalUCS.createTableFromJsonFile(preloadedFile)
+  preloadedTable.policy_table.functional_groupings["DataConsent-2"].rpcs = json.null
+  preloadedTable.policy_table.module_config.timeout_after_x_seconds = 2
+  preloadedTable.policy_table.module_config.seconds_between_retries = { 1 }
+  preloadedTable.policy_table.app_policies[appId] = {
     default_hmi = "NONE",
     keep_context = false,
     priority = "NONE",
@@ -52,7 +60,7 @@ local function ptuFunc(pTable)
       "Base-4", grpId
     }
   }
-  pTable.policy_table.functional_groupings[grpId].disallowed_by_external_consent_entities_on = {
+  preloadedTable.policy_table.functional_groupings[grpId].disallowed_by_external_consent_entities_on = {
     {
       entityID = 128,
       entityType = 0
@@ -63,6 +71,8 @@ end
 --[[ General Precondition before ATF start ]]
 commonFunctions:SDLForceStop()
 commonSteps:DeleteLogsFileAndPolicyTable()
+commonPreconditions:BackupFile("sdl_preloaded_pt.json")
+replaceSDLPreloadedPtFile()
 testCasesForExternalUCS.removePTS()
 
 --[[ General Settings for configuration ]]
@@ -88,7 +98,7 @@ function Test:RAI_1()
 end
 
 function Test:ActivateApp_1()
-  testCasesForExternalUCS.activateApp(self, 1, "UP_TO_DATE", ptuFunc)
+  testCasesForExternalUCS.activateApp(self, 1)
 end
 
 function Test:SendExternalConsent()
@@ -96,18 +106,15 @@ function Test:SendExternalConsent()
       externalConsentStatus = {
         { entityType = 0, entityID = 128, status = "OFF" }
     } })
+  utils.wait(3000)
 end
 
 function Test.RemovePTS()
   testCasesForExternalUCS.removePTS()
 end
 
-function Test:StartSession_2()
-  testCasesForExternalUCS.startSession(self, 2)
-end
-
-function Test:RAI_2()
-  testCasesForExternalUCS.registerApp(self, 2)
+function Test:CreateNewPTS()
+  self.hmiConnection:SendNotification("SDL.OnPolicyUpdate")
   EXPECT_HMICALL("BasicCommunication.PolicyUpdate")
   :Do(function(_, d) testCasesForExternalUCS.pts = testCasesForExternalUCS.createTableFromJsonFile(d.params.file) end)
 end
@@ -134,6 +141,10 @@ function Test:CheckPTS()
 
   function Test.StopSDL()
     StopSDL()
+  end
+
+  function Test.Postcondition_RestorePreloadedFile()
+    commonPreconditions:RestoreFile("sdl_preloaded_pt.json")
   end
 
   return Test
