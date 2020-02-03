@@ -37,6 +37,7 @@ local commonPreconditions = require('user_modules/shared_testcases/commonPrecond
 local json = require("modules/json")
 local testCasesForExternalUCS = require('user_modules/shared_testcases/testCasesForExternalUCS')
 local utils = require ('user_modules/utils')
+local testCasesForPolicyTable = require('user_modules/shared_testcases/testCasesForPolicyTable')
 
 --[[ Local variables ]]
 local appId = config.application1.registerAppInterfaceParams.fullAppID
@@ -44,13 +45,16 @@ local grpId = "Location-1"
 local checkedSection = "external_consent_status_groups"
 
 --[[ Local Functions ]]
-local function replaceSDLPreloadedPtFile()
+local function ptuFile(pPtuFileName)
   local preloadedFile = commonPreconditions:GetPathToSDL() ..
   commonFunctions:read_parameter_from_smart_device_link_ini("PreloadedPT")
   local preloadedTable = testCasesForExternalUCS.createTableFromJsonFile(preloadedFile)
-  preloadedTable.policy_table.functional_groupings["DataConsent-2"].rpcs = json.null
-  preloadedTable.policy_table.module_config.timeout_after_x_seconds = 2
-  preloadedTable.policy_table.module_config.seconds_between_retries = { 1 }
+  if next(preloadedTable) ~= nil then
+    preloadedTable.policy_table.consumer_friendly_messages = nil
+    preloadedTable.policy_table.functional_groupings["DataConsent-2"].rpcs = json.null
+    preloadedTable.policy_table.module_config.preloaded_pt = nil
+    preloadedTable.policy_table.vehicle_data = nil
+  end
   preloadedTable.policy_table.app_policies[appId] = {
     default_hmi = "NONE",
     keep_context = false,
@@ -66,13 +70,11 @@ local function replaceSDLPreloadedPtFile()
       entityType = 0
     }
   }
+  testCasesForExternalUCS.createJsonFileFromTable(preloadedTable, pPtuFileName)
 end
-
 --[[ General Precondition before ATF start ]]
 commonFunctions:SDLForceStop()
 commonSteps:DeleteLogsFileAndPolicyTable()
-commonPreconditions:BackupFile("sdl_preloaded_pt.json")
-replaceSDLPreloadedPtFile()
 testCasesForExternalUCS.removePTS()
 
 --[[ General Settings for configuration ]]
@@ -99,6 +101,13 @@ end
 
 function Test:ActivateApp_1()
   testCasesForExternalUCS.activateApp(self, 1)
+end
+
+function Test:PolicyTableUpdate()
+  local ptuFileName = os.tmpname()
+  ptuFile(ptuFileName)
+  testCasesForPolicyTable:updatePolicyInDifferentSessions(
+    self, ptuFileName, config.application1.registerAppInterfaceParams.appName, self["mobileSession" .. 1])
 end
 
 function Test:SendExternalConsent()
@@ -141,10 +150,6 @@ function Test:CheckPTS()
 
   function Test.StopSDL()
     StopSDL()
-  end
-
-  function Test.Postcondition_RestorePreloadedFile()
-    commonPreconditions:RestoreFile("sdl_preloaded_pt.json")
   end
 
   return Test
