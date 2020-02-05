@@ -10,7 +10,7 @@ runner.testSettings.isSelfIncluded = false
 
 --[[ Local Variables ]]
 local serviceId = 7
-local appHMIType = "NAVIGATION"
+local appHMIType = "DEFAULT"
 
 --[[ General configuration parameters ]]
 config.application1.registerAppInterfaceParams.appName = "server"
@@ -18,22 +18,6 @@ config.application1.registerAppInterfaceParams.fullAppID = "SPT"
 config.application1.registerAppInterfaceParams.appHMIType = { appHMIType }
 
 --[[ Local Functions ]]
-local function ptUpdate(pTbl)
-  local filePath = "./files/Security/client_credential.pem"
-  local crt = common.readFile(filePath)
-  pTbl.policy_table.module_config.certificate = crt
-end
-
-local function startServiceSecured(pData)
-  common.getMobileSession():StartSecureService(serviceId)
-  common.getMobileSession():ExpectControlMessage(serviceId, pData)
-
-  local handshakeOccurences = 0
-  if pData.encryption == true then handshakeOccurences = 1 end
-  common.getMobileSession():ExpectHandshakeMessage()
-  :Times(handshakeOccurences)
-end
-
 local function sendRPCAddCommandSecured()
   local params = {
     cmdID = 1,
@@ -62,18 +46,14 @@ runner.Step("Start SDL, HMI, connect Mobile, start Session", common.start)
 runner.Title("Test")
 
 runner.Step("Register App", common.registerApp)
+runner.Step("PolicyTableUpdate without certificate", common.policyTableUpdate, { common.ptUpdateWOcert })
 runner.Step("Activate App", common.activateApp)
 
-runner.Step("PolicyTableUpdate", common.policyTableUpdate)
+runner.Step("StartService Secured, PTU wo cert, NACK, no Handshake", common.startServiceSecured,
+  { serviceId, common.nackData, common.ptUpdateWOcert })
 
-runner.Step("StartService Secured NACK", startServiceSecured, { {
-  frameInfo = common.frameInfo.START_SERVICE_NACK,
-  encryption = false } })
-
-runner.Step("PolicyTableUpdate with certificate", common.policyTableUpdate, { ptUpdate })
-
-runner.Step("StartService Secured ACK", startServiceSecured,
-  { {frameInfo = common.frameInfo.START_SERVICE_ACK, encryption = true } })
+runner.Step("StartService Secured, PTU with cert, ACK, Handshake", common.startServiceSecured,
+  { serviceId, common.ackData })
 
 runner.Step("AddCommand Secured", sendRPCAddCommandSecured)
 
