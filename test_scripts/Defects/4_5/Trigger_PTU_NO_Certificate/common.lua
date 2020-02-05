@@ -37,15 +37,6 @@ function m.setForceProtectedServiceParam(pParamValue)
   m.setSDLIniParameter("ForceProtectedService", pParamValue)
 end
 
-local registerAppOrigin = m.registerApp
-
-function m.registerApp(pAppId, pExpFunc)
-  registerAppOrigin(pAppId)
-  if pExpFunc then
-    pExpFunc()
-  end
-end
-
 function m.ptUpdateWOcert(pTbl)
   pTbl.policy_table.module_config.certificate = nil
 end

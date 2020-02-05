@@ -18,6 +18,7 @@ local sdl = require("SDL")
 local mobile_session = require("mobile_session")
 local events = require("events")
 local json = require("modules/json")
+local utils = require("user_modules/utils")
 
 --[[ Local Variables ]]
 
