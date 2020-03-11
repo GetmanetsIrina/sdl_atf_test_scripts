@@ -4,7 +4,7 @@
 -- In case:
 -- 1. Navigation app is registered and activated
 -- 2. Video streaming is started
--- 3. Wait 15 sec
+-- 3. Wait some time
 -- 4. Video streaming is restarted
 -- SDL does:
 --   a) send Navigation.OnVideoDataStreaming(available=false) by streaming finish
@@ -13,9 +13,6 @@
 -- SDL does:
 --   a) send UI.AddSubMenu request to HMI
 --   b) resend UI.AddSubMenu response from HMI to mobile app
--- 6. Mobile app stops streaming
--- SDL does:
---   a) send Navigation.OnVideoDataStreaming(available=false) by streaming finish
 ---------------------------------------------------------------------------------------------------
 
 --[[ Required Shared libraries ]]
@@ -30,22 +27,31 @@ runner.testSettings.isSelfIncluded = false
 common.app.getParams(1).appHMIType = { "NAVIGATION" }
 
 --[[ Local Variables ]]
+local timeToWait = 120 -- in sec.
 local videoStreamServiceId = 11
 local videoDataStoppedTimeout = 500
-local requestParams = {
-  menuID = 1000,
-  position = 500,
-  menuName ="SubMenupositive"
-}
 
 --[[ Local Functions ]]
-local function stopStreaming()
-  common.getMobileSession():StopStreaming("files/SampleVideo_5mb.mp4")
-end
-
 local function startStreaming(pServiceId)
-  common.getMobileSession():StartStreaming(pServiceId, "files/SampleVideo_5mb.mp4")
-  common.getHMIConnection():ExpectNotification("Navigation.OnVideoDataStreaming", { available = true })
+  local msg = {
+    frameInfo = 0,
+    frameType = 1,
+    serviceType = pServiceId,
+    binaryData = "123"
+  }
+  local function sendStreamData()
+    common.getMobileSession():Send(msg)
+  end
+  sendStreamData()
+  common.getHMIConnection():ExpectNotification("Navigation.OnVideoDataStreaming")
+  :Do(function(_, data)
+      if data.params.available == false then
+        sendStreamData()
+        RUN_AFTER(sendStreamData, videoDataStoppedTimeout)
+      end
+    end)
+  :Times(AnyNumber())
+  utils.wait(timeToWait * 1000 + 1000)
 end
 
 local function startService(pServiceId)
@@ -58,6 +64,11 @@ local function startService(pServiceId)
 end
 
 local function sendAddSubMenu()
+  local requestParams = {
+    menuID = 1000,
+    position = 500,
+    menuName ="SubMenupositive"
+  }
   local corId = common.getMobileSession():SendRPC("AddSubMenu", requestParams)
   common.getHMIConnection():ExpectRequest("UI.AddSubMenu")
   :Do(function(_, data)
@@ -68,10 +79,6 @@ local function sendAddSubMenu()
   common.getMobileSession():ExpectNotification("OnHashChange")
 end
 
-local function wait()
-  utils.cprint(35, "Wait 15 seconds ...")
-  utils.wait(15000)
-end
 
 --[[ Scenario ]]
 runner.Title("Preconditions")
@@ -84,12 +91,8 @@ runner.Step("Policy Table Update", common.policyTableUpdate)
 runner.Step("Activate App", common.activateApp)
 
 runner.Title("Test")
-runner.Step("Start video Service", startService, { videoStreamServiceId })
-runner.Step("Wait 15 sec", wait)
-runner.Step("Stop streaming", stopStreaming, { videoStreamServiceId })
-runner.Step("Start streaming", startStreaming, { videoStreamServiceId })
+runner.Step("Start video service", startService, { videoStreamServiceId })
 runner.Step("AddSubMenu", sendAddSubMenu)
-runner.Step("Stop streaming", stopStreaming, { videoStreamServiceId })
 
 runner.Title("Postconditions")
 runner.Step("Stop SDL", common.postconditions)
