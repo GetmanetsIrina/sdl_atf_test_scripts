@@ -22,14 +22,12 @@
 local runner = require('user_modules/script_runner')
 local common = require('user_modules/sequences/actions')
 local utils = require("user_modules/utils")
-local hmiCapabilities = require("user_modules/hmi_values")
 
 --[[ Test Configuration ]]
 runner.testSettings.isSelfIncluded = false
 
 --[[ Apps Configuration ]]
 common.app.getParams(1).appHMIType = { "NAVIGATION" }
-hmiCapabilities.getDefaultHMITable().BasicCommunication.UpdateDeviceList = nil
 
 --[[ Local Variables ]]
 local videoStreamServiceId = 11
@@ -43,7 +41,6 @@ local requestParams = {
 --[[ Local Functions ]]
 local function stopStreaming()
   common.getMobileSession():StopStreaming("files/SampleVideo_5mb.mp4")
-  common.getHMIConnection():ExpectNotification("Navigation.OnVideoDataStreaming", { available = false })
 end
 
 local function startStreaming(pServiceId)
