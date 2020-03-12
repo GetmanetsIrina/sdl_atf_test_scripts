@@ -31,7 +31,7 @@ common.app.getParams(1).appHMIType = { "NAVIGATION" }
 --[[ Local Variables ]]
 local timeToWait = 120 -- in sec.
 local videoStreamServiceId = 11
-local videoDataStoppedTimeout = 505
+local videoDataStoppedTimeout = 500
 
 --[[ Local Functions ]]
 local function startStreaming(pServiceId)
