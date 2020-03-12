@@ -19,9 +19,11 @@
 local runner = require('user_modules/script_runner')
 local common = require('user_modules/sequences/actions')
 local utils = require("user_modules/utils")
+local sdl = require("SDL")
 
 --[[ Test Configuration ]]
 runner.testSettings.isSelfIncluded = false
+sdl.buildOptions.webSocketServerSupport = "OFF"
 
 --[[ Apps Configuration ]]
 common.app.getParams(1).appHMIType = { "NAVIGATION" }
