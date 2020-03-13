@@ -29,7 +29,7 @@ sdl.buildOptions.webSocketServerSupport = "OFF"
 common.app.getParams(1).appHMIType = { "NAVIGATION" }
 
 --[[ Local Variables ]]
-local timeToWait = 120 -- in sec.
+local timeToWait = 30 -- in sec.
 local videoStreamServiceId = 11
 local videoDataStoppedTimeout = 500
 
@@ -53,6 +53,7 @@ local function startStreaming(pServiceId)
       end
     end)
   :Times(AnyNumber())
+  print("Wait " .. timeToWait .. " seconds ...")
   utils.wait(timeToWait * 1000 + 1000)
 end
 

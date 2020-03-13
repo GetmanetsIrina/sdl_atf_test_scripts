@@ -29,7 +29,7 @@ common.app.getParams(1).appHMIType = { "NAVIGATION" }
 sdl.buildOptions.webSocketServerSupport = "OFF"
 
 --[[ Local Variables ]]
-local timeToWait = 120 -- in sec.
+local timeToWait = 30 -- in sec.
 local audioStreamServiceId = 10
 local audioDataStoppedTimeout = 500
 
@@ -53,6 +53,7 @@ local function startStreaming(pServiceId)
       end
     end)
   :Times(AnyNumber())
+  print("Wait " .. timeToWait .. " seconds ...")
   utils.wait(timeToWait * 1000 + 1000)
 end
 
