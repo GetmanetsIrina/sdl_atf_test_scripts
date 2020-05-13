@@ -4,8 +4,10 @@
 -- In case:
 -- 1) App sends SubscribeVehicleData request with windowStatus=true to the SDL and this request is allowed by Policies.
 -- SDL does:
--- 1) transfer this request to HMI and after successful response from hmi.
--- 2) respond SUCCESS, success:true to mobile application.
+--  a) transfer this request to HMI.
+-- 2) HMI responds with `SUCCESS` result to SubscribeVehicleData request.
+-- SDL does:
+--  a) respond `SUCCESS`, success:true to mobile application.
 ---------------------------------------------------------------------------------------------------
 --[[ Required Shared libraries ]]
 local common = require('test_scripts/API/VehicleData/WindowStatus/common')
@@ -15,7 +17,6 @@ common.Title("Preconditions")
 common.Step("Clean environment", common.preconditions)
 common.Step("Start SDL, HMI, connect Mobile, start Session", common.start)
 common.Step("Register App", common.registerApp)
-common.Step("PTU", common.policyTableUpdate, { common.pTUpdateFunc })
 common.Step("Activate App", common.activateApp)
 
 common.Title("Test")

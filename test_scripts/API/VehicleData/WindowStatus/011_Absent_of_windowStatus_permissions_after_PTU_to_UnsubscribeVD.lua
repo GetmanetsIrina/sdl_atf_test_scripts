@@ -7,11 +7,11 @@
 -- 2) App sends valid RPCs(Subscribe/UnsubscribeVehicleData) requests with windowStatus=true to the SDL
 -- 3) and SDL processes this requests successfully.
 -- In case:
--- 1) PTU is performed and UnsubscribeVehicleData RPC with `windowStatus` param is unassigned for the app.
+-- 1) Policy Table Update is performed and "windowStatus" param is unassigned for the app.
 -- 2) App is subscribed to `windowStatus` data.
--- 3) App re-sends UnsubscribeVehicleData request with windowStatus=true to the SDL.
+-- 3) App sends UnsubscribeVehicleData request with windowStatus=true to the SDL.
 -- SDL does:
--- 1) send UnsubscribeVehicleData response with (success:false, "DISALLOWED") to the mobile app.
+--  a) send UnsubscribeVehicleData response with (success:false, "DISALLOWED") to the mobile app.
 ---------------------------------------------------------------------------------------------------
 --[[ Required Shared libraries ]]
 local common = require('test_scripts/API/VehicleData/WindowStatus/common')
@@ -23,18 +23,20 @@ local function pTUpdateFunc(tbl)
       SubscribeVehicleData = {
         hmi_levels = {"BACKGROUND", "FULL", "LIMITED"},
         parameters = {"windowStatus"}
+      },
+      UnsubscribeVehicleData = {
+        hmi_levels = {"BACKGROUND", "FULL", "LIMITED"},
+        parameters = {"prndl"}
       }
     }
   }
   tbl.policy_table.functional_groupings.NewVehicleDataGroup = VDgroup
-  tbl.policy_table.app_policies[config.application1.registerAppInterfaceParams.fullAppID].groups =
-  {"Base-4", "NewVehicleDataGroup"}
+  tbl.policy_table.app_policies[common.getParams(1).fullAppID].groups = {"Base-4", "NewVehicleDataGroup"}
 end
 
 --[[ Scenario ]]
 common.Title("Preconditions")
 common.Step("Clean environment", common.preconditions)
-common.Step("Update local PT", common.updatePreloadedPT)
 common.Step("Start SDL, HMI, connect Mobile, start Session", common.start)
 common.Step("Register App", common.registerApp)
 common.Step("Activate App", common.activateApp)
@@ -42,10 +44,9 @@ common.Step("App subscribes to windowStatus data", common.subUnScribeVD, { "Subs
 common.Step("App unsubscribes to windowStatus data", common.subUnScribeVD, { "UnsubscribeVehicleData" })
 
 common.Title("Test")
-common.Step("PTU with allowed Base-4 group for application", common.policyTableUpdate, { pTUpdateFunc })
+common.Step("PTU is performed, windowStatus is unassigned for the app", common.policyTableUpdate, { pTUpdateFunc })
 common.Step("App subscribes to windowStatus data", common.subUnScribeVD, { "SubscribeVehicleData" })
-common.Step("App unsubscribes to windowStatus data DISALLOWED", common.processRPCFailure, { "UnsubscribeVehicleData" })
+common.Step("App unsubscribes to windowStatus data DISALLOWED", common.processRPCFailure, { "UnsubscribeVehicleData", "DISALLOWED" })
 
 common.Title("Postconditions")
 common.Step("Stop SDL", common.postconditions)
-common.Step("Restore PreloadedPT", common.restorePreloadedPT)

@@ -4,18 +4,18 @@
 -- 'windowStatus' parameter in case App is registered with syncMsgVersion less than 6.2.
 -- Preconditions:
 -- 1) App is registered with syncMsgVersion=5.0
--- 2) New param in `windowStatus` has since=6.2 in DB and API
+-- 2) New param `windowStatus` has since=6.2 in DB and API
 -- In case:
 -- 1) App requests Get/Sub/UnsubVehicleData with windowStatus=true.
 -- SDL does:
--- 1) reject the request as empty one
+--  a) reject the request with resultCode INVALID_DATA as empty one
 ---------------------------------------------------------------------------------------------------
 --[[ Required Shared libraries ]]
 local common = require('test_scripts/API/VehicleData/WindowStatus/common')
 
 -- [[ Test Configuration ]]
-config.application1.registerAppInterfaceParams.syncMsgVersion.majorVersion = 5
-config.application1.registerAppInterfaceParams.syncMsgVersion.minorVersion = 0
+common.getParams(1).syncMsgVersion.majorVersion = 5
+common.getParams(1).syncMsgVersion.minorVersion = 0
 
 --[[ Local Functions ]]
 local function ptuFunc(tbl)
@@ -36,13 +36,12 @@ local function ptuFunc(tbl)
     }
   }
   tbl.policy_table.functional_groupings["WindowStatus"] = VDgroup
-  tbl.policy_table.app_policies[config.application1.registerAppInterfaceParams.fullAppID].groups =
-    { "Base-4", "WindowStatus" }
+  tbl.policy_table.app_policies[common.getParams(1).fullAppID].groups = { "Base-4", "WindowStatus" }
 end
 
 --[[ Scenario ]]
 common.Title("Preconditions")
-common.Step("Clean environment", common.preconditions)
+common.Step("Clean environment", common.preconditions, { false })
 common.Step("Start SDL, HMI, connect Mobile, start Session", common.start)
 common.Step("Register App", common.registerApp)
 common.Step("PTU", common.policyTableUpdate, { ptuFunc })

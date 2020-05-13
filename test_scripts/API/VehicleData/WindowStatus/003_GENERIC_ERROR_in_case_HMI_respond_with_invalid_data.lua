@@ -13,48 +13,63 @@
 --    - params out of bounds
 --    - empty value
 -- SDL does:
--- 1) respond GENERIC_ERROR to mobile when default timeout expired.
+--  a) respond GENERIC_ERROR to mobile when default timeout is expired.
 ---------------------------------------------------------------------------------------------------
 --[[ Required Shared libraries ]]
 local common = require('test_scripts/API/VehicleData/WindowStatus/common')
 
 --[[ Local Variables ]]
+local windowStatusData = {
+  {
+    location = { col = 49, row = 49 },
+    state = {
+      approximatePosition = 50,
+      deviation = 50
+    }
+  }
+}
+
+local invalidValue = {
+  emptyValue = "",
+  invalidType = true,
+  beyondMax = 101
+}
+
+
 local resultCode = { success = false, resultCode = "GENERIC_ERROR" }
 
 --[[ Scenario ]]
 common.Title("Preconditions")
 common.Step("Clean environment", common.preconditions)
-common.Step("Update local PT", common.updatePreloadedPT)
 common.Step("Start SDL, HMI, connect Mobile, start Session", common.start)
 common.Step("Register App", common.registerApp)
 common.Step("Activate App", common.activateApp)
 
 common.Title("Test")
-for p in pairs(common.windowStatusData[1].location) do
+for p in pairs(windowStatusData[1].location) do
   common.Title("Check " .. p .. " parameter from Grid structure")
-  for k, v in pairs(common.invalidValue) do
+  for k, v in pairs(invalidValue) do
     common.Step("HMI sends GetVehicleData response with invalid " .. p .. "=" .. tostring(k),
-      common.sendGetVehicleData, { p, "location", v, resultCode })
+      common.sendGetVehicleData, { p, "location", v, windowStatusData, resultCode })
   end
   common.Step("HMI sends GetVehicleData response with missing mandatory " .. p .. " parameter",
-    common.sendGetVehicleData, { p, "location", nil, resultCode })
+    common.sendGetVehicleData, { p, "location", nil, windowStatusData, resultCode })
 end
 
-for p in pairs(common.windowStatusData[1].state) do
+for p in pairs(windowStatusData[1].state) do
   common.Title("Check " .. p .. " parameter from WindowState structure")
-  for k, v in pairs(common.invalidValue) do
+  for k, v in pairs(invalidValue) do
     common.Step("HMI sends GetVehicleData response with invalid " .. p .. "=" .. tostring(k),
-      common.sendGetVehicleData, { p, "state", v, resultCode })
+      common.sendGetVehicleData, { p, "state", v, windowStatusData, resultCode })
   end
   common.Step("HMI sends GetVehicleData response with missing mandatory " .. p .. " parameter",
-    common.sendGetVehicleData, { p, "state", nil, resultCode })
+    common.sendGetVehicleData, { p, "state", nil, windowStatusData, resultCode })
 end
 
 common.Title("Check for other parameters")
 for k, v in pairs(common.invalidParam) do
-  common.Step("HMI sends GetVehicleData response with " .. k, common.getVehicleData, { v })
+  common.Step("HMI sends GetVehicleData response with " .. k, common.getVehicleData, { v, resultCode })
 end
 
 common.Title("Postconditions")
 common.Step("Stop SDL", common.postconditions)
-common.Step("Restore PreloadedPT", common.restorePreloadedPT)

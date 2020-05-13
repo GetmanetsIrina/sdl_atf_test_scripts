@@ -8,28 +8,40 @@
 -- 3) and SDL processes this requests successfully.
 -- In case:
 -- 1) Policy Table Update is performed and "WindowStatus" functional group is unassigned for the app.
--- 2) App re-sends RPCs(Get/SubscribeVehicleData) request with windowStatus=true to the SDL.
+-- 2) App sends RPCs(Get/SubscribeVehicleData) request with windowStatus=true to the SDL.
 -- SDL does:
--- 1) send response RPCs(Get/SubscribeVehicleData) with (success:false, "DISALLOWED") to the mobile app.
+--  a) send response RPCs(Get/SubscribeVehicleData) with (success:false, "DISALLOWED") to the mobile app.
 ---------------------------------------------------------------------------------------------------
 --[[ Required Shared libraries ]]
 local common = require('test_scripts/API/VehicleData/WindowStatus/common')
 
+--[[ Local Variables ]]
+local windowStatusData = {
+  {
+    location = { col = 49, row = 49, level = 49, colspan = 49, rowspan = 49, levelspan = 49 },
+    state = {
+      approximatePosition = 50,
+      deviation = 50
+    }
+  }
+}
+
+local notExpected = 0
+
 --[[ Scenario ]]
 common.Title("Preconditions")
 common.Step("Clean environment", common.preconditions)
-common.Step("Update local PT", common.updatePreloadedPT)
 common.Step("Start SDL, HMI, connect Mobile, start Session", common.start)
 common.Step("Register App", common.registerApp)
 common.Step("Activate App", common.activateApp)
-common.Step("App sends GetVehicleData for windowStatus", common.getVehicleData, { common.windowStatusData })
+common.Step("GetVehicleData for windowStatus", common.getVehicleData, { windowStatusData })
 common.Step("App subscribes to windowStatus data", common.subUnScribeVD, { "SubscribeVehicleData" })
 
 common.Title("Test")
-common.Step("PTU with allowed Base-4 group for application", common.policyTableUpdate, { common.pTUpdateFunc })
-common.Step("GetVehicleData for windowStatus DISALLOWED", common.processRPCFailure, { "GetVehicleData" })
-common.Step("SubscribeVehicleData for windowStatus DISALLOWED", common.processRPCFailure, { "SubscribeVehicleData" })
+common.Step("PTU is performed, windowStatus is unassigned for the app", common.policyTableUpdate, { common.pTUpdateFunc })
+common.Step("GetVehicleData for windowStatus DISALLOWED", common.processRPCFailure, { "GetVehicleData", "DISALLOWED" })
+common.Step("SubscribeVehicleData for windowStatus DISALLOWED", common.processRPCFailure, { "SubscribeVehicleData", "DISALLOWED" })
+common.Step("OnVehicleData with windowStatus data", common.sendOnVehicleData, { windowStatusData, notExpected })
 
 common.Title("Postconditions")
 common.Step("Stop SDL", common.postconditions)
-common.Step("Restore PreloadedPT", common.restorePreloadedPT)

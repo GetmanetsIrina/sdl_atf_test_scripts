@@ -17,42 +17,33 @@
 --[[ Required Shared libraries ]]
 local common = require('test_scripts/API/VehicleData/WindowStatus/common')
 
---[[ Local Function ]]
-local function subscribeVD(pRPC, pAppId)
-  if not pAppId then pAppId = 1 end
-  common.getMobileSession(pAppId):ExpectNotification("OnHashChange")
-  :Do(function(_, data)
-      common.setHashId(data.payload.hashID, pAppId)
-    end)
-  common.subUnScribeVD(pRPC, pAppId)
-end
+--[[ Local Variables ]]
+local appId = 1
+local isSubscribed = true
 
-local function checkResumption_FULL()
-  common.getHMIConnection():ExpectRequest("BasicCommunication.ActivateApp", {})
-  :Do(function(_, data)
-    common.getHMIConnection():SendResponse(data.id, data.method, "SUCCESS", {})
-  end)
-  common.getMobileSession():ExpectNotification("OnHMIStatus",
-    { hmiLevel = "NONE" },
-    { hmiLevel = "FULL" })
-  :Times(2)
-end
+local windowStatusData = {
+  {
+    location = { col = 49, row = 49, level = 49, colspan = 49, rowspan = 49, levelspan = 49 },
+    state = {
+      approximatePosition = 50,
+      deviation = 50
+    }
+  }
+}
 
 --[[ Scenario ]]
 common.Title("Preconditions")
 common.Step("Clean environment", common.preconditions)
-common.Step("Update local PT", common.updatePreloadedPT)
 common.Step("Start SDL, HMI, connect Mobile, start Session", common.start)
 common.Step("Register App", common.registerApp)
 common.Step("Activate App", common.activateApp)
-common.Step("App subscribes to windowStatus data", subscribeVD, { "SubscribeVehicleData" })
+common.Step("App subscribes to windowStatus data", common.subUnScribeVD, { "SubscribeVehicleData" })
 
 common.Title("Test")
 common.Step("Unexpected disconnect", common.unexpectedDisconnect)
 common.Step("Connect mobile", common.connectMobile)
-common.Step("Re-register App resumption data", common.registerWithResumption, { 1, checkResumption_FULL, true })
-common.Step("Send OnVehicleData with windowStatus data", common.sendOnVehicleData, { common.windowStatusData })
+common.Step("Re-register App resumption data", common.registerWithResumption, { appId, common.checkResumption_FULL, isSubscribed })
+common.Step("OnVehicleData with windowStatus data", common.sendOnVehicleData, { windowStatusData })
 
 common.Title("Postconditions")
 common.Step("Stop SDL", common.postconditions)
-common.Step("Restore PreloadedPT", common.restorePreloadedPT)

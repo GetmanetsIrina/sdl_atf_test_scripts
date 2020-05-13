@@ -9,31 +9,51 @@
 -- 3) HMI sends GetVehicleData response with `windowStatus` structure with max value (100) for one of the parameters
 -- of `Grid` and `WindowState` types.
 -- SDL does:
--- 1) process this response and transfer it to mobile app.
+--  a)  process this response and transfer it to mobile app.
 ---------------------------------------------------------------------------------------------------
 --[[ Required Shared libraries ]]
 local common = require('test_scripts/API/VehicleData/WindowStatus/common')
 
 --[[ Local Variables ]]
-local value = 100
+local windowStatusData = {
+  {
+    location = { col = 49, row = 49, level = 49, colspan = 49, rowspan = 49, levelspan = 49 },
+    state = {
+      approximatePosition = 50,
+      deviation = 50
+    }
+  }
+}
+
+local boundaryValues = {
+  maxvalue = 100,
+  minvalue = -1
+}
 
 --[[ Scenario ]]
 common.Title("Preconditions")
 common.Step("Clean environment", common.preconditions)
-common.Step("Update local PT", common.updatePreloadedPT)
 common.Step("Start SDL, HMI, connect Mobile, start Session", common.start)
 common.Step("Register App", common.registerApp)
 common.Step("Activate App", common.activateApp)
 
 common.Title("Test")
-for k in pairs(common.windowStatusData[1].state) do
-  common.Step("Send GetVehicleData param " .. k .. "=" .. tostring(100), common.sendGetVehicleData, { k, "state", value })
+for k in pairs(windowStatusData[1].state) do
+  if windowStatusData[1].state then boundaryValues.minvalue = 0 end
+  for key, value in pairs(boundaryValues) do
+    common.Step("GetVehicleData param " .. k .. "=" .. key, common.sendGetVehicleData, { k, "state", value, windowStatusData })
+  end
 end
 
-for k in pairs(common.windowStatusData[1].location) do
-  common.Step("Send GetVehicleData param " .. k .. "=" .. tostring(100), common.sendGetVehicleData, { k, "location", value })
+for k in pairs(windowStatusData[1].location) do
+  if windowStatusData[1].location.colspan or
+    windowStatusData[1].location.rowspan or
+    windowStatusData[1].location.levelspan then boundaryValues.minvalue = 1
+  end
+  for key, value in pairs(boundaryValues) do
+    common.Step("GetVehicleData param " .. k .. "=" .. key, common.sendGetVehicleData, { k, "location", value, windowStatusData })
+  end
 end
 
 common.Title("Postconditions")
 common.Step("Stop SDL", common.postconditions)
-common.Step("Restore PreloadedPT", common.restorePreloadedPT)

@@ -3,18 +3,28 @@
 -- Description: Check that SDL does not forward the OnVehicleData notification with 'windowStatus' parameter to App in
 -- case `windowStatus` parameter does not exist in apps assigned policies.
 -- In case:
--- 1) OnVehicleData RPC with the `windowStatus` param does not exist in app's assigned policies.
--- 1) App is subscribed to `windowStatus` data.
--- 2) HMI sends valid OnVehicleData notification with all parameters of `windowStatus` structure.
+-- 1) `windowStatus` param does not exist in app's assigned policies OnVehicleData RPC.
+-- 2) App is subscribed to `windowStatus` data.
+-- 3) HMI sends valid OnVehicleData notification with all parameters of `windowStatus` structure.
 -- SDL does:
--- 1) ignore this notification.
--- 2) not send OnVehicleData notification to mobile.
+--  a) ignore this notification.
+--  b) not send OnVehicleData notification to mobile.
 ---------------------------------------------------------------------------------------------------
 --[[ Required Shared libraries ]]
 local common = require('test_scripts/API/VehicleData/WindowStatus/common')
 
 --[[ Local Variables ]]
-local expTime = 0
+local windowStatusData = {
+  {
+    location = { col = 49, row = 49, level = 49, colspan = 49, rowspan = 49, levelspan = 49 },
+    state = {
+      approximatePosition = 50,
+      deviation = 50
+    }
+  }
+}
+
+local notExpected = 0
 
 --[[ Local Function ]]
 local function pTUpdateFunc(tbl)
@@ -23,12 +33,15 @@ local function pTUpdateFunc(tbl)
       SubscribeVehicleData = {
         hmi_levels = {"BACKGROUND", "FULL", "LIMITED"},
         parameters = {"windowStatus"}
+      },
+      OnVehicleData = {
+        hmi_levels = {"BACKGROUND", "FULL", "LIMITED"},
+        parameters = {"prndl"}
       }
     }
   }
   tbl.policy_table.functional_groupings.NewVehicleDataGroup = VDgroup
-  tbl.policy_table.app_policies[config.application1.registerAppInterfaceParams.fullAppID].groups =
-  {"Base-4", "NewVehicleDataGroup"}
+  tbl.policy_table.app_policies[common.getParams(1).fullAppID].groups = {"Base-4", "NewVehicleDataGroup"}
 end
 
 --[[ Scenario ]]
@@ -41,7 +54,7 @@ common.Step("Activate App", common.activateApp)
 common.Step("App subscribes to windowStatus data", common.subUnScribeVD, { "SubscribeVehicleData" })
 
 common.Title("Test")
-common.Step("Send OnVehicleData with windowStatus data", common.sendOnVehicleData, { common.windowStatusData, expTime })
+common.Step("OnVehicleData with windowStatus data", common.sendOnVehicleData, { windowStatusData, notExpected })
 
 common.Title("Postconditions")
 common.Step("Stop SDL", common.postconditions)

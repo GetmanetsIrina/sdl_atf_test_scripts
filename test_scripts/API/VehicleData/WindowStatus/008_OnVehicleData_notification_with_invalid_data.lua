@@ -13,58 +13,64 @@
 --    - params out of bounds
 --    - empty value
 -- SDL does:
--- 1) ignore this notification.
--- 2) not send OnVehicleData notification to mobile.
+--  a) ignore this notification.
+--  b) not send OnVehicleData notification to mobile.
 ---------------------------------------------------------------------------------------------------
 --[[ Required Shared libraries ]]
 local common = require('test_scripts/API/VehicleData/WindowStatus/common')
 
 --[[ Local Variables ]]
-local expTime = 0
+local windowStatusData = {
+  {
+    location = { col = 49, row = 49 },
+    state = {
+      approximatePosition = 50,
+      deviation = 50
+    }
+  }
+}
 
---[[ Local Function ]]
-local function sendOnVehicleData( pParam, pData, pValue)
-  local params = common.windowStatusData
-  params[1][pData][pParam] = pValue
+local invalidValue = {
+  emptyValue = "",
+  invalidType = true,
+  beyondMax = 101
+}
 
-  common.getHMIConnection():SendNotification("VehicleInfo.OnVehicleData", { windowStatus = params })
-  common.getMobileSession():ExpectNotification("OnVehicleData", { windowStatus = params })
-  :Times(0)
-end
+local notExpected = 0
 
 --[[ Scenario ]]
 common.Title("Preconditions")
 common.Step("Clean environment", common.preconditions)
-common.Step("Update local PT", common.updatePreloadedPT)
 common.Step("Start SDL, HMI, connect Mobile, start Session", common.start)
 common.Step("Register App", common.registerApp)
 common.Step("Activate App", common.activateApp)
 common.Step("App subscribes to windowStatus data", common.subUnScribeVD, { "SubscribeVehicleData" })
 
 common.Title("Test")
-for param in pairs(common.windowStatusData[1].location) do
+for param in pairs(windowStatusData[1].location) do
   common.Title("HMI sends with invalid `windowStatus` structure for " .. param)
-  for k, v in pairs(common.invalidValue) do
+  for k, v in pairs(invalidValue) do
     common.Step("OnVehicleData with invalid value for " .. param .. "=" .. tostring(k),
-      sendOnVehicleData, { param, "location", v })
+      common.checkNotificationIgnored, { param, "location", v, windowStatusData })
   end
-  common.Step("OnVehicleData with missing mandatory " .. param .. " parameter", sendOnVehicleData, { param, "location", nil })
+  common.Step("OnVehicleData with missing mandatory " .. param .. " parameter", common.checkNotificationIgnored,
+    { param, "location", nil, windowStatusData })
 end
 
-for param in pairs(common.windowStatusData[1].state) do
+for param in pairs(windowStatusData[1].state) do
   common.Title("HMI sends with invalid `windowStatus` structure for " .. param)
-  for k, v in pairs(common.invalidValue) do
+  for k, v in pairs(invalidValue) do
     common.Step("OnVehicleData with invalid value for " .. param .. "=" .. tostring(k),
-      sendOnVehicleData, { param, "state", v })
+    common.checkNotificationIgnored, { param, "state", v, windowStatusData })
   end
-  common.Step("OnVehicleData with missing mandatory " .. param .. " parameter", sendOnVehicleData, { param, "state", nil })
+  common.Step("OnVehicleData with missing mandatory " .. param .. " parameter", common.checkNotificationIgnored,
+    { param, "state", nil, windowStatusData })
 end
 
 common.Title("Check for other parameters")
 for k, v in pairs(common.invalidParam) do
-  common.Step("OnVehicleData with " .. k, common.sendOnVehicleData, { v, expTime })
+  common.Step("OnVehicleData with " .. k, common.sendOnVehicleData, { v, notExpected })
 end
 
 common.Title("Postconditions")
 common.Step("Stop SDL", common.postconditions)
-common.Step("Restore PreloadedPT", common.restorePreloadedPT)

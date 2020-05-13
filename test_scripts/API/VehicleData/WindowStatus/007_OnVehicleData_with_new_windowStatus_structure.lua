@@ -6,23 +6,32 @@
 -- 1) App is subscribed to `windowStatus` data.
 -- 2) HMI sends valid OnVehicleData notification with all parameters of `windowStatus` structure.
 -- SDL does:
--- 1) process this notification and transfer it to mobile app.
+--  a) process this notification and transfer it to mobile app.
 ---------------------------------------------------------------------------------------------------
 --[[ Required Shared libraries ]]
 local common = require('test_scripts/API/VehicleData/WindowStatus/common')
 
+--[[ Local Variables ]]
+local windowStatusData = {
+  {
+    location = { col = 49, row = 49, level = 49, colspan = 49, rowspan = 49, levelspan = 49 },
+    state = {
+      approximatePosition = 50,
+      deviation = 50
+    }
+  }
+}
+
 --[[ Scenario ]]
 common.Title("Preconditions")
 common.Step("Clean environment", common.preconditions)
-common.Step("Update local PT", common.updatePreloadedPT)
 common.Step("Start SDL, HMI, connect Mobile, start Session", common.start)
 common.Step("Register App", common.registerApp)
 common.Step("Activate App", common.activateApp)
 common.Step("App subscribes to windowStatus data", common.subUnScribeVD, { "SubscribeVehicleData" })
 
 common.Title("Test")
-common.Step("Send OnVehicleData with windowStatus data", common.sendOnVehicleData, { common.windowStatusData })
+common.Step("OnVehicleData with windowStatus data", common.sendOnVehicleData, { windowStatusData })
 
 common.Title("Postconditions")
 common.Step("Stop SDL", common.postconditions)
-common.Step("Restore PreloadedPT", common.restorePreloadedPT)
