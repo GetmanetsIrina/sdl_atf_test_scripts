@@ -1,9 +1,11 @@
 ---------------------------------------------------------------------------------------------------
 -- Proposal:https://github.com/smartdevicelink/sdl_evolution/blob/master/proposals/0261-New-vehicle-data-WindowStatus.md
+--
 -- Description: Check that SDL rejects the request with resultCode `DISALLOWED` if app tries to unsubscribe from
 -- 'windowStatus' and parameter is not present in apps assigned policies after PTU.
+--
 -- Preconditions:
--- 1) RPCs(Subscribe/UnsubscribeVehicleData) with the `windowStatus` param exists in app's assigned policies.
+-- 1) RPCs(Subscribe/UnsubscribeVehicleData) with the `windowStatus` param exist in app's assigned policies.
 -- 2) App sends valid RPCs(Subscribe/UnsubscribeVehicleData) requests with windowStatus=true to the SDL
 -- 3) and SDL processes this requests successfully.
 -- In case:
@@ -21,17 +23,17 @@ local function pTUpdateFunc(tbl)
   local VDgroup = {
     rpcs = {
       SubscribeVehicleData = {
-        hmi_levels = {"BACKGROUND", "FULL", "LIMITED"},
-        parameters = {"windowStatus"}
+        hmi_levels = { "BACKGROUND", "FULL", "LIMITED" },
+        parameters = { "windowStatus" }
       },
       UnsubscribeVehicleData = {
-        hmi_levels = {"BACKGROUND", "FULL", "LIMITED"},
-        parameters = {"prndl"}
+        hmi_levels = { "BACKGROUND", "FULL", "LIMITED" },
+        parameters = { "prndl" }
       }
     }
   }
   tbl.policy_table.functional_groupings.NewVehicleDataGroup = VDgroup
-  tbl.policy_table.app_policies[common.getParams(1).fullAppID].groups = {"Base-4", "NewVehicleDataGroup"}
+  tbl.policy_table.app_policies[common.getParams().fullAppID].groups = { "Base-4", "NewVehicleDataGroup" }
 end
 
 --[[ Scenario ]]
@@ -41,12 +43,12 @@ common.Step("Start SDL, HMI, connect Mobile, start Session", common.start)
 common.Step("Register App", common.registerApp)
 common.Step("Activate App", common.activateApp)
 common.Step("App subscribes to windowStatus data", common.subUnScribeVD, { "SubscribeVehicleData" })
-common.Step("App unsubscribes to windowStatus data", common.subUnScribeVD, { "UnsubscribeVehicleData" })
+common.Step("App unsubscribes from windowStatus data", common.subUnScribeVD, { "UnsubscribeVehicleData" })
 
 common.Title("Test")
 common.Step("PTU is performed, windowStatus is unassigned for the app", common.policyTableUpdate, { pTUpdateFunc })
 common.Step("App subscribes to windowStatus data", common.subUnScribeVD, { "SubscribeVehicleData" })
-common.Step("App unsubscribes to windowStatus data DISALLOWED", common.processRPCFailure, { "UnsubscribeVehicleData", "DISALLOWED" })
+common.Step("App unsubscribes from windowStatus data DISALLOWED", common.processRPCFailure, { "UnsubscribeVehicleData", "DISALLOWED" })
 
 common.Title("Postconditions")
 common.Step("Stop SDL", common.postconditions)

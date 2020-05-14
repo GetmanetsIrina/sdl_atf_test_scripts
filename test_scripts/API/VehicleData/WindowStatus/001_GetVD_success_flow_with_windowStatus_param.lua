@@ -1,6 +1,8 @@
 ---------------------------------------------------------------------------------------------------
 -- Proposal:https://github.com/smartdevicelink/sdl_evolution/blob/master/proposals/0261-New-vehicle-data-WindowStatus.md
+--
 -- Description: Check that SDL successfully processes GetVehicleData with new `windowStatus` param.
+--
 -- In case:
 -- 1) App sends GetVehicleData request with windowStatus=true to the SDL and this request is allowed by Policies.
 -- SDL does:

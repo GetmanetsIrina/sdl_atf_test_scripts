@@ -1,9 +1,11 @@
 ---------------------------------------------------------------------------------------------------
 -- Proposal:https://github.com/smartdevicelink/sdl_evolution/blob/master/proposals/0261-New-vehicle-data-WindowStatus.md
--- Description: Check that SDL successfully processes VD RPC with new `windowStatus` param in case app version is greater than 6.2
+--
+-- Description: Check that SDL successfully processes VD RPC with new `windowStatus` param in case app version is greater than 6.0
+--
 -- Preconditions:
 -- 1) App is registered with syncMsgVersion=7.0
--- 2) New param in `windowStatus` has since=6.2 in DB and API
+-- 2) New param in `windowStatus` has since=6.0 in DB and API
 -- In case:
 -- 1) App requests Get/Sub/UnsubVehicleData with windowStatus=true.
 -- 2) HMI sends valid OnVehicleData notification with all parameters of `windowStatus` structure.
@@ -15,8 +17,8 @@
 local common = require('test_scripts/API/VehicleData/WindowStatus/common')
 
 -- [[ Test Configuration ]]
-common.getParams(1).syncMsgVersion.majorVersion = 7
-common.getParams(1).syncMsgVersion.minorVersion = 0
+common.getParams().syncMsgVersion.majorVersion = 7
+common.getParams().syncMsgVersion.minorVersion = 0
 
 --[[ Local Variables ]]
 local windowStatusData = {
@@ -40,7 +42,7 @@ common.Title("Test")
 common.Step("GetVehicleData for windowStatus", common.getVehicleData, { windowStatusData })
 common.Step("App subscribes to windowStatus data", common.subUnScribeVD, { "SubscribeVehicleData" })
 common.Step("OnVehicleData with windowStatus data", common.sendOnVehicleData, { windowStatusData })
-common.Step("App unsubscribes to windowStatus data", common.subUnScribeVD, { "UnsubscribeVehicleData" })
+common.Step("App unsubscribes from windowStatus data", common.subUnScribeVD, { "UnsubscribeVehicleData" })
 
 common.Title("Postconditions")
 common.Step("Stop SDL", common.postconditions)

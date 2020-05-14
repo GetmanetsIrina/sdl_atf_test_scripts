@@ -1,9 +1,11 @@
 ---------------------------------------------------------------------------------------------------
 -- Proposal:https://github.com/smartdevicelink/sdl_evolution/blob/master/proposals/0261-New-vehicle-data-WindowStatus.md
+--
 -- Description: Check that SDL resumes the subscription for 'windowStatus' after IGN_OFF/ON.
+--
 -- In case:
 -- 1) App is subscribed to `windowStatus` data.
--- 2) IGN_OFF/IGN_ON cycle is performed.
+-- 2) IGN_OFF/IGN_ON cycle are performed.
 -- 3) App re-registered with actual HashId.
 -- SDL does:
 --  a) send VehicleInfo.SubscribeVehicleData(windowStatus=true) request to HMI.
@@ -42,7 +44,7 @@ common.Step("App subscribes to windowStatus data", common.subUnScribeVD, { "Subs
 common.Title("Test")
 common.Step("Ignition Off", common.ignitionOff)
 common.Step("Ignition On", common.start)
-common.Step("Re-register App resumption data", common.registerWithResumption, { appId, common.checkResumption_FULL, isSubscribed })
+common.Step("Re-register App resumption data", common.registerAppWithResumption, { appId, common.checkResumption_FULL, isSubscribed })
 common.Step("OnVehicleData with windowStatus data", common.sendOnVehicleData, { windowStatusData })
 
 common.Title("Postconditions")

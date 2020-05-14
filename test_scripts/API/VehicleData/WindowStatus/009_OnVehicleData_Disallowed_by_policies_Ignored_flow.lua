@@ -1,9 +1,11 @@
 ---------------------------------------------------------------------------------------------------
 -- Proposal:https://github.com/smartdevicelink/sdl_evolution/blob/master/proposals/0261-New-vehicle-data-WindowStatus.md
+--
 -- Description: Check that SDL does not forward the OnVehicleData notification with 'windowStatus' parameter to App in
 -- case `windowStatus` parameter does not exist in apps assigned policies.
+--
 -- In case:
--- 1) `windowStatus` param does not exist in app's assigned policies OnVehicleData RPC.
+-- 1) `windowStatus` param does not exist in app's assigned policies for OnVehicleData RPC.
 -- 2) App is subscribed to `windowStatus` data.
 -- 3) HMI sends valid OnVehicleData notification with all parameters of `windowStatus` structure.
 -- SDL does:
@@ -31,17 +33,17 @@ local function pTUpdateFunc(tbl)
   local VDgroup = {
     rpcs = {
       SubscribeVehicleData = {
-        hmi_levels = {"BACKGROUND", "FULL", "LIMITED"},
-        parameters = {"windowStatus"}
+        hmi_levels = { "BACKGROUND", "FULL", "LIMITED" },
+        parameters = { "windowStatus"}
       },
       OnVehicleData = {
-        hmi_levels = {"BACKGROUND", "FULL", "LIMITED"},
-        parameters = {"prndl"}
+        hmi_levels = { "BACKGROUND", "FULL", "LIMITED" },
+        parameters = { "prndl" }
       }
     }
   }
   tbl.policy_table.functional_groupings.NewVehicleDataGroup = VDgroup
-  tbl.policy_table.app_policies[common.getParams(1).fullAppID].groups = {"Base-4", "NewVehicleDataGroup"}
+  tbl.policy_table.app_policies[common.getParams().fullAppID].groups = { "Base-4", "NewVehicleDataGroup" }
 end
 
 --[[ Scenario ]]

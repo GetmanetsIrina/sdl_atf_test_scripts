@@ -1,7 +1,9 @@
 ---------------------------------------------------------------------------------------------------
 -- Proposal:https://github.com/smartdevicelink/sdl_evolution/blob/master/proposals/0261-New-vehicle-data-WindowStatus.md
+--
 -- Description: Check that SDL rejects the RPCs(Get/Subscribe/UnsubscribeVehicleData) requests with resultCode: DISALLOWED
 -- if app tries to get `windowStatus` vehicle data in case `windowStatus` param does not exist in assigned policies.
+--
 -- In case:
 -- 1) RPCs(Get/Subscribe/UnsubscribeVehicleData) with the `windowStatus` and param does not exist in app's assigned policies.
 -- 2) App sends valid RPCs(Get/Subscribe/UnsubscribeVehicleData) requests with windowStatus=true to the SDL.

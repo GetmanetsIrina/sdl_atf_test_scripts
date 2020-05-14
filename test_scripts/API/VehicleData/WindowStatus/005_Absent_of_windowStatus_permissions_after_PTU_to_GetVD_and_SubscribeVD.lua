@@ -1,7 +1,9 @@
 ---------------------------------------------------------------------------------------------------
 -- Proposal:https://github.com/smartdevicelink/sdl_evolution/blob/master/proposals/0261-New-vehicle-data-WindowStatus.md
+--
 -- Description: Check that SDL rejects the request with resultCode DISALLOWED if app tries to get vehicle data in case
 -- `windowStatus` parameter is not present in apps assigned policies after PTU.
+--
 -- Preconditions:
 -- 1) RPCs(Get/SubscribeVehicleData) with the `windowStatus` param exists in app's assigned policies.
 -- 2) App sends valid RPCs(Get/SubscribeVehicleData) requests with windowStatus=true to the SDL

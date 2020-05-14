@@ -1,9 +1,11 @@
 ---------------------------------------------------------------------------------------------------
 -- Proposal:https://github.com/smartdevicelink/sdl_evolution/blob/master/proposals/0261-New-vehicle-data-WindowStatus.md
+--
 -- Description: Check that SDL does not transfer OnVehicleData notification to subscribed app if HMI sends notification
 -- with invalid values of `windowStatus` structure params:
 --    location: { col, row, level, colspan, rowspan, levelspan }
 --    state: { approximatePosition, deviation }
+--
 -- In case:
 -- 1) App is subscribed to `windowStatus` data.
 -- 2) HMI sends the invalid `windowStatus` structure in OnVehicleData notification:
@@ -20,16 +22,6 @@
 local common = require('test_scripts/API/VehicleData/WindowStatus/common')
 
 --[[ Local Variables ]]
-local windowStatusData = {
-  {
-    location = { col = 49, row = 49 },
-    state = {
-      approximatePosition = 50,
-      deviation = 50
-    }
-  }
-}
-
 local invalidValue = {
   emptyValue = "",
   invalidType = true,
@@ -47,24 +39,20 @@ common.Step("Activate App", common.activateApp)
 common.Step("App subscribes to windowStatus data", common.subUnScribeVD, { "SubscribeVehicleData" })
 
 common.Title("Test")
-for param in pairs(windowStatusData[1].location) do
+for param in pairs(common.windowStatusData[1].location) do
   common.Title("HMI sends with invalid `windowStatus` structure for " .. param)
   for k, v in pairs(invalidValue) do
     common.Step("OnVehicleData with invalid value for " .. param .. "=" .. tostring(k),
-      common.checkNotificationIgnored, { param, "location", v, windowStatusData })
+      common.sendOnVehicleData, { common.setValue(param, "location", v), notExpected })
   end
-  common.Step("OnVehicleData with missing mandatory " .. param .. " parameter", common.checkNotificationIgnored,
-    { param, "location", nil, windowStatusData })
 end
 
-for param in pairs(windowStatusData[1].state) do
+for param in pairs(common.windowStatusData[1].state) do
   common.Title("HMI sends with invalid `windowStatus` structure for " .. param)
   for k, v in pairs(invalidValue) do
     common.Step("OnVehicleData with invalid value for " .. param .. "=" .. tostring(k),
-    common.checkNotificationIgnored, { param, "state", v, windowStatusData })
+    common.sendOnVehicleData, { common.setValue(param, "state", v), notExpected })
   end
-  common.Step("OnVehicleData with missing mandatory " .. param .. " parameter", common.checkNotificationIgnored,
-    { param, "state", nil, windowStatusData })
 end
 
 common.Title("Check for other parameters")

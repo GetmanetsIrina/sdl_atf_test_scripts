@@ -1,6 +1,8 @@
 ---------------------------------------------------------------------------------------------------
 -- Proposal:https://github.com/smartdevicelink/sdl_evolution/blob/master/proposals/0261-New-vehicle-data-WindowStatus.md
+--
 -- Description: Check that SDL resumes the subscription for 'windowStatus' after unexpected disconnect/connect.
+--
 -- In case:
 -- 1) App is subscribed to `windowStatus` data.
 -- 2) Unexpected disconnect and reconnect are performed.
@@ -42,7 +44,7 @@ common.Step("App subscribes to windowStatus data", common.subUnScribeVD, { "Subs
 common.Title("Test")
 common.Step("Unexpected disconnect", common.unexpectedDisconnect)
 common.Step("Connect mobile", common.connectMobile)
-common.Step("Re-register App resumption data", common.registerWithResumption, { appId, common.checkResumption_FULL, isSubscribed })
+common.Step("Re-register App resumption data", common.registerAppWithResumption, { appId, common.checkResumption_FULL, isSubscribed })
 common.Step("OnVehicleData with windowStatus data", common.sendOnVehicleData, { windowStatusData })
 
 common.Title("Postconditions")

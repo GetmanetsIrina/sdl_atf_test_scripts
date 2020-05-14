@@ -5,7 +5,7 @@
 --[[ General configuration parameters ]]
 config.defaultProtocolVersion = 2
 config.application1.registerAppInterfaceParams.syncMsgVersion.majorVersion = 6
-config.application1.registerAppInterfaceParams.syncMsgVersion.minorVersion = 2
+config.application1.registerAppInterfaceParams.syncMsgVersion.minorVersion = 0
 
 --[[ Required Shared libraries ]]
 local actions = require("user_modules/sequences/actions")
@@ -41,6 +41,16 @@ m.connectMobile = actions.mobile.connect
 m.getAppsCount = actions.getAppsCount
 m.getConfigAppParams = actions.getConfigAppParams
 m.EMPTY_ARRAY = json.EMPTY_ARRAY
+
+m.windowStatusData = {
+  {
+    location = { col = 49, row = 49, level = 49, colspan = 49, rowspan = 49, levelspan = 49 },
+    state = {
+      approximatePosition = 50,
+      deviation = 50
+    }
+  }
+}
 
 m.subUnsubParams = {
   dataType = "VEHICLEDATA_WINDOWSTATUS",
@@ -103,6 +113,16 @@ m.invalidParam = {
     { location = { col = 49, row = 49 },
       state = { approximatePosition = 50, DeviatioN = 50 }
     }
+  },
+  ["missing_col"] = { -- without col parameter from Grid structure
+    { location = { row = 49, level = 49, colspan = 49, rowspan = 49, levelspan = 49 },
+      state = { approximatePosition = 50, DeviatioN = 50 }
+    }
+  },
+  ["missing_row"] = { -- without row parameter from Grid structure
+    { location = { col = 49, level = 49, colspan = 49, rowspan = 49, levelspan = 49 },
+      state = { approximatePosition = 50, DeviatioN = 50 }
+    }
   }
 }
 
@@ -113,25 +133,24 @@ m.invalidParam = {
 --! @return: none
 --]]
 function m.updatePreloadedPT()
-  m.backupPreloadedPT()
   local pt = m.getPreloadedPT()
   local WindowStatusGroup = {
     rpcs = {
       GetVehicleData = {
-        hmi_levels = {"BACKGROUND", "FULL", "LIMITED"},
-        parameters = {"windowStatus"}
+        hmi_levels = { "BACKGROUND", "FULL", "LIMITED" },
+        parameters = { "windowStatus"}
       },
       SubscribeVehicleData = {
-        hmi_levels = {"BACKGROUND", "FULL", "LIMITED"},
-        parameters = {"windowStatus"}
+        hmi_levels = { "BACKGROUND", "FULL", "LIMITED" },
+        parameters = { "windowStatus"}
       },
       OnVehicleData = {
-        hmi_levels = {"BACKGROUND", "FULL", "LIMITED"},
-        parameters = {"windowStatus"}
+        hmi_levels = { "BACKGROUND", "FULL", "LIMITED" },
+        parameters = { "windowStatus"}
       },
       UnsubscribeVehicleData = {
-        hmi_levels = {"BACKGROUND", "FULL", "LIMITED"},
-        parameters = {"windowStatus"}
+        hmi_levels = { "BACKGROUND", "FULL", "LIMITED" },
+        parameters = { "windowStatus" }
       }
     }
   }
@@ -141,7 +160,7 @@ function m.updatePreloadedPT()
   m.setPreloadedPT(pt)
 end
 
---[[ @preconditions: Clean environment and backup sdl_preloaded_pt.json file
+--[[ @preconditions: Clean environment and optional backup and update of sdl_preloaded_pt.json file
 --! @parameters:
 --! isPreloadedUpdate: if ommited or true then sdl_preloaded_pt.json file will be updated, otherwise - false
 --! @return: none
@@ -150,7 +169,6 @@ function m.preconditions(isPreloadedUpdate)
   if isPreloadedUpdate == nil then isPreloadedUpdate = true end
   actions.preconditions()
   if isPreloadedUpdate == true then
-    m.backupPreloadedPT()
     m.updatePreloadedPT()
   end
 end
@@ -163,25 +181,25 @@ function m.pTUpdateFunc(tbl)
   local VDgroup = {
     rpcs = {
       GetVehicleData = {
-        hmi_levels = {"BACKGROUND", "FULL", "LIMITED"},
-        parameters = {"gps", }
+        hmi_levels = { "BACKGROUND", "FULL", "LIMITED" },
+        parameters = { "gps" }
       },
       SubscribeVehicleData = {
-        hmi_levels = {"BACKGROUND", "FULL", "LIMITED"},
-        parameters = {"gps", }
+        hmi_levels = { "BACKGROUND", "FULL", "LIMITED" },
+        parameters = { "gps" }
       },
       UnsubscribeVehicleData = {
-        hmi_levels = {"BACKGROUND", "FULL", "LIMITED"},
-        parameters = {"gps", }
+        hmi_levels = { "BACKGROUND", "FULL", "LIMITED" },
+        parameters = { "gps" }
       },
       OnVehicleData = {
-        hmi_levels = {"BACKGROUND", "FULL", "LIMITED"},
-        parameters = {"gps"}
+        hmi_levels = { "BACKGROUND", "FULL", "LIMITED" },
+        parameters = { "gps" }
       }
     }
   }
   tbl.policy_table.functional_groupings.NewVehicleDataGroup = VDgroup
-  tbl.policy_table.app_policies[m.getParams(1).fullAppID].groups = {"Base-4", "NewVehicleDataGroup"}
+  tbl.policy_table.app_policies[m.getParams().fullAppID].groups = { "Base-4", "NewVehicleDataGroup" }
 end
 
 --[[ @setHashId: Set hashId which is required during resumption
@@ -203,6 +221,27 @@ function m.getHashId(pAppId)
   return hashId[pAppId]
 end
 
+--[[ @windowStatus: Clone table with data for use to GetVD and OnVD RPCs
+--! @parameters:none
+--! @return: table for GetVD and OnVD
+--]]
+function m.windowStatus()
+  return utils.cloneTable(m.windowStatusData)
+end
+
+--[[ @setValue: Set value for params from `windowStatus` structure
+--! @parameters:
+--! pParam: parameters from `windowStatus` structure
+--! pData: parameters for mobile response
+--! pValue: value for parameters from the `windowStatus` structure
+--! @return: table for GetVD and OnVD
+--]]
+function m.setValue(pParam, pData, pValue)
+  local params = m.windowStatus()
+  params[1][pData][pParam] = pValue
+  return params
+end
+
 --[[ @getVehicleData: Processing GetVehicleData RPC
 --! @parameters:
 --! pData: parameters for mobile response
@@ -213,37 +252,16 @@ function m.getVehicleData(pData, pResult)
   if not pResult then pResult = { success = true, resultCode = "SUCCESS", windowStatus = pData } end
   local cid = m.getMobileSession():SendRPC("GetVehicleData", { windowStatus = true })
   m.getHMIConnection():ExpectRequest("VehicleInfo.GetVehicleData", { windowStatus = true })
-    :Do(function(_,data)
-      m.getHMIConnection():SendResponse(data.id, data.method, "SUCCESS", { windowStatus = pData })
-    end)
+  :Do(function(_,data)
+    m.getHMIConnection():SendResponse(data.id, data.method, "SUCCESS", { windowStatus = pData })
+  end)
   m.getMobileSession():ExpectResponse(cid, pResult)
-end
-
---[[ @sendGetVehicleData: GetVehicleData RPC processing to check each param of the `windowStatus` structure
---! @parameters:
---! pParam: parameters from Grid/WindowState structure
---! pData: parameters from windowStatus structure(location, state)
---! pValue: value for parameters
---! pTb: table with windowStatus data
---! pResult: expected result code
---! @return: none
---]]
-function m.sendGetVehicleData(pParam, pData, pValue, pTb, pResult)
-  local params = pTb
-  if not pResult then pResult = { success = true, resultCode = "SUCCESS" } end
-  params[1][pData][pParam] = pValue
-  local cid = m.getMobileSession():SendRPC("GetVehicleData", { windowStatus = true })
-  m.getHMIConnection():ExpectRequest("VehicleInfo.GetVehicleData", { windowStatus = true })
-  :Do(function(_, data)
-      m.getHMIConnection():SendResponse(data.id, data.method, "SUCCESS", { windowStatus = params })
-    end)
-  m.getMobileSession():ExpectResponse(cid, pResult, { windowStatus = params })
 end
 
 --[[ @processRPCFailure: Processing VD RPC with ERROR resultCode
 --! @parameters:
 --! pRPC: RPC for mobile request
---! pResult: result error
+--! pResult: Result code for mobile response
 --! @return: none
 --]]
 function m.processRPCFailure(pRPC, pResult)
@@ -261,10 +279,10 @@ end
 function m.subUnScribeVD(pRPC, pAppID)
   if not pAppID then pAppID = 1 end
   local cid = m.getMobileSession(pAppID):SendRPC(pRPC, { windowStatus = true })
-    m.getHMIConnection():ExpectRequest("VehicleInfo." .. pRPC, { windowStatus = true })
-    :Do(function(_,data)
-      m.getHMIConnection():SendResponse(data.id, data.method, "SUCCESS", { windowStatus = m.subUnsubParams })
-    end)
+  m.getHMIConnection():ExpectRequest("VehicleInfo." .. pRPC, { windowStatus = true })
+  :Do(function(_,data)
+    m.getHMIConnection():SendResponse(data.id, data.method, "SUCCESS", { windowStatus = m.subUnsubParams })
+  end)
   m.getMobileSession(pAppID):ExpectResponse(cid, { success = true, resultCode = "SUCCESS", windowStatus = m.subUnsubParams })
   m.getMobileSession(pAppID):ExpectNotification("OnHashChange")
   :Do(function(_, data)
@@ -272,16 +290,16 @@ function m.subUnScribeVD(pRPC, pAppID)
   end)
 end
 
---[[ @checkResumption: Resume the subscription after the resumption
+--[[ @subscribeVD2Apps: Processing SubscribeVehicleData for two apps
 --! @parameters:
---! pFirstApp: true - in case SDL sends VehicleInfo.SubscribeVehicleData_requset to HMI, otherwise - false
+--! isSubscriptionExpected: true - in case VehicleInfo.SubscribeVehicleData_requset on HMI is expected, otherwise - false
 --! pAppId: application number (1, 2, etc.)
 --! @return: none
 --]]
-function m.checkResumption(pFirstApp, pAppId)
+function m.subscribeVD2Apps(isSubscriptionExpected, pAppId)
   if not pAppId then pAppId = 1 end
   local cid = m.getMobileSession(pAppId):SendRPC("SubscribeVehicleData", { windowStatus = true })
-  if pFirstApp then
+  if isSubscriptionExpected then
     m.getHMIConnection():ExpectRequest("VehicleInfo.SubscribeVehicleData", { windowStatus = true })
     :Do(function(_,data)
       m.getHMIConnection():SendResponse(data.id, data.method, "SUCCESS", { windowStatus = m.subUnsubParams })
@@ -309,23 +327,6 @@ function m.sendOnVehicleData(pData, pExpTime, pAppID)
   :Times(pExpTime)
 end
 
---[[ @checkNotificationIgnored:
---! @parameters:
---! pParam: parameters from Grid/WindowState structure
---! pData: parameters for the notification
---! pValue: value for parameters
---! pTb: table with windowStatus data
---! @return: none
---]]
-function m.checkNotificationIgnored(pParam, pData, pValue, pTb)
-  local params = pTb
-  params[1][pData][pParam] = pValue
-
-  m.getHMIConnection():SendNotification("VehicleInfo.OnVehicleData", { windowStatus = params })
-  m.getMobileSession():ExpectNotification("OnVehicleData", { windowStatus = params })
-  :Times(0)
-end
-
 --[[ @ignitionOff: IGNITION_OFF sequence
 --! @parameters: none
 --! @return: none
@@ -342,27 +343,27 @@ function m.ignitionOff()
   event.matches = function(event1, event2) return event1 == event2 end
   EXPECT_EVENT(event, "SDL shutdown")
   :Do(function()
-      removeSessions()
-      StopSDL()
-      config.ExitOnCrash = true
-    end)
+    removeSessions()
+    StopSDL()
+    config.ExitOnCrash = true
+  end)
   m.getHMIConnection():SendNotification("BasicCommunication.OnExitAllApplications", { reason = "SUSPEND" })
   m.getHMIConnection():ExpectNotification("BasicCommunication.OnSDLPersistenceComplete")
   :Do(function()
-      m.getHMIConnection():SendNotification("BasicCommunication.OnExitAllApplications",{ reason = "IGNITION_OFF" })
-      for i = 1, m.getAppsCount() do
-        m.getMobileSession(i):ExpectNotification("OnAppInterfaceUnregistered", { reason = "IGNITION_OFF" })
-      end
-    end)
+    m.getHMIConnection():SendNotification("BasicCommunication.OnExitAllApplications",{ reason = "IGNITION_OFF" })
+    for i = 1, m.getAppsCount() do
+      m.getMobileSession(i):ExpectNotification("OnAppInterfaceUnregistered", { reason = "IGNITION_OFF" })
+    end
+  end)
   m.getHMIConnection():ExpectNotification("BasicCommunication.OnAppUnregistered", { unexpectedDisconnect = false })
   :Times(m.getAppsCount())
   local isSDLShutDownSuccessfully = false
   m.getHMIConnection():ExpectNotification("BasicCommunication.OnSDLClose")
   :Do(function()
-      utils.cprint(35, "SDL was shutdown successfully")
-      isSDLShutDownSuccessfully = true
-      RAISE_EVENT(event, event)
-    end)
+    utils.cprint(35, "SDL was shutdown successfully")
+    isSDLShutDownSuccessfully = true
+    RAISE_EVENT(event, event)
+  end)
   :Timeout(timeout)
   local function forceStopSDL()
     if isSDLShutDownSuccessfully == false then
@@ -384,7 +385,7 @@ function m.unexpectedDisconnect()
   utils.wait(1000)
 end
 
---[[ @checkResumption_FULL: function that checks HMIlevel to FULL recovery after resumption
+--[[ @checkResumption_FULL: function that checks HMI level resumption to FULL level
 --! @parameters: none
 --! @return: none
 --]]
@@ -399,23 +400,22 @@ function m.checkResumption_FULL()
   :Times(2)
 end
 
---[[ @checkResumption_NONE: function that checks HMIlevel to NONE recovery after resumption
+--[[ @checkResumption_NONE: function that checks HMI level resumption to NONE level
 --! @parameters: none
 --! @return: none
 --]]
 function m.checkResumption_NONE()
-  m.getMobileSession(1):ExpectNotification("OnHMIStatus",{ hmiLevel = "NONE" })
+  m.getMobileSession():ExpectNotification("OnHMIStatus",{ hmiLevel = "NONE" })
 end
 
-
---[[ @registerWithResumption: re-register application with SUCCESS resultCode
+--[[ @registerAppWithResumption: Successful app registration with resumption
 --! @parameters:
 --! pAppId: application number (1, 2, etc.)
---! pLevelCheckFunc: check function
---! isHMIsubscription: if false SDL resumes SubscribeVehicleData for app2 and does not send VehicleInfo.SubscribeVehicleData request to HMI
+--! pLevelCheckFunc: function for expectation of HMI level related messages
+--! isHMIsubscription: if true VD.SubscribeVehicleData request is expected on HMI, otherwise - not expected
 --! @return: none
 --]]
-function m.registerWithResumption(pAppId, pLevelCheckFunc, isHMIsubscription)
+function m.registerAppWithResumption(pAppId, pLevelCheckFunc, isHMIsubscription)
   if not pAppId then pAppId = 1 end
   m.getMobileSession(pAppId):StartService(7)
   :Do(function()

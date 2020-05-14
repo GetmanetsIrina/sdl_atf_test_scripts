@@ -1,6 +1,8 @@
 ---------------------------------------------------------------------------------------------------
 -- Proposal:https://github.com/smartdevicelink/sdl_evolution/blob/master/proposals/0261-New-vehicle-data-WindowStatus.md
+--
 -- Description: Check that SDL successful processes UnsubscribeVehicleData RPC with `windowStatus` param.
+--
 -- In case:
 -- 1) App is subscribed to `windowStatus` data.
 -- 2) App sends UnsubscribeVehicleData request with windowStatus=true to the SDL and this request is allowed by Policies.
@@ -34,7 +36,7 @@ common.Step("Activate App", common.activateApp)
 common.Step("App subscribes to windowStatus data", common.subUnScribeVD, { "SubscribeVehicleData" })
 
 common.Title("Test")
-common.Step("App unsubscribes to windowStatus data", common.subUnScribeVD, { "UnsubscribeVehicleData" })
+common.Step("App unsubscribes from windowStatus data", common.subUnScribeVD, { "UnsubscribeVehicleData" })
 common.Step("OnVehicleData with windowStatus data", common.sendOnVehicleData, { windowStatusData, notExpected })
 
 common.Title("Postconditions")
