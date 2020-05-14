@@ -5,7 +5,7 @@
 -- 1) App sends GetVehicleData request with windowStatus=true to the SDL and this request is allowed by Policies.
 -- SDL does:
 --  a) transfer this request to HMI.
--- 3) HMI sends GetVehicleData response with all params of structure `windowStatus`.
+-- 2) HMI sends GetVehicleData response with all params of structure `windowStatus`.
 -- SDL does:
 --  a) send GetVehicleData response to mobile with all parameters in `windowStatus` structure.
 ---------------------------------------------------------------------------------------------------

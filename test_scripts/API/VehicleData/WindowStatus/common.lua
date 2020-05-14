@@ -143,7 +143,7 @@ end
 
 --[[ @preconditions: Clean environment and backup sdl_preloaded_pt.json file
 --! @parameters:
---! isPreloadedUpdate: if true then sdl_preloaded_pt.json file will be updated, otherwise - false
+--! isPreloadedUpdate: if ommited or true then sdl_preloaded_pt.json file will be updated, otherwise - false
 --! @return: none
 --]]
 function m.preconditions(isPreloadedUpdate)
@@ -155,7 +155,7 @@ function m.preconditions(isPreloadedUpdate)
   end
 end
 
---! @pTUpdateFunc: Policy Table Update with allowed "Base-4" group for application
+--! @pTUpdateFunc: Policy Table Update with allowed "Base-4" and "NewVehicleDataGroup" group for application
 --! @parameters:
 --! tbl: policy table
 --! @return: none
@@ -272,7 +272,7 @@ function m.subUnScribeVD(pRPC, pAppID)
   end)
 end
 
---[[ @checkResumption: function that checks resume of subscription for two applications
+--[[ @checkResumption: Resume the subscription after the resumption
 --! @parameters:
 --! pFirstApp: true - in case SDL sends VehicleInfo.SubscribeVehicleData_requset to HMI, otherwise - false
 --! pAppId: application number (1, 2, etc.)
@@ -311,9 +311,9 @@ end
 
 --[[ @checkNotificationIgnored:
 --! @parameters:
---! pParam:
+--! pParam: parameters from Grid/WindowState structure
 --! pData: parameters for the notification
---! pValue:
+--! pValue: value for parameters
 --! pTb: table with windowStatus data
 --! @return: none
 --]]

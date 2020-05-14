@@ -1,6 +1,6 @@
 ---------------------------------------------------------------------------------------------------
 -- Proposal:https://github.com/smartdevicelink/sdl_evolution/blob/master/proposals/0261-New-vehicle-data-WindowStatus.md
--- Description: Check that SDL successfully processes a valid OnVehicleData notification with new ' windowStatus'
+-- Description: Check that SDL successfully processes a valid OnVehicleData notification with new 'windowStatus'
 -- structure and transfers it to subscribed app
 -- In case:
 -- 1) App is subscribed to `windowStatus` data.
