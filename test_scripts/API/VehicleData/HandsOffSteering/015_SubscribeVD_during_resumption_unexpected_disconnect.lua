@@ -1,15 +1,14 @@
 ---------------------------------------------------------------------------------------------------
 -- Proposal:https://github.com/smartdevicelink/sdl_evolution/blob/master/proposals/0257-New-vehicle-data-HandsOffSteering.md
 --
--- Description: Check that SDL restored SubscribeVehicleData on 'handsOffSteering' parameter after unexpected disconnect
+-- Description: Check that SDL restores the subscription to 'handsOffSteering' parameter after unexpected disconnect
 --
 -- Preconditions:
 -- 1) Update preloaded_pt file, add handsOffSteering parameter to VD_RPC group
--- 2) RPC SubscribeVehicleData is allowed by policies
+-- 2) RPC SubscribeVehicleData and handsOffSteering is allowed by policies
 -- 3) App is registered and subscribed on handsOffSteering VD
--- Steps:
--- 1) Unexpected disconnect and reconnect are performed
--- 2) App re-register with actual HashId
+-- 4) Unexpected disconnect and reconnect are performed
+-- 5) App re-registers with actual HashId
 -- SDL does:
 -- - a) send VehicleInfo.SubscribeVehicleData request to HMI during resumption
 -- - b) process successful response from HMI
@@ -18,35 +17,23 @@
 --[[ Required Shared libraries ]]
 local common = require('test_scripts/API/VehicleData/HandsOffSteering/common')
 
---[[ Local Variable ]]
+--[[ Local Variables ]]
 local rpc = "SubscribeVehicleData"
-
---[[ Local Function ]]
-local function checkResumptionData()
-  local handsOffSteeringResponseData = {
-    dataType = "VEHICLEDATA_HANDSOFFSTEERING",
-    resultCode = "SUCCESS"
-  }
-  common.getHMIConnection():ExpectRequest("VehicleInfo." .. rpc, { handsOffSteering = true })
-  :Do(function(_, data)
-    common.getHMIConnection():SendResponse(data.id, data.method, "SUCCESS",
-      { handsOffSteering = handsOffSteeringResponseData })
-  end)
-end
+local appId = 1
+local onVDValue = true
 
 --[[ Scenario ]]
 common.Title("Preconditions")
-common.Step("Clean environment", common.precondition)
-common.Step("Update preloaded file", common.updatedPreloadedPTFile)
+common.Step("Clean environment and update preloaded_pt file", common.precondition)
 common.Step("Start SDL, HMI, connect Mobile, start Session", common.start)
 common.Step("Register App", common.registerAppWOPTU)
-common.Step("RPC " .. rpc .. " on handsOffSteering parameter", common.processRPCSuccess, { rpc })
+common.Step("RPC " .. rpc .. " on handsOffSteering parameter", common.processSubscriptionRPCsSuccess, { rpc })
 
 common.Title("Test")
 common.Step("Unexpected disconnect", common.unexpectedDisconnect)
 common.Step("Connect mobile", common.connectMobile)
-common.Step("Re-register App resumption data", common.reRegisterAppSuccess, { 1, checkResumptionData })
-common.Step("Check resumption data OnVehicleData notification", common.onVehicleData, { true })
+common.Step("Re-register App resumption data", common.registerAppSuccessWithResumption, { appId, true })
+common.Step("Check resumption data OnVehicleData notification", common.onVehicleData, { onVDValue })
 
 common.Title("Postconditions")
 common.Step("Stop SDL", common.postcondition)

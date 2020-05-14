@@ -6,20 +6,17 @@
 --
 -- Preconditions:
 -- 1) Update preloaded_pt file, add handsOffSteering parameter to VD_RPC group
--- 2) RPC is allowed by policies
+-- 2) RPCs GetVD, SubscribeVD, UnsubscribeVD and handsOffSteering is allowed by policies
 -- 3) App is registered with syncMsgVersion = 6.0
--- Steps:
--- 1) App sends valid GetVehicleData request to SDL
+-- 4) App sends valid GetVehicleData(handsOffSteering=true) request to SDL
 -- SDL does:
 -- - a) send GetVehicleData response with (success = false, resultCode = INVALID_DATA") to App
 -- - b) not transfer this request to HMI
--- Steps:
--- 2) App send valid SubscribeVehicleData request to SDL
+-- 5) App send valid SubscribeVehicleData(handsOffSteering=true) request to SDL
 -- SDL does:
 -- - a) send SubscribeVehicleData response with (success = false, resultCode = INVALID_DATA") to App
 -- - b) not transfer this request to HMI
--- Steps:
--- 3) App send valid UnsubscribeVehicleData request to SDL
+-- 6) App send valid UnsubscribeVehicleData request to SDL
 -- SDL does:
 -- - a) send UnsubscribeVehicleData response with (success = false, resultCode = INVALID_DATA") to App
 -- - b) not transfer this request to HMI
@@ -28,8 +25,8 @@
 local common = require('test_scripts/API/VehicleData/HandsOffSteering/common')
 
 --[[ Test Configuration ]]
-common.getParams().syncMsgVersion.majorVersion = 5
-common.getParams().syncMsgVersion.minorVersion = 1
+common.getParams().syncMsgVersion.majorVersion = 6
+common.getParams().syncMsgVersion.minorVersion = 0
 
 --[[ Local Variables ]]
 local rpc_sub = "SubscribeVehicleData"
@@ -51,8 +48,7 @@ end
 
 --[[ Scenario ]]
 common.Title("Preconditions")
-common.Step("Clean environment", common.precondition)
-common.Step("Update preloaded file", common.updatedPreloadedPTFile)
+common.Step("Clean environment and update preloaded_pt file", common.precondition)
 common.Step("Start SDL, HMI, connect Mobile, start Session", common.start)
 common.Step("Register App", common.registerAppWOPTU)
 

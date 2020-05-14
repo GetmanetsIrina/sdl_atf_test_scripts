@@ -1,16 +1,15 @@
 ---------------------------------------------------------------------------------------------------
 -- Proposal:https://github.com/smartdevicelink/sdl_evolution/blob/master/proposals/0257-New-vehicle-data-HandsOffSteering.md
 --
--- Check that SDL rejects UnsubscribeVehicleData request with resultCode: "DISALLOWED" if an app not allowed by
--- policy with new 'handsOffSteering' parameter
+-- Description: Check that SDL rejects UnsubscribeVehicleData request with resultCode: "DISALLOWED" if
+-- 'handsOffSteering' parameter is not allowed by policy
 --
 -- Preconditions:
 -- 1) Update preloaded_pt file, add handsOffSteering parameter to VD_RPC group
--- 2) RPC SubscribeVehicleData is allowed by policies
--- 3) RPC UnsubscribeVehicleData is Not allowed by policies
+-- 2) SubscribeVehicleData and handsOffSteering is allowed by policies
+-- 3) UnsubscribeVehicleData and handsOffSteering is Not allowed by policies
 -- 4) App is registered and subscribed on handsOffSteering parameter
--- Steps:
--- 1) App sends valid UnsubscribeVehicleData request to SDL
+-- 5) App sends valid UnsubscribeVehicleData request to SDL
 -- SDL does:
 -- - a) send UnsubscribeVehicleData response with (success = false, resultCode = DISALLOWED") to App
 -- - b) not transfer this request to HMI
@@ -18,7 +17,6 @@
 ---------------------------------------------------------------------------------------------------
 --[[ Required Shared libraries ]]
 local common = require('test_scripts/API/VehicleData/HandsOffSteering/common')
-local json = require("modules/json")
 
 --[[ Local Variables ]]
 local rpc_sub = "SubscribeVehicleData"
@@ -31,18 +29,17 @@ local VDGroup = {
     },
     UnsubscribeVehicleData = {
       hmi_levels = { "NONE", "BACKGROUND", "LIMITED", "FULL" },
-      parameters = json.EMPTY_ARRAY
+      parameters = common.EMPTY_ARRAY
     }
   }
 }
 
 --[[ Scenario ]]
 common.Title("Preconditions")
-common.Step("Clean environment", common.precondition)
-common.Step("Update preloaded file", common.updatedPreloadedPTFile, { VDGroup })
+common.Step("Clean environment and update preloaded_pt file", common.precondition, { VDGroup })
 common.Step("Start SDL, HMI, connect Mobile, start Session", common.start)
 common.Step("Register App", common.registerAppWOPTU)
-common.Step("RPC " .. rpc_sub .. " on handsOffSteering parameter", common.processRPCSuccess, { rpc_sub })
+common.Step("RPC " .. rpc_sub .. " on handsOffSteering parameter", common.processSubscriptionRPCsSuccess, { rpc_sub })
 
 common.Title("Test")
 common.Step("RPC " .. rpc_unsub .. " on handsOffSteering parameter DISALLOWED",

@@ -6,37 +6,32 @@
 --
 -- Preconditions:
 -- 1) Update preloaded_pt file, add handsOffSteering parameter to VD_RPC group
--- 2) RPC is allowed by policies
--- 3) App is registered with syncMsgVersion = 6.3
--- Steps:
--- 1) App sends valid GetVehicleData request to SDL
+-- 2) RPCs GetVD, SubscribeVD, UnsubscribeVD, OnVD and handsOffSteering is allowed by policies
+-- 3) App is registered with syncMsgVersion = 7.3
+-- 4) App sends valid GetVehicleData(handsOffSteering=true) request to SDL
 -- SDL does:
 -- - a) transfer this request to HMI
--- Steps:
--- 2) HMI sends all VehicleInfo.GetVehicleData response to SDL
+-- 5) HMI sends VehicleInfo.GetVehicleData response with handsOffSteering structure to SDL
 -- SDL does:
 -- - a) send GetVehicleData response with (success = true, resultCode = SUCCESS") to App
--- Steps:
--- 3) App send valid SubscribeVehicleData request to SDL
+-- 6) App send valid SubscribeVehicleData(handsOffSteering=true) request to SDL
 -- SDL does:
 -- - a) transfer this request to HMI
--- Steps:
--- 4) HMI sends all VehicleInfo.SubscribeVehicleData response to SDL
+-- 7) HMI sends VehicleInfo.SubscribeVehicleData response with handsOffSteering structure to SDL
 -- SDL does:
--- - a) send SubscribeVehicleData response with (success = true, resultCode = SUCCESS") to App
+-- - a) send SubscribeVehicleData response with (success = true, resultCode = SUCCESS",
+-- handsOffSteering = <data received from HMI>) to App
 -- - b) send OnHashChange notification to App
--- Steps:
--- 5) HMI sends valid VehicleInfo.OnVehicleData notification to SDL
+-- 8) HMI sends valid VehicleInfo.OnVehicleData notification to SDL
 -- SDL does:
 -- - a) transfer this notification to App
--- Steps:
--- 6) App sends valid UnsubscribeVehicleData request to SDL
+-- 9) App sends valid UnsubscribeVehicleData(handsOffSteering=true) request to SDL
 -- SDL does:
 -- - a) transfer this request to HMI
--- Steps:
--- 7) HMI sends all VehicleInfo.UnsubscribeVehicleData response to SDL
+-- 10) HMI sends VehicleInfo.UnsubscribeVehicleData response with handsOffSteering structure to SDL
 -- SDL does:
--- - a) send UnsubscribeVehicleData response with (success = true, resultCode = SUCCESS") to App
+-- - a) send UnsubscribeVehicleData response with (success = true, resultCode = SUCCESS",
+-- handsOffSteering = <data received from HMI>) to App
 -- - b) send OnHashChange notification to App
 ---------------------------------------------------------------------------------------------------
 --[[ Required Shared libraries ]]
@@ -49,19 +44,20 @@ common.getParams().syncMsgVersion.minorVersion = 3
 --[[ Local Variables ]]
 local rpc_sub = "SubscribeVehicleData"
 local rpc_unsub = "UnsubscribeVehicleData"
+local onVDValue = true
 
 --[[ Scenario ]]
 common.Title("Preconditions")
-common.Step("Clean environment", common.precondition)
-common.Step("Update preloaded file", common.updatedPreloadedPTFile)
+common.Step("Clean environment and update preloaded_pt file", common.precondition)
 common.Step("Start SDL, HMI, connect Mobile, start Session", common.start)
 common.Step("Register App", common.registerAppWOPTU)
 
 common.Title("Test")
 common.Step("RPC GetVehicleData, handsOffSteering", common.getVehicleData, { true })
-common.Step("RPC " .. rpc_sub .. " on handsOffSteering parameter", common.processRPCSuccess, { rpc_sub })
-common.Step("HMI sends OnVehicleData notification with handsOffSteering", common.onVehicleData, { true })
-common.Step("RPC " .. rpc_unsub .. " on handsOffSteering parameter", common.processRPCSuccess, { rpc_unsub })
+common.Step("RPC " .. rpc_sub .. " on handsOffSteering parameter", common.processSubscriptionRPCsSuccess, { rpc_sub })
+common.Step("HMI sends OnVehicleData notification with handsOffSteering", common.onVehicleData, { onVDValue })
+common.Step("RPC " .. rpc_unsub .. " on handsOffSteering parameter",
+  common.processSubscriptionRPCsSuccess, { rpc_unsub })
 
 common.Title("Postconditions")
 common.Step("Stop SDL", common.postcondition)

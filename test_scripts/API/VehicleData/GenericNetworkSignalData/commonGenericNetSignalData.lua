@@ -6,6 +6,8 @@ config.mobileHost = "127.0.0.1"
 config.defaultProtocolVersion = 2
 config.ValidateSchema = false
 config.zeroOccurrenceTimeout = 1000
+config.application1.registerAppInterfaceParams.syncMsgVersion.majorVersion = 6
+config.application1.registerAppInterfaceParams.syncMsgVersion.minorVersion = 2
 
 --[[ Required Shared libraries ]]
 local actions = require("user_modules/sequences/actions")
@@ -142,6 +144,8 @@ local function VehicleDataItemsWithDataTableCreation()
     common.VehicleDataItemsWithData.vin.APItype = "VEHICLEDATA_VIN"
     common.VehicleDataItemsWithData.prndl.value = "PARK"
     common.VehicleDataItemsWithData.prndl.APItype = "VEHICLEDATA_PRNDL"
+    common.VehicleDataItemsWithData.handsOffSteering.value = true
+    common.VehicleDataItemsWithData.handsOffSteering.APItype = "VEHICLEDATA_HANDSOFFSTEERING"
     local tirePressureParams = common.VehicleDataItemsWithData.tirePressure.params
     tirePressureParams.pressureTelltale.value = "OFF"
     local leftFrontParams = tirePressureParams.leftFront.params

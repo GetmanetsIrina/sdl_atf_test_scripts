@@ -6,16 +6,14 @@
 --
 -- Preconditions:
 -- 1) Update preloaded_pt file, add handsOffSteering parameter to VD_RPC group
--- 2) OnVehicleData notification is allowed by policies
+-- 2) OnVehicleData notification and handsOffSteering is allowed by policies
 -- 3) App is registered
 -- 4) App is subscribed on handsOffSteering parameter
--- Steps:
--- 1) HMI sends valid VehicleInfo.OnVehicleData notification to SDL
+-- 5) HMI sends valid VehicleInfo.OnVehicleData notification to SDL
 -- SDL does:
 -- - a) transfer this notification to App
--- 5) App is unsubscribed on handsOffSteering parameter
--- Steps:
--- 1) HMI sends valid VehicleInfo.OnVehicleData notification to SDL
+-- 6) App is unsubscribed on handsOffSteering parameter
+-- 7) HMI sends valid VehicleInfo.OnVehicleData notification to SDL
 -- SDL does:
 -- - a) not transfer this notification to App
 ---------------------------------------------------------------------------------------------------
@@ -26,30 +24,25 @@ local common = require('test_scripts/API/VehicleData/HandsOffSteering/common')
 local value = { true, false }
 local rpc_sub = "SubscribeVehicleData"
 local rpc_unsub = "UnsubscribeVehicleData"
-
---[[ Local Function ]]
-local function onVDNotificationAppNotSubscribed(pHandsOffSteering)
-  common.getHMIConnection():SendNotification("VehicleInfo.OnVehicleData", { handsOffSteering = pHandsOffSteering })
-  common.getMobileSession():ExpectNotification("OnVehicleData") :Times(0)
-end
+local pExpTimes = 0
 
 --[[ Scenario ]]
 common.Title("Preconditions")
-common.Step("Clean environment", common.precondition)
-common.Step("Update preloaded file", common.updatedPreloadedPTFile)
+common.Step("Clean environment and update preloaded_pt file", common.precondition)
 common.Step("Start SDL, HMI, connect Mobile, start Session", common.start)
 common.Step("Register App", common.registerAppWOPTU)
-common.Step("RPC " .. rpc_sub .. " on handsOffSteering parameter", common.processRPCSuccess, { rpc_sub })
+common.Step("RPC " .. rpc_sub .. " on handsOffSteering parameter", common.processSubscriptionRPCsSuccess, { rpc_sub })
 for _, v in pairs(value) do
   common.Step("Check that SDL does transfer OnVehicleData notification with handsOffSteering to App " .. tostring(v),
     common.onVehicleData, { v })
 end
 
 common.Title("Test")
-common.Step("RPC " .. rpc_unsub .. " on handsOffSteering parameter", common.processRPCSuccess, { rpc_unsub })
+common.Step("RPC " .. rpc_unsub .. " on handsOffSteering parameter",
+  common.processSubscriptionRPCsSuccess, { rpc_unsub })
 for _, v in pairs(value) do
   common.Step("Check that SDL doesn't transfer OnVehicleData notification with handsOffSteering to App " .. tostring(v),
-    onVDNotificationAppNotSubscribed, { v })
+  common.onVehicleData, { v, pExpTimes })
 end
 
 common.Title("Postconditions")

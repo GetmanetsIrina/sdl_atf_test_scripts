@@ -1,20 +1,19 @@
 ---------------------------------------------------------------------------------------------------
 -- Proposal:https://github.com/smartdevicelink/sdl_evolution/blob/master/proposals/0257-New-vehicle-data-HandsOffSteering.md
 --
--- Description: Check that SDL processes GetVehicleDate RPC with new 'handsOffSteering' parameter
+-- Description: Check that SDL processes GetVehicleData RPC with new 'handsOffSteering' parameter
 --
 -- Preconditions:
 -- 1) Update preloaded_pt file, add handsOffSteering parameter to VD_RPC group
--- 2) RPC GetVehicleData is allowed by policies
+-- 2) RPC GetVehicleData and handsOffSteering is allowed by policies
 -- 3) App is registered
--- Steps:
--- 1) App sends valid GetVehicleData request to SDL
+-- 4) App sends valid GetVehicleData(handsOffSteering=true) request to SDL
 -- SDL does:
 -- - a) transfer this request to HMI
--- Steps:
--- 2) HMI sends all VehicleInfo.GetVehicleData response to SDL
+-- 5) HMI sends VehicleInfo.GetVehicleData response with handsOffSteering structure to SDL
 -- SDL does:
--- - a) send GetVehicleData response with (success = true, resultCode = SUCCESS") to App
+-- - a) send GetVehicleData response with (success = true, resultCode = SUCCESS", handsOffSteering = <data received from
+-- HMI>) to App
 ---------------------------------------------------------------------------------------------------
 --[[ Required Shared libraries ]]
 local common = require('test_scripts/API/VehicleData/HandsOffSteering/common')
@@ -24,8 +23,7 @@ local value = { true, false }
 
 --[[ Scenario ]]
 common.Title("Preconditions")
-common.Step("Clean environment", common.precondition)
-common.Step("Update preloaded file", common.updatedPreloadedPTFile)
+common.Step("Clean environment and update preloaded_pt file", common.precondition)
 common.Step("Start SDL, HMI, connect Mobile, start Session", common.start)
 common.Step("Register App", common.registerAppWOPTU)
 

@@ -6,14 +6,12 @@
 --
 -- Preconditions:
 -- 1) Update preloaded_pt file, add handsOffSteering parameter to VD_RPC group
--- 2) RPC SubscribeVehicleData is allowed by policies
+-- 2) RPC SubscribeVehicleData and handsOffSteering is allowed by policies
 -- 3) App is registered
--- Steps:
--- 1) App sends valid SubscribeVehicleData request to SDL
+-- 4) App sends valid SubscribeVehicleData(handsOffSteering=true) request to SDL
 -- SDL does:
 -- - a) transfer this request to HMI
--- Steps:
--- 2) HMI doesn't send VehicleInfo.SubscribeVehicleData response to SDL
+-- 5) HMI doesn't respond to SDL
 -- SDL does:
 -- - a) send SubscribeVehicleData response with (success = false, resultCode = GENERIC_ERROR") to App
 -- - b) not send OnHashChange notification to App
@@ -26,13 +24,12 @@ local rpc = "SubscribeVehicleData"
 
 --[[ Scenario ]]
 common.Title("Preconditions")
-common.Step("Clean environment", common.precondition)
-common.Step("Update preloaded file", common.updatedPreloadedPTFile)
+common.Step("Clean environment and update preloaded_pt file", common.precondition)
 common.Step("Start SDL, HMI, connect Mobile, start Session", common.start)
 common.Step("Register App", common.registerAppWOPTU)
 
 common.Title("Test")
-common.Step("RPC SubscribeVehicleData, HMI doesn't response", common.processRPCHMIWithoutResponse, { rpc })
+common.Step("RPC SubscribeVehicleData, HMI doesn't response", common.processRPCHMIInvalidResponse, { rpc })
 
 common.Title("Postconditions")
 common.Step("Stop SDL", common.postcondition)
