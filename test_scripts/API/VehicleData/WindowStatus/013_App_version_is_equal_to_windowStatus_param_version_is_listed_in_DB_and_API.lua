@@ -4,8 +4,8 @@
 -- Description: Check that SDL successfully processes VD RPC with new `windowStatus` param in case app version is equal to 6.0
 --
 -- Preconditions:
--- 1) App is registered with syncMsgVersion=6.0
--- 2) New param `windowStatus` has since=6.0 in DB and API
+-- 1) App is registered with syncMsgVersion=6.2
+-- 2) New param `windowStatus` has since=6.2 in DB and API
 -- In case:
 -- 1) App requests Get/Sub/UnsubVehicleData with windowStatus=true.
 -- 2) HMI sends valid OnVehicleData notification with all parameters of `windowStatus` structure.
@@ -18,7 +18,7 @@ local common = require('test_scripts/API/VehicleData/WindowStatus/common')
 
 -- [[ Test Configuration ]]
 common.getParams().syncMsgVersion.majorVersion = 6
-common.getParams().syncMsgVersion.minorVersion = 0
+common.getParams().syncMsgVersion.minorVersion = 2
 
 --[[ Local Variables ]]
 local windowStatusData = {

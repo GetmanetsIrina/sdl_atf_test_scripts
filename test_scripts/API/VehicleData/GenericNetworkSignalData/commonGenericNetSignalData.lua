@@ -7,6 +7,9 @@ config.defaultProtocolVersion = 2
 config.ValidateSchema = false
 config.zeroOccurrenceTimeout = 1000
 
+config.application1.registerAppInterfaceParams.syncMsgVersion.majorVersion = 6
+config.application1.registerAppInterfaceParams.syncMsgVersion.minorVersion = 2
+
 --[[ Required Shared libraries ]]
 local actions = require("user_modules/sequences/actions")
 local commonFunctions = require("user_modules/shared_testcases/commonFunctions")

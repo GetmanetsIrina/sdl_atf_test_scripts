@@ -1,11 +1,11 @@
 ---------------------------------------------------------------------------------------------------
 -- Proposal:https://github.com/smartdevicelink/sdl_evolution/blob/master/proposals/0261-New-vehicle-data-WindowStatus.md
 --
--- Description: Check that SDL successfully processes VD RPC with new `windowStatus` param in case app version is greater than 6.0
+-- Description: Check that SDL successfully processes VD RPC with new `windowStatus` param in case app version is greater than 6.2
 --
 -- Preconditions:
 -- 1) App is registered with syncMsgVersion=7.0
--- 2) New param in `windowStatus` has since=6.0 in DB and API
+-- 2) New param in `windowStatus` has since=6.2 in DB and API
 -- In case:
 -- 1) App requests Get/Sub/UnsubVehicleData with windowStatus=true.
 -- 2) HMI sends valid OnVehicleData notification with all parameters of `windowStatus` structure.

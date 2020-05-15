@@ -2,11 +2,11 @@
 -- Proposal:https://github.com/smartdevicelink/sdl_evolution/blob/master/proposals/0261-New-vehicle-data-WindowStatus.md
 --
 -- Description: Check that SDL responds with ` INVALID_DATA` resultCode on Get/Sub/Unsub/VehicleData requests with new
--- 'windowStatus' parameter in case App is registered with syncMsgVersion less than 6.0.
+-- 'windowStatus' parameter in case App is registered with syncMsgVersion less than 6.2.
 --
 -- Preconditions:
 -- 1) App is registered with syncMsgVersion=5.0
--- 2) New param `windowStatus` has since=6.0 in DB and API
+-- 2) New param `windowStatus` has since=6.2 in DB and API
 -- In case:
 -- 1) App requests Get/Sub/UnsubVehicleData with windowStatus=true.
 -- SDL does:
