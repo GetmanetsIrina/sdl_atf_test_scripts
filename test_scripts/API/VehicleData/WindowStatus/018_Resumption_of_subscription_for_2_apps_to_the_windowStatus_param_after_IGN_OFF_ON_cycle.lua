@@ -24,7 +24,7 @@ local common = require('test_scripts/API/VehicleData/WindowStatus/common')
 local appId1 = 1
 local appId2 = 2
 local isExpectedSubscribeVDonHMI = true
-local notExpectedSubscribeVDonHMI = true
+local notExpectedSubscribeVDonHMI = false
 local isSubscribed = true
 local notSubscribed = false
 
@@ -52,19 +52,14 @@ common.Step("Register App1", common.registerAppWOPTU)
 common.Step("Register App2", common.registerAppWOPTU, { appId2 })
 common.Step("Activate App1", common.activateApp)
 common.Step("Activate App2", common.activateApp, { appId2 })
-common.Step("App1 subscribes to windowStatus data", common.checkResumption, { isExpectedSubscribeVDonHMI })
-common.Step("App2 subscribes to windowStatus data", common.checkResumption, { notExpectedSubscribeVDonHMI, appId2 })
+common.Step("App1 subscribes to windowStatus data", common.subUnScribeVD, { "SubscribeVehicleData", isExpectedSubscribeVDonHMI })
+common.Step("App2 subscribes to windowStatus data", common.subUnScribeVD, { "SubscribeVehicleData", notExpectedSubscribeVDonHMI, appId2 })
 common.Step("Ignition Off", common.ignitionOff)
 common.Step("Ignition On", common.start)
 
 common.Title("Test")
-common.Step("Re-register App1 resumption data", common.registerAppWithResumption,
-  { appId1, common.checkResumption_NONE, isSubscribed })
-
-common.Step("Re-register App2 resumption data", common.registerAppWithResumption,
-  { appId2, common.checkResumption_FULL, notSubscribed })
-
-  common.Step("Activate App1", common.activateApp)
+common.Step("Re-register App1 resumption data", common.registerAppWithResumption, { appId1, isSubscribed })
+common.Step("Re-register App2 resumption data", common.registerAppWithResumption, { appId2, notSubscribed })
 common.Step("OnVehicleData with windowStatus data", OnVehicleData2Apps, { windowStatusData })
 
 common.Title("Postconditions")

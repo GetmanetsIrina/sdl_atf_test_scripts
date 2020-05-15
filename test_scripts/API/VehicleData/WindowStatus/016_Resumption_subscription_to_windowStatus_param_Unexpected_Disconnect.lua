@@ -44,7 +44,7 @@ common.Step("App subscribes to windowStatus data", common.subUnScribeVD, { "Subs
 common.Title("Test")
 common.Step("Unexpected disconnect", common.unexpectedDisconnect)
 common.Step("Connect mobile", common.connectMobile)
-common.Step("Re-register App resumption data", common.registerAppWithResumption, { appId, common.checkResumption_FULL, isSubscribed })
+common.Step("Re-register App resumption data", common.registerAppWithResumption, { appId, isSubscribed })
 common.Step("OnVehicleData with windowStatus data", common.sendOnVehicleData, { windowStatusData })
 
 common.Title("Postconditions")

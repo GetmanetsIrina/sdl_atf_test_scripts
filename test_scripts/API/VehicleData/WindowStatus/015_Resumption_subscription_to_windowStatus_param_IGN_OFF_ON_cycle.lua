@@ -44,7 +44,7 @@ common.Step("App subscribes to windowStatus data", common.subUnScribeVD, { "Subs
 common.Title("Test")
 common.Step("Ignition Off", common.ignitionOff)
 common.Step("Ignition On", common.start)
-common.Step("Re-register App resumption data", common.registerAppWithResumption, { appId, common.checkResumption_FULL, isSubscribed })
+common.Step("Re-register App resumption data", common.registerAppWithResumption, { appId, isSubscribed })
 common.Step("OnVehicleData with windowStatus data", common.sendOnVehicleData, { windowStatusData })
 
 common.Title("Postconditions")
