@@ -23,14 +23,16 @@ local value = { true, false }
 local rpc_sub = "SubscribeVehicleData"
 local appId_1 = 1
 local appId_2 = 2
+local isExpectedSubscribeVDonHMI = true
+local notExpectedSubscribeVDonHMI = false
 
 --[[ Scenario ]]
 common.Title("Preconditions")
-common.Step("Clean environment and update preloaded_pt file", common.precondition)
+common.Step("Clean environment and update preloaded_pt file", common.preconditions)
 common.Step("Start SDL, HMI, connect Mobile, start Session", common.start)
 common.Step("Register App_1", common.registerAppWOPTU, { appId_1 })
 common.Step("RPC " .. rpc_sub .. " on handsOffSteering parameter App_1",
-common.processSubscriptionRPCsSuccess, { rpc_sub, appId_1 })
+common.processSubscriptionRPCsSuccess, { rpc_sub, appId_1, isExpectedSubscribeVDonHMI })
 
 common.Title("Test")
 for _, v in pairs(value) do
@@ -38,11 +40,11 @@ for _, v in pairs(value) do
 end
 common.Step("Register App_2", common.registerAppWOPTU, { appId_2 })
 common.Step("RPC " .. rpc_sub .. " on handsOffSteering parameter App_2",
-  common.processRPCForSecondApp, { rpc_sub, appId_2 })
+  common.processSubscriptionRPCsSuccess, { rpc_sub, appId_2, notExpectedSubscribeVDonHMI })
 for _, v in pairs(value) do
-  common.Step("HMI sends OnVehicleData notification with handsOffSteering " .. tostring(v),
-    common.onVehicleDataForTwoApps, { v, appId_1, appId_2 })
+  common.Step("HMI sends OnVehicleData notification with handsOffSteering parameter for two Apps" .. tostring(v),
+    common.onVehicleDataForTwoApps, { v })
 end
 
 common.Title("Postconditions")
-common.Step("Stop SDL", common.postcondition)
+common.Step("Stop SDL", common.postconditions)

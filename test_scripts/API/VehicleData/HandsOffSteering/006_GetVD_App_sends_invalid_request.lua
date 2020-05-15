@@ -16,17 +16,20 @@
 --[[ Required Shared libraries ]]
 local common = require('test_scripts/API/VehicleData/HandsOffSteering/common')
 
---[[ Local Variable ]]
+--[[ Local Variables ]]
 local rpc = "GetVehicleData"
+local resultCode = "INVALID_DATA"
+local invalidData = 123
 
 --[[ Scenario ]]
 common.Title("Preconditions")
-common.Step("Clean environment and update preloaded_pt file", common.precondition)
+common.Step("Clean environment and update preloaded_pt file", common.preconditions)
 common.Step("Start SDL, HMI, connect Mobile, start Session", common.start)
 common.Step("Register App", common.registerAppWOPTU)
 
 common.Title("Test")
-common.Step("RPC GetVehicleData, App with invalid request", common.processRPCInvalidRequest, { rpc })
+common.Step("RPC GetVehicleData, App with invalid request",
+  common.processRPCUnsuccessRequest, { rpc, invalidData, resultCode })
 
 common.Title("Postconditions")
-common.Step("Stop SDL", common.postcondition)
+common.Step("Stop SDL", common.postconditions)

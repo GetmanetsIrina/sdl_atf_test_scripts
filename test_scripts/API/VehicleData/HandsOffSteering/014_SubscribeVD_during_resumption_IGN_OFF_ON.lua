@@ -24,7 +24,7 @@ local onVDValue = true
 
 --[[ Scenario ]]
 common.Title("Preconditions")
-common.Step("Clean environment and update preloaded_pt file", common.precondition)
+common.Step("Clean environment and update preloaded_pt file", common.preconditions)
 common.Step("Start SDL, HMI, connect Mobile, start Session", common.start)
 common.Step("Register App", common.registerAppWOPTU)
 common.Step("RPC " .. rpc .. " on handsOffSteering parameter", common.processSubscriptionRPCsSuccess, { rpc })
@@ -36,4 +36,4 @@ common.Step("Re-register App resumption data", common.registerAppSuccessWithResu
 common.Step("Check resumption data OnVehicleData notification", common.onVehicleData, { onVDValue })
 
 common.Title("Postconditions")
-common.Step("Stop SDL", common.postcondition)
+common.Step("Stop SDL", common.postconditions)

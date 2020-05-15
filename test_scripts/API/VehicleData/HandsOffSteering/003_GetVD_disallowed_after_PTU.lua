@@ -27,6 +27,7 @@ local common = require('test_scripts/API/VehicleData/HandsOffSteering/common')
 --[[ Local Variables ]]
 local value = true
 local rpc = "GetVehicleData"
+local resultCode = "DISALLOWED"
 
 -- [[ Local Function ]]
 local function ptUpdate(pt)
@@ -44,7 +45,7 @@ end
 
 --[[ Scenario ]]
 common.Title("Preconditions")
-common.Step("Clean environment and update preloaded_pt file", common.precondition)
+common.Step("Clean environment and update preloaded_pt file", common.preconditions)
 common.Step("Start SDL, HMI, connect Mobile, start Session", common.start)
 common.Step("Register App", common.registerApp)
 common.Step("RPC GetVehicleData", common.getVehicleData, { value })
@@ -52,7 +53,7 @@ common.Step("RPC GetVehicleData", common.getVehicleData, { value })
 common.Title("Test")
 common.Step("Policy Table Update with disabling permissions for handsOffSteering",
   common.policyTableUpdate, { ptUpdate })
-common.Step("RPC GetVehicleData, DISALLOWED after PTU", common.processRPCDisallowed, { rpc })
+common.Step("RPC GetVehicleData, DISALLOWED after PTU", common.processRPCUnsuccessRequest, { rpc, true, resultCode })
 
 common.Title("Postconditions")
-common.Step("Stop SDL", common.postcondition)
+common.Step("Stop SDL", common.postconditions)

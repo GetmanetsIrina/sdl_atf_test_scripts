@@ -23,7 +23,7 @@ local rpc = "GetVehicleData"
 
 --[[ Scenario ]]
 common.Title("Preconditions")
-common.Step("Clean environment and update preloaded_pt file", common.precondition)
+common.Step("Clean environment and update preloaded_pt file", common.preconditions)
 common.Step("Start SDL, HMI, connect Mobile, start Session", common.start)
 common.Step("Register App", common.registerAppWOPTU)
 
@@ -31,4 +31,4 @@ common.Title("Test")
 common.Step("RPC GetVehicleData, HMI doesn't response", common.processRPCHMIInvalidResponse, { rpc })
 
 common.Title("Postconditions")
-common.Step("Stop SDL", common.postcondition)
+common.Step("Stop SDL", common.postconditions)

@@ -32,6 +32,7 @@ local json = require("modules/json")
 local rpc_sub = "SubscribeVehicleData"
 local appId_1 = 1
 local appId_2 = 2
+local resultCode = "DISALLOWED"
 
 --[[ Local Function ]]
 local function updatedPreloadedPTFile()
@@ -64,7 +65,7 @@ end
 
 --[[ Scenario ]]
 common.Title("Preconditions")
-common.Step("Clean environment", common.precondition)
+common.Step("Clean environment", common.preconditions)
 common.Step("Update preloaded file", updatedPreloadedPTFile)
 common.Step("Start SDL, HMI, connect Mobile, start Session", common.start)
 common.Step("Register App_1", common.registerAppWOPTU, { appId_1 })
@@ -74,7 +75,6 @@ common.Step("RPC " .. rpc_sub .. " on handsOffSteering parameter for App_1",
 common.Title("Test")
 common.Step("Register App_2", common.registerAppWOPTU, { appId_2 })
 common.Step("RPC " .. rpc_sub .. " on handsOffSteering parameter for App_2 DISALLOWED",
-  common.processRPCDisallowed, { rpc_sub, appId_2 })
-
+  common.processRPCUnsuccessRequest, { rpc_sub, true, resultCode, appId_2 })
 common.Title("Postconditions")
-common.Step("Stop SDL", common.postcondition)
+common.Step("Stop SDL", common.postconditions)

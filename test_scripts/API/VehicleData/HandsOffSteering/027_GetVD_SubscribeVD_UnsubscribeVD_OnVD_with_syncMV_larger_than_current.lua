@@ -2,7 +2,7 @@
 -- Proposal:https://github.com/smartdevicelink/sdl_evolution/blob/master/proposals/0257-New-vehicle-data-HandsOffSteering.md
 --
 -- Description: Check that SDL processes GetVD, SubscribeVD, UnsubscribeVD, OnVD RPCs with new 'handsOffSteering'
--- parameter if an app registered with version large than 6.2 version
+-- parameter if an app registered with version large than current version
 --
 -- Preconditions:
 -- 1) Update preloaded_pt file, add handsOffSteering parameter to VD_RPC group
@@ -48,16 +48,16 @@ local onVDValue = true
 
 --[[ Scenario ]]
 common.Title("Preconditions")
-common.Step("Clean environment and update preloaded_pt file", common.precondition)
+common.Step("Clean environment and update preloaded_pt file", common.preconditions)
 common.Step("Start SDL, HMI, connect Mobile, start Session", common.start)
 common.Step("Register App", common.registerAppWOPTU)
 
 common.Title("Test")
-common.Step("RPC GetVehicleData, handsOffSteering", common.getVehicleData, { true })
+common.Step("RPC GetVehicleData, handsOffSteering", common.getVehicleData, { onVDValue })
 common.Step("RPC " .. rpc_sub .. " on handsOffSteering parameter", common.processSubscriptionRPCsSuccess, { rpc_sub })
 common.Step("HMI sends OnVehicleData notification with handsOffSteering", common.onVehicleData, { onVDValue })
 common.Step("RPC " .. rpc_unsub .. " on handsOffSteering parameter",
   common.processSubscriptionRPCsSuccess, { rpc_unsub })
 
 common.Title("Postconditions")
-common.Step("Stop SDL", common.postcondition)
+common.Step("Stop SDL", common.postconditions)

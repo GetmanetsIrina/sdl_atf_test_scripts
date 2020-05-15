@@ -21,6 +21,7 @@ local common = require('test_scripts/API/VehicleData/HandsOffSteering/common')
 --[[ Local Variables ]]
 local rpc_sub = "SubscribeVehicleData"
 local rpc_unsub = "UnsubscribeVehicleData"
+local resultCode = "DISALLOWED"
 local VDGroup = {
   rpcs = {
     SubscribeVehicleData = {
@@ -36,14 +37,14 @@ local VDGroup = {
 
 --[[ Scenario ]]
 common.Title("Preconditions")
-common.Step("Clean environment and update preloaded_pt file", common.precondition, { VDGroup })
+common.Step("Clean environment and update preloaded_pt file", common.preconditions, { VDGroup })
 common.Step("Start SDL, HMI, connect Mobile, start Session", common.start)
 common.Step("Register App", common.registerAppWOPTU)
 common.Step("RPC " .. rpc_sub .. " on handsOffSteering parameter", common.processSubscriptionRPCsSuccess, { rpc_sub })
 
 common.Title("Test")
 common.Step("RPC " .. rpc_unsub .. " on handsOffSteering parameter DISALLOWED",
-  common.processRPCDisallowed, { rpc_unsub })
+  common.processRPCUnsuccessRequest, { rpc_unsub, true, resultCode })
 
 common.Title("Postconditions")
-common.Step("Stop SDL", common.postcondition)
+common.Step("Stop SDL", common.postconditions)

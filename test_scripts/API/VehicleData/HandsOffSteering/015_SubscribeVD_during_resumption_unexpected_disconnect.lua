@@ -19,12 +19,11 @@ local common = require('test_scripts/API/VehicleData/HandsOffSteering/common')
 
 --[[ Local Variables ]]
 local rpc = "SubscribeVehicleData"
-local appId = 1
 local onVDValue = true
 
 --[[ Scenario ]]
 common.Title("Preconditions")
-common.Step("Clean environment and update preloaded_pt file", common.precondition)
+common.Step("Clean environment and update preloaded_pt file", common.preconditions)
 common.Step("Start SDL, HMI, connect Mobile, start Session", common.start)
 common.Step("Register App", common.registerAppWOPTU)
 common.Step("RPC " .. rpc .. " on handsOffSteering parameter", common.processSubscriptionRPCsSuccess, { rpc })
@@ -32,8 +31,8 @@ common.Step("RPC " .. rpc .. " on handsOffSteering parameter", common.processSub
 common.Title("Test")
 common.Step("Unexpected disconnect", common.unexpectedDisconnect)
 common.Step("Connect mobile", common.connectMobile)
-common.Step("Re-register App resumption data", common.registerAppSuccessWithResumption, { appId, true })
+common.Step("Re-register App resumption data", common.registerAppSuccessWithResumption, { 1, true })
 common.Step("Check resumption data OnVehicleData notification", common.onVehicleData, { onVDValue })
 
 common.Title("Postconditions")
-common.Step("Stop SDL", common.postcondition)
+common.Step("Stop SDL", common.postconditions)

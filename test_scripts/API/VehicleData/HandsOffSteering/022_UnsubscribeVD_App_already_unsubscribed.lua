@@ -20,23 +20,24 @@ local common = require('test_scripts/API/VehicleData/HandsOffSteering/common')
 --[[ Local Variables ]]
 local rpc_sub = "SubscribeVehicleData"
 local rpc_unsub = "UnsubscribeVehicleData"
-local resultCode = "DATA_NOT_SUBSCRIBED"
 local onVDValue = true
 local pExpTimes = 0
+local alreadySub = { success = false, resultCode = "IGNORED",
+handsOffSteering = {dataType = "VEHICLEDATA_HANDSOFFSTEERING", resultCode = "DATA_NOT_SUBSCRIBED" }}
 
 --[[ Scenario ]]
 common.Title("Preconditions")
-common.Step("Clean environment and update preloaded_pt file", common.precondition)
+common.Step("Clean environment and update preloaded_pt file", common.preconditions)
 common.Step("Start SDL, HMI, connect Mobile, start Session", common.start)
 common.Step("Register App", common.registerAppWOPTU)
 common.Step("RPC " .. rpc_sub .. " on handsOffSteering parameter", common.processSubscriptionRPCsSuccess, { rpc_sub })
 common.Step("RPC " .. rpc_unsub .. " on handsOffSteering parameter",
-  common.processSubscriptionRPCsSuccess, { rpc_unsub })
+  common.processSubscriptionRPCsSuccess, { rpc_unsub, 1, true })
 
 common.Title("Test")
 common.Step("App sends RPC " .. rpc_unsub .. " on already unsubscribed parameter",
-  common.appAlreadySubUnsubscribed, { rpc_unsub, resultCode })
+  common.processSubscriptionRPCsSuccess, { rpc_unsub, 1, false, alreadySub })
 common.Step("Check that App is unsubscribed", common.onVehicleData, { onVDValue, pExpTimes })
 
 common.Title("Postconditions")
-common.Step("Stop SDL", common.postcondition)
+common.Step("Stop SDL", common.postconditions)

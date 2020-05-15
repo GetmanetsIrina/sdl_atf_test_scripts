@@ -2,7 +2,7 @@
 -- Common module
 ---------------------------------------------------------------------------------------------------
 config.application1.registerAppInterfaceParams.syncMsgVersion.majorVersion = 6
-config.application1.registerAppInterfaceParams.syncMsgVersion.minorVersion = 2
+config.application1.registerAppInterfaceParams.syncMsgVersion.minorVersion = 0
 
 --[[ Required Shared libraries ]]
 local actions = require("user_modules/sequences/actions")
@@ -18,6 +18,10 @@ config.defaultProtocolVersion = 2
 --[[ Local Variables ]]
 local m = {}
 local hashId = {}
+local handsOffSteeringResponseData = {
+  dataType = "VEHICLEDATA_HANDSOFFSTEERING",
+  resultCode = "SUCCESS"
+}
 
 --[[ Shared Functions ]]
 m.Title = runner.Title
@@ -30,10 +34,7 @@ m.activateApp = actions.activateApp
 m.getMobileSession = actions.getMobileSession
 m.getHMIConnection = actions.getHMIConnection
 m.getParams = actions.app.getParams
-m.backupPreloadedPT = actions.sdl.backupPreloadedPT
-m.restorePreloadedPT = actions.sdl.restorePreloadedPT
 m.cloneTable = utils.cloneTable
-m.preconditions = actions.preconditions
 m.start = actions.start
 m.postconditions = actions.postconditions
 m.policyTableUpdate = actions.policyTableUpdate
@@ -45,7 +46,7 @@ m.connectMobile = actions.mobile.connect
 --[[ Common Functions ]]
 --[[ @updatedPreloadedPTFile: Update preloaded file with additional permissions for handsOffSteering
 --! @parameters:
---! pGroups: table with additional updates (optional)
+--! pGroup: table with additional updates (optional)
 --! @return: none
 --]]
 function m.updatedPreloadedPTFile(pGroup)
@@ -78,18 +79,17 @@ function m.updatedPreloadedPTFile(pGroup)
   m.setPreloadedPT(pt)
 end
 
---[[ @precondition: Clean environment, backup sdl_preloaded_pt.json file and update sdl_preloaded_pt.json file
+--[[ @preconditions: Clean environment, backup and update of sdl_preloaded_pt.json file
  --! @parameters:
- --! pGroups: data for updating sdl_preloaded_pt.json file
+ --! pGroup: data for updating sdl_preloaded_pt.json file
  --! @return: none
  --]]
-function m.precondition(pGroup)
-  m.backupPreloadedPT()
-  m.preconditions()
+function m.preconditions(pGroup)
+  actions.preconditions()
   m.updatedPreloadedPTFile(pGroup)
 end
 
---[[ @setHashId: Set hashId which is required during resumption
+--[[ @setHashId: Set hashId value which is required during resumption
 --! @parameters:
 --! pHashId: hashId value to store
 --! pAppId: application number (1, 2, etc.)
@@ -110,7 +110,7 @@ end
 
 --[[ @getVehicleData: Processing GetVehicleData RPC
 --! @parameters:
---! pHandsOffSteering: Vehicle parameter value
+--! pHandsOffSteering: handsOffSteering parameter value
 --! pAppId: application number (1, 2, etc.)
 --! @return: none
 --]]
@@ -129,53 +129,36 @@ end
 --! @parameters:
 --! pRpcName: RPC name
 --! pAppId: application number (1, 2, etc.)
+--! isRequestOnHMIExpected: true - in case VehicleInfo.Sub/UnsubscribeVehicleData request on HMI is expected,
+--! otherwise - false
+--! pResultCode: resultCode value for expectation on App
 --! @return: none
 --]]
-function m.processSubscriptionRPCsSuccess(pRpcName, pAppId)
+function m.processSubscriptionRPCsSuccess(pRpcName, pAppId, isRequestOnHMIExpected, pResultCode)
+  local result = { success = true, resultCode = "SUCCESS", handsOffSteering = handsOffSteeringResponseData }
   if not pAppId then pAppId = 1 end
-  local handsOffSteeringResponseData = {
-    dataType = "VEHICLEDATA_HANDSOFFSTEERING",
-    resultCode = "SUCCESS"
-  }
+  if isRequestOnHMIExpected == nil then isRequestOnHMIExpected = true end
+  if not pResultCode then pResultCode = result end
   local cid = m.getMobileSession(pAppId):SendRPC(pRpcName, { handsOffSteering = true })
-  m.getHMIConnection():ExpectRequest("VehicleInfo." .. pRpcName, { handsOffSteering = true })
-  :Do(function(_, data)
-    m.getHMIConnection():SendResponse(data.id, data.method, "SUCCESS",
-      { handsOffSteering = handsOffSteeringResponseData })
-  end)
-  m.getMobileSession(pAppId):ExpectResponse(cid,
-    { success = true, resultCode = "SUCCESS", handsOffSteering = handsOffSteeringResponseData })
-  m.getMobileSession(pAppId):ExpectNotification("OnHashChange")
-  :Do(function(_, data)
-    m.setHashId(data.payload.hashID, pAppId)
-  end)
-end
-
---[[ @processRPCForSecondApp: Processing Subscribe/Unsubscribe RPC on VD for second App
---! @parameters:
---! pRpcName: RPC name
---! pAppId: application number (1, 2, etc.)
---! @return: none
---]]
-function m.processRPCForSecondApp(pRpcName, pAppId)
-  local handsOffSteeringResponseData = {
-    dataType = "VEHICLEDATA_HANDSOFFSTEERING",
-    resultCode = "SUCCESS"
-  }
-  local cid = m.getMobileSession(pAppId):SendRPC(pRpcName, { handsOffSteering = true })
-  m.getHMIConnection():ExpectRequest("VehicleInfo." .. pRpcName):Times(0)
-  :Do(function()
-    m.getMobileSession(pAppId):ExpectResponse(cid,
-    { success = true, resultCode = "SUCCESS", handsOffSteering = handsOffSteeringResponseData })
-  end)
-  m.getMobileSession(pAppId):ExpectNotification("OnHashChange")
-  :Do(function(_, data)
-    m.setHashId(data.payload.hashID, pAppId)
-  end)
+  if isRequestOnHMIExpected then
+    m.getHMIConnection():ExpectRequest("VehicleInfo." .. pRpcName, { handsOffSteering = true })
+    :Do(function(_,data)
+      m.getHMIConnection():SendResponse(data.id, data.method, "SUCCESS",
+        { handsOffSteering = handsOffSteeringResponseData })
+    end)
+  else
+    m.getHMIConnection():ExpectRequest("VehicleInfo." .. pRpcName):Times(0)
+  end
+  m.getMobileSession(pAppId):ExpectResponse(cid, pResultCode)
+  if pResultCode == result then
+    m.getMobileSession(pAppId):ExpectNotification("OnHashChange")
+    :Do(function(_, data)
+      m.setHashId(data.payload.hashID, pAppId)
+    end)
+  end
 end
 
 --[[ @processRPCHMIInvalidResponse: emulate incorrect HMI response for Subscribe/Unsubscribe RPC
---! No response form HMI if pInvalidData = nil
 --! @parameters:
 --! @pRpcName: RPC name
 --! @pInvalidData: data for invalid response from HMI
@@ -185,53 +168,25 @@ function m.processRPCHMIInvalidResponse(pRpcName, pInvalidData)
   local cid = m.getMobileSession():SendRPC(pRpcName, { handsOffSteering = true })
   m.getHMIConnection():ExpectRequest("VehicleInfo." .. pRpcName, { handsOffSteering = true })
   :Do(function(_, data)
-    if pInvalidData then
-      m.getHMIConnection():SendResponse(data.id, data.method, { handsOffSteering = pInvalidData })
-    end
+    m.getHMIConnection():SendResponse(data.id, data.method, { handsOffSteering = pInvalidData })
   end)
   m.getMobileSession():ExpectResponse(cid, { success = false, resultCode = "GENERIC_ERROR" })
   m.getMobileSession():ExpectNotification("OnHashChange") :Times(0)
 end
 
---[[ @processRPCInvalidRequest: performs case when App did requested with invalid data
+--[[ @processRPCUnsuccessRequest: function for processing of unsuccess vehicle data request
 --! @parameters:
 --! @pRpcName: RPC name
---! @return: none
---]]
-function m.processRPCInvalidRequest(pRpcName)
-  local cid = m.getMobileSession():SendRPC(pRpcName, { handsOffSteering = 123 }) -- invalid data
-  m.getHMIConnection():ExpectRequest("VehicleInfo." .. pRpcName) :Times(0)
-  m.getMobileSession():ExpectResponse(cid, { success = false, resultCode = "INVALID_DATA" })
-  m.getMobileSession():ExpectNotification("OnHashChange") :Times(0)
-end
-
---[[ @processRPCDisallowed: Processing Subscribe/Unsubscribe RPC on VD not allowed by Policy
---! @parameters:
---! @pRpcName: RPC name
---! pAppId: application number (1, 2, etc.)
---! @return: none
---]]
-function m.processRPCDisallowed(pRpcName, pAppId)
-  if not pAppId then pAppId = 1 end
-  local cid = m.getMobileSession(pAppId):SendRPC(pRpcName, { handsOffSteering = true })
-  m.getHMIConnection():ExpectRequest("VehicleInfo." .. pRpcName, { handsOffSteering = true }) :Times(0)
-  m.getMobileSession(pAppId):ExpectResponse(cid, { success = false, resultCode = "DISALLOWED" })
-  m.getMobileSession(pAppId):ExpectNotification("OnHashChange") :Times(0)
-end
-
---[[ @appAlreadySubUnsubscribed: Processing Subscribe/Unsubscribe RPC on VD in case App already Subscribed/Unsubscribed
---! @parameters:
---! @pRpcName: RPC name
+--! @pHandsData: parameters for the request
 --! @pResultCode: resultCode value for expectation on App
 --! pAppId: application number (1, 2, etc.)
 --! @return: none
 --]]
-function m.appAlreadySubUnsubscribed(pRpcName, pResultCode, pAppId)
+function m.processRPCUnsuccessRequest(pRpcName, pHandsData, pResultCode, pAppId)
   if not pAppId then pAppId = 1 end
-  local cid = m.getMobileSession(pAppId):SendRPC(pRpcName, { handsOffSteering = true })
-  m.getHMIConnection():ExpectRequest("VehicleInfo." .. pRpcName, { handsOffSteering = true }) :Times(0)
-  m.getMobileSession(pAppId):ExpectResponse(cid, { success = false, resultCode = "IGNORED",
-    handsOffSteering = {dataType = "VEHICLEDATA_HANDSOFFSTEERING", resultCode = pResultCode }, })
+  local cid = m.getMobileSession(pAppId):SendRPC(pRpcName, { handsOffSteering = pHandsData })
+  m.getHMIConnection():ExpectRequest("VehicleInfo." .. pRpcName) :Times(0)
+  m.getMobileSession(pAppId):ExpectResponse(cid, { success = false, resultCode = pResultCode })
   m.getMobileSession(pAppId):ExpectNotification("OnHashChange") :Times(0)
 end
 
@@ -285,16 +240,11 @@ end
 --[[ @registerAppSuccessWithResumption: Successful application registration with custom expectations for resumption
 --! @parameters:
 --! pAppId - application number (1, 2, etc.)
---! isHMISubscription: if false SDL resumes SubscribeVehicleData for App2 and does not send
---! VehicleInfo.SubscribeVehicleData request to HMI
+--! isHMISubscription: if true VD.SubscribeVehicleData request is expected on HMI, otherwise - not expected
 --! @return: none
 --]]
 function m.registerAppSuccessWithResumption(pAppId, isHMISubscription)
   if not pAppId then pAppId = 1 end
-  local handsOffSteeringResponseData = {
-    dataType = "VEHICLEDATA_HANDSOFFSTEERING",
-    resultCode = "SUCCESS"
-  }
   m.getMobileSession(pAppId):StartService(7)
   :Do(function()
     local params = m.cloneTable(m.getParams(pAppId))
@@ -303,25 +253,25 @@ function m.registerAppSuccessWithResumption(pAppId, isHMISubscription)
     m.getHMIConnection():ExpectNotification("BasicCommunication.OnAppRegistered", {
       application = { appName = m.getParams(pAppId).appName }
     })
+    if isHMISubscription == true then
+      m.getHMIConnection():ExpectRequest( "VehicleInfo.SubscribeVehicleData", { handsOffSteering = true })
+      :Do(function(_, data)
+        m.getHMIConnection():SendResponse(data.id, data.method, "SUCCESS",
+          { handsOffSteering = handsOffSteeringResponseData })
+      end)
+    else
+      m.getHMIConnection():ExpectRequest( "VehicleInfo.SubscribeVehicleData"):Times(0)
+    end
     m.getMobileSession(pAppId):ExpectResponse(corId, { success = true, resultCode = "SUCCESS" })
     :Do(function()
       m.getMobileSession(pAppId):ExpectNotification("OnPermissionsChange")
     end)
   end)
-  if true == isHMISubscription then
-    m.getHMIConnection():ExpectRequest( "VehicleInfo.SubscribeVehicleData", { handsOffSteering = true })
-    :Do(function(_, data)
-      m.getHMIConnection():SendResponse(data.id, data.method, "SUCCESS",
-        { handsOffSteering = handsOffSteeringResponseData })
-    end)
-  else
-    m.getHMIConnection():ExpectRequest( "VehicleInfo.SubscribeVehicleData", { handsOffSteering = true }):Times(0)
-  end
 end
 
 --[[ @onVehicleData: Processing OnVehicleData notification
 --! @parameters:
---! pHandsOffSteering: Vehicle parameter value
+--! pHandsOffSteering: handsOffSteering parameter value
 --! pExpTimes:  expected number of notifications
 --! pAppId: application number (1, 2, etc.)
 --! @return: none
@@ -336,14 +286,13 @@ end
 
 --[[ @onVehicleDataForTwoApps: Processing OnVehicleData notification for two apps
 --! @parameters:
---! pHandsOffSteering: Vehicle parameter value
---! pAppId_1, pAppId_2: application number (1, 2, etc.)
+--! pHandsOffSteering: handsOffSteering parameter value
 --! @return: none
 --]]
-function m.onVehicleDataForTwoApps(pHandsOffSteering, pAppId_1, pAppId_2)
+function m.onVehicleDataForTwoApps(pHandsOffSteering)
   m.getHMIConnection():SendNotification("VehicleInfo.OnVehicleData", { handsOffSteering = pHandsOffSteering })
-  m.getMobileSession(pAppId_1):ExpectNotification("OnVehicleData", { handsOffSteering = pHandsOffSteering })
-  m.getMobileSession(pAppId_2):ExpectNotification("OnVehicleData", { handsOffSteering = pHandsOffSteering })
+  m.getMobileSession(1):ExpectNotification("OnVehicleData", { handsOffSteering = pHandsOffSteering })
+  m.getMobileSession(2):ExpectNotification("OnVehicleData", { handsOffSteering = pHandsOffSteering })
 end
 
 --[[ @unexpectedDisconnect: closing connection
@@ -355,15 +304,6 @@ function m.unexpectedDisconnect()
   :Times(actions.mobile.getAppsCount())
   actions.mobile.disconnect()
   utils.wait(1000)
-end
-
---[[ @postcondition: Stop SDL and restore sdl_preloaded_pt.json file
- --! @parameters: none
- --! @return: none
- --]]
-function m.postcondition()
-  m.restorePreloadedPT()
-  m.postconditions()
 end
 
 return m

@@ -30,6 +30,9 @@ local rpc_sub = "SubscribeVehicleData"
 local rpc_unsub = "UnsubscribeVehicleData"
 local appId_1 = 1
 local appId_2 = 2
+local resultCode = "DISALLOWED"
+local isExpectedSubscribeVDonHMI = true
+local notExpectedSubscribeVDonHMI = false
 
 --[[ Local Functions ]]
 local function updatedPreloadedPTFile()
@@ -70,21 +73,21 @@ end
 
 --[[ Scenario ]]
 common.Title("Preconditions")
-common.Step("Clean environment", common.precondition)
+common.Step("Clean environment", common.preconditions)
 common.Step("Update preloaded file", updatedPreloadedPTFile)
 common.Step("Start SDL, HMI, connect Mobile, start Session", common.start)
 common.Step("Register App_1", common.registerAppWOPTU, { appId_1 })
 common.Step("RPC " .. rpc_sub .. " on handsOffSteering parameter for App_1",
-  common.processSubscriptionRPCsSuccess, { rpc_sub, appId_1 })
+  common.processSubscriptionRPCsSuccess, { rpc_sub, appId_1, isExpectedSubscribeVDonHMI })
 common.Step("Register App_2", common.registerAppWOPTU, { appId_2 })
 common.Step("RPC " .. rpc_sub .. " on handsOffSteering parameter for App_2",
-  common.processRPCForSecondApp, { rpc_sub, appId_2 })
+  common.processSubscriptionRPCsSuccess, { rpc_sub, appId_2, notExpectedSubscribeVDonHMI })
 
 common.Title("Test")
 common.Step("RPC " .. rpc_unsub .. " on handsOffSteering parameter for App_1",
-  common.processRPCForSecondApp, { rpc_unsub, appId_1 })
+  common.processSubscriptionRPCsSuccess, { rpc_unsub, appId_1, notExpectedSubscribeVDonHMI })
 common.Step("RPC " .. rpc_unsub .. " on handsOffSteering parameter DISALLOWED for App_2",
-  common.processRPCDisallowed, { rpc_unsub, appId_2 })
+common.processRPCUnsuccessRequest, { rpc_unsub, true, resultCode, appId_2 })
 
 common.Title("Postconditions")
-common.Step("Stop SDL", common.postcondition)
+common.Step("Stop SDL", common.postconditions)

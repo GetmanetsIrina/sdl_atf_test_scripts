@@ -25,7 +25,7 @@ local rpc_unsub = "UnsubscribeVehicleData"
 
 --[[ Scenario ]]
 common.Title("Preconditions")
-common.Step("Clean environment and update preloaded_pt file", common.precondition)
+common.Step("Clean environment and update preloaded_pt file", common.preconditions)
 common.Step("Start SDL, HMI, connect Mobile, start Session", common.start)
 common.Step("Register App", common.registerAppWOPTU)
 common.Step("RPC " .. rpc_sub .. " on handsOffSteering parameter", common.processSubscriptionRPCsSuccess, { rpc_sub })
@@ -34,4 +34,4 @@ common.Title("Test")
 common.Step("RPC UnsubscribeVehicleData, HMI with invalid response", common.processRPCHMIInvalidResponse, { rpc_unsub })
 
 common.Title("Postconditions")
-common.Step("Stop SDL", common.postcondition)
+common.Step("Stop SDL", common.postconditions)
