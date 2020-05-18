@@ -18,7 +18,7 @@ local common = require('test_scripts/API/VehicleData/HandsOffSteering/common')
 
 --[[ Local Variables ]]
 local rpc = "GetVehicleData"
-local resultCode = "INVALID_DATA"
+local resultCode = { success = false, resultCode = "INVALID_DATA" }
 local invalidData = 123
 
 --[[ Scenario ]]

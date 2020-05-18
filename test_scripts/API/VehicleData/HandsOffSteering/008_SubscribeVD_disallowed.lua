@@ -19,7 +19,7 @@ local common = require('test_scripts/API/VehicleData/HandsOffSteering/common')
 
 --[[ Local Variables ]]
 local rpc = "SubscribeVehicleData"
-local resultCode = "DISALLOWED"
+local resultCode = { success = false, resultCode = "DISALLOWED" }
 local VDGroup = {
   rpcs = {
     SubscribeVehicleData = {

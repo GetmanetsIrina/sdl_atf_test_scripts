@@ -31,7 +31,7 @@ local common = require('test_scripts/API/VehicleData/HandsOffSteering/common')
 local rpc_sub = "SubscribeVehicleData"
 local rpc_unsub = "UnsubscribeVehicleData"
 local onVDValue = true
-local resultCode = "DISALLOWED"
+local resultCode = { success = false, resultCode = "DISALLOWED" }
 local pExpTimes = 0
 
 --[[ Local Function ]]

@@ -18,10 +18,9 @@ local common = require('test_scripts/API/VehicleData/HandsOffSteering/common')
 
 --[[ Local Variables ]]
 local rpc = "SubscribeVehicleData"
--- local resultCode = "DATA_ALREADY_SUBSCRIBED"
 local onVDValue = false
-local alreadySub = { success = false, resultCode = "IGNORED",
-handsOffSteering = {dataType = "VEHICLEDATA_HANDSOFFSTEERING", resultCode = "DATA_ALREADY_SUBSCRIBED" }}
+local alreadySub = { success = false, resultCode = "IGNORED", handsOffSteering =
+  {dataType = "VEHICLEDATA_HANDSOFFSTEERING", resultCode = "DATA_ALREADY_SUBSCRIBED" }}
 
 --[[ Scenario ]]
 common.Title("Preconditions")
@@ -32,7 +31,7 @@ common.Step("RPC " .. rpc .. " on handsOffSteering parameter", common.processSub
 
 common.Title("Test")
 common.Step("App sends RPC " .. rpc .. " on already subscribed parameter",
-  common.processSubscriptionRPCsSuccess, { rpc, 1, false, alreadySub })
+  common.processRPCUnsuccessRequest, { rpc, true, alreadySub, 1 })
 common.Step("Check that App is subscribed", common.onVehicleData, { onVDValue })
 
 common.Title("Postconditions")

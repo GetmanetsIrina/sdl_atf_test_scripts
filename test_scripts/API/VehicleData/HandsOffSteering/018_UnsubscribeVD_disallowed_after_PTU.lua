@@ -30,7 +30,7 @@ local common = require('test_scripts/API/VehicleData/HandsOffSteering/common')
 --[[ Local Variables ]]
 local rpc_sub = "SubscribeVehicleData"
 local rpc_unsub = "UnsubscribeVehicleData"
-local resultCode = "DISALLOWED"
+local resultCode = { success = false, resultCode = "DISALLOWED" }
 local onVDValue = true
 
 --[[ Local Function ]]

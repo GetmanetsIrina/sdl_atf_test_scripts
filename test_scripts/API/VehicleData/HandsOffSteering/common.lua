@@ -2,14 +2,14 @@
 -- Common module
 ---------------------------------------------------------------------------------------------------
 config.application1.registerAppInterfaceParams.syncMsgVersion.majorVersion = 6
-config.application1.registerAppInterfaceParams.syncMsgVersion.minorVersion = 0
+config.application1.registerAppInterfaceParams.syncMsgVersion.minorVersion = 2
 
 --[[ Required Shared libraries ]]
 local actions = require("user_modules/sequences/actions")
 local json = require("modules/json")
 local utils = require("user_modules/utils")
-local events = require('events')
 local runner = require('user_modules/script_runner')
+local SDL = require("SDL")
 
 --[[ Test Configuration ]]
 runner.testSettings.isSelfIncluded = false
@@ -42,6 +42,7 @@ m.getAppsCount = actions.getAppsCount
 m.EMPTY_ARRAY = json.EMPTY_ARRAY
 m.deleteSession = actions.mobile.deleteSession
 m.connectMobile = actions.mobile.connect
+m.wait = utils.wait
 
 --[[ Common Functions ]]
 --[[ @updatedPreloadedPTFile: Update preloaded file with additional permissions for handsOffSteering
@@ -131,14 +132,11 @@ end
 --! pAppId: application number (1, 2, etc.)
 --! isRequestOnHMIExpected: true - in case VehicleInfo.Sub/UnsubscribeVehicleData request on HMI is expected,
 --! otherwise - false
---! pResultCode: resultCode value for expectation on App
 --! @return: none
 --]]
-function m.processSubscriptionRPCsSuccess(pRpcName, pAppId, isRequestOnHMIExpected, pResultCode)
-  local result = { success = true, resultCode = "SUCCESS", handsOffSteering = handsOffSteeringResponseData }
+function m.processSubscriptionRPCsSuccess(pRpcName, pAppId, isRequestOnHMIExpected)
   if not pAppId then pAppId = 1 end
   if isRequestOnHMIExpected == nil then isRequestOnHMIExpected = true end
-  if not pResultCode then pResultCode = result end
   local cid = m.getMobileSession(pAppId):SendRPC(pRpcName, { handsOffSteering = true })
   if isRequestOnHMIExpected then
     m.getHMIConnection():ExpectRequest("VehicleInfo." .. pRpcName, { handsOffSteering = true })
@@ -149,13 +147,11 @@ function m.processSubscriptionRPCsSuccess(pRpcName, pAppId, isRequestOnHMIExpect
   else
     m.getHMIConnection():ExpectRequest("VehicleInfo." .. pRpcName):Times(0)
   end
-  m.getMobileSession(pAppId):ExpectResponse(cid, pResultCode)
-  if pResultCode == result then
-    m.getMobileSession(pAppId):ExpectNotification("OnHashChange")
-    :Do(function(_, data)
-      m.setHashId(data.payload.hashID, pAppId)
-    end)
-  end
+  m.getMobileSession(pAppId):ExpectResponse(cid, { success = true, resultCode = "SUCCESS" })
+  m.getMobileSession(pAppId):ExpectNotification("OnHashChange")
+  :Do(function(_, data)
+    m.setHashId(data.payload.hashID, pAppId)
+  end)
 end
 
 --[[ @processRPCHMIInvalidResponse: emulate incorrect HMI response for Subscribe/Unsubscribe RPC
@@ -186,7 +182,7 @@ function m.processRPCUnsuccessRequest(pRpcName, pHandsData, pResultCode, pAppId)
   if not pAppId then pAppId = 1 end
   local cid = m.getMobileSession(pAppId):SendRPC(pRpcName, { handsOffSteering = pHandsData })
   m.getHMIConnection():ExpectRequest("VehicleInfo." .. pRpcName) :Times(0)
-  m.getMobileSession(pAppId):ExpectResponse(cid, { success = false, resultCode = pResultCode })
+  m.getMobileSession(pAppId):ExpectResponse(cid, pResultCode)
   m.getMobileSession(pAppId):ExpectNotification("OnHashChange") :Times(0)
 end
 
@@ -195,46 +191,26 @@ end
 --! @return: none
 --]]
 function m.ignitionOff()
-  config.ExitOnCrash = false
-  local timeout = 5000
-  local function removeSessions()
-    for i = 1, m.getAppsCount() do
-      m.deleteSession(i)
-    end
-  end
-  local event = events.Event()
-  event.matches = function(event1, event2) return event1 == event2 end
-  EXPECT_EVENT(event, "SDL shutdown")
-  :Do(function()
-      removeSessions()
-      StopSDL()
-      config.ExitOnCrash = true
-    end)
+  local isOnSDLCloseSent = false
   m.getHMIConnection():SendNotification("BasicCommunication.OnExitAllApplications", { reason = "SUSPEND" })
   m.getHMIConnection():ExpectNotification("BasicCommunication.OnSDLPersistenceComplete")
   :Do(function()
-      m.getHMIConnection():SendNotification("BasicCommunication.OnExitAllApplications",{ reason = "IGNITION_OFF" })
-      for i = 1, m.getAppsCount() do
-        m.getMobileSession(i):ExpectNotification("OnAppInterfaceUnregistered", { reason = "IGNITION_OFF" })
-      end
+    m.getHMIConnection():SendNotification("BasicCommunication.OnExitAllApplications", { reason = "IGNITION_OFF" })
+    m.getHMIConnection():ExpectNotification("BasicCommunication.OnSDLClose")
+    :Do(function()
+      isOnSDLCloseSent = true
+      SDL.DeleteFile()
     end)
-  m.getHMIConnection():ExpectNotification("BasicCommunication.OnAppUnregistered", { unexpectedDisconnect = false })
-  :Times(m.getAppsCount())
-  local isSDLShutDownSuccessfully = false
-  m.getHMIConnection():ExpectNotification("BasicCommunication.OnSDLClose")
+    :Times(AtMost(1))
+  end)
+  m.wait(3000)
   :Do(function()
-      utils.cprint(35, "SDL was shutdown successfully")
-      isSDLShutDownSuccessfully = true
-      RAISE_EVENT(event, event)
-    end)
-  :Timeout(timeout)
-  local function forceStopSDL()
-    if isSDLShutDownSuccessfully == false then
-      utils.cprint(35, "SDL was shutdown forcibly")
-      RAISE_EVENT(event, event)
+    if isOnSDLCloseSent == false then m.cprint(35, "BC.OnSDLClose was not sent") end
+    if SDL:CheckStatusSDL() == SDL.RUNNING then SDL:StopSDL() end
+    for i = 1, m.getAppsCount() do
+      m.deleteSession(i)
     end
-  end
-  RUN_AFTER(forceStopSDL, timeout + 500)
+  end)
 end
 
 --[[ @registerAppSuccessWithResumption: Successful application registration with custom expectations for resumption

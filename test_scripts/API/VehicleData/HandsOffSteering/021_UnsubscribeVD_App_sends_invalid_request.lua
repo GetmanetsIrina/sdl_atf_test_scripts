@@ -20,7 +20,7 @@ local common = require('test_scripts/API/VehicleData/HandsOffSteering/common')
 --[[ Local Variables ]]
 local rpc_sub = "SubscribeVehicleData"
 local rpc_unsub = "UnsubscribeVehicleData"
-local resultCode = "INVALID_DATA"
+local resultCode = { success = false, resultCode = "INVALID_DATA" }
 local invalidData = 123
 
 --[[ Scenario ]]

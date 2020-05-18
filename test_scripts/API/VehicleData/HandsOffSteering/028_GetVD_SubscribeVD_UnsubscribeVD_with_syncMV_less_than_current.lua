@@ -32,7 +32,7 @@ common.getParams().syncMsgVersion.minorVersion = 0
 local rpc_get = "GetVehicleData"
 local rpc_sub = "SubscribeVehicleData"
 local rpc_unsub = "UnsubscribeVehicleData"
-local resultCode = "INVALID_DATA"
+local resultCode = { success = false, resultCode = "INVALID_DATA" }
 local valueVD = true
 
 --[[ Scenario ]]

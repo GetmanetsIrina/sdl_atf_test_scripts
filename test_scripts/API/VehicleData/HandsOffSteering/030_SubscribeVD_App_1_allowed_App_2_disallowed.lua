@@ -32,7 +32,7 @@ local json = require("modules/json")
 local rpc_sub = "SubscribeVehicleData"
 local appId_1 = 1
 local appId_2 = 2
-local resultCode = "DISALLOWED"
+local resultCode = { success = false, resultCode = "DISALLOWED" }
 
 --[[ Local Function ]]
 local function updatedPreloadedPTFile()

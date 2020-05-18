@@ -22,8 +22,8 @@ local rpc_sub = "SubscribeVehicleData"
 local rpc_unsub = "UnsubscribeVehicleData"
 local onVDValue = true
 local pExpTimes = 0
-local alreadySub = { success = false, resultCode = "IGNORED",
-handsOffSteering = {dataType = "VEHICLEDATA_HANDSOFFSTEERING", resultCode = "DATA_NOT_SUBSCRIBED" }}
+local alreadyUnsub = { success = false, resultCode = "IGNORED", handsOffSteering =
+  {dataType = "VEHICLEDATA_HANDSOFFSTEERING", resultCode = "DATA_NOT_SUBSCRIBED" }}
 
 --[[ Scenario ]]
 common.Title("Preconditions")
@@ -36,7 +36,7 @@ common.Step("RPC " .. rpc_unsub .. " on handsOffSteering parameter",
 
 common.Title("Test")
 common.Step("App sends RPC " .. rpc_unsub .. " on already unsubscribed parameter",
-  common.processSubscriptionRPCsSuccess, { rpc_unsub, 1, false, alreadySub })
+  common.processRPCUnsuccessRequest, { rpc_unsub, true, alreadyUnsub, 1 })
 common.Step("Check that App is unsubscribed", common.onVehicleData, { onVDValue, pExpTimes })
 
 common.Title("Postconditions")

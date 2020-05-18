@@ -30,7 +30,7 @@ local rpc_sub = "SubscribeVehicleData"
 local rpc_unsub = "UnsubscribeVehicleData"
 local appId_1 = 1
 local appId_2 = 2
-local resultCode = "DISALLOWED"
+local resultCode = { success = false, resultCode = "DISALLOWED" }
 local isExpectedSubscribeVDonHMI = true
 local notExpectedSubscribeVDonHMI = false
 
