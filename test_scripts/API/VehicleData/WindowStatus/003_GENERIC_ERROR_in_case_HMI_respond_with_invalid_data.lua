@@ -71,7 +71,7 @@ local invalidParam = {
   },
   ["invalidName_state"] = { -- invalid name for state parameter
     { location = common.getWindowStatusParams()[1].location,
-      StaTe = { approximatePosition = 50, deviation = 50 }
+      StaTe = common.getWindowStatusParams()[1].state
     }
   },
   ["invalidName_approximatePosition"] = { -- invalid name for approximatePosition parameter from WindowState structure
@@ -86,12 +86,12 @@ local invalidParam = {
   },
   ["missing_col"] = { -- without col parameter from Grid structure
     { location = { row = 49, level = 49, colspan = 49, rowspan = 49, levelspan = 49 },
-      state = { approximatePosition = 50, deviation = 50 }
+      state = common.getWindowStatusParams()[1].state
     }
   },
   ["missing_row"] = { -- without row parameter from Grid structure
     { location = { col = 49, level = 49, colspan = 49, rowspan = 49, levelspan = 49 },
-      state = { approximatePosition = 50, deviation = 50 }
+      state = common.getWindowStatusParams()[1].state
     }
   }
 }

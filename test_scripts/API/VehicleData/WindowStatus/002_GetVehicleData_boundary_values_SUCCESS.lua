@@ -17,20 +17,12 @@
 local common = require('test_scripts/API/VehicleData/WindowStatus/common')
 
 --[[ Local Variables ]]
-local windowStatusData = {
-  {
-    location = { col = 0, row = 0, level = 0, colspan = 1, rowspan = 1, levelspan = 1 },
-    state = {
-      approximatePosition = 50,
-      deviation = 50
-    }
-  }
+local windowStatusDataMinValues = {
+  location = { col = -1, row = -1, level = -1, colspan = 1, rowspan = 1, levelspan = 1 },
+  stateMinvalue = 0
 }
 
-local boundaryValues = {
-  maxvalue = 100,
-  minvalue = -1
-}
+local maxValue = 100
 
 --[[ Scenario ]]
 common.Title("Preconditions")
@@ -40,21 +32,18 @@ common.Step("Register App", common.registerApp)
 common.Step("Activate App", common.activateApp)
 
 common.Title("Test")
-for k in pairs(windowStatusData[1].state) do
-  if windowStatusData[1].state then boundaryValues.minvalue = 0 end
-  for key, value in pairs(boundaryValues) do
-    common.Step("GetVehicleData param " .. k .. "=" .. key, common.getVehicleData, { common.getCustomData(k, "state", value) })
-  end
+for k in pairs(common.getWindowStatusParams()[1].state) do
+  common.Step("GetVehicleData maxValue " .. k .. "=" .. maxValue, common.getVehicleData,
+    { common.getCustomData(k, "state", maxValue) })
+  common.Step("GetVehicleData minValue " .. k .. "=" .. windowStatusDataMinValues.stateMinvalue, common.getVehicleData,
+    { common.getCustomData(k, "state", windowStatusDataMinValues.stateMinvalue) })
 end
 
-for k in pairs(windowStatusData[1].location) do
-  if windowStatusData[1].location.colspan or
-    windowStatusData[1].location.rowspan or
-    windowStatusData[1].location.levelspan then boundaryValues.minvalue = 1
-  end
-  for key, value in pairs(boundaryValues) do
-    common.Step("GetVehicleData param " .. k .. "=" .. key, common.getVehicleData, { common.getCustomData(k, "location", value) })
-  end
+for k in pairs(common.getWindowStatusParams()[1].location) do
+  common.Step("GetVehicleData maxValue " .. k .. "=" .. maxValue, common.getVehicleData,
+    { common.getCustomData(k, "location", maxValue) })
+  common.Step("GetVehicleData minValue " .. k .. "=" .. windowStatusDataMinValues.location[k], common.getVehicleData,
+    { common.getCustomData(k, "location", windowStatusDataMinValues.location[k]) })
 end
 
 common.Title("Postconditions")

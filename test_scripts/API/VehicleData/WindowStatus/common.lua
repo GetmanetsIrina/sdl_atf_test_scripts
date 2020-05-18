@@ -101,7 +101,7 @@ end
 function m.preconditions(isPreloadedUpdate)
   if isPreloadedUpdate == nil then isPreloadedUpdate = true end
   actions.preconditions()
-  if isPreloadedUpdate == true then
+  if isPreloadedUpdate == true or isPreloadedUpdate == nil then
     m.updatePreloadedPT()
   end
 end
