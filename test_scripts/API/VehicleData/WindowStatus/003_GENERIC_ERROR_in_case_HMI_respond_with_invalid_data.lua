@@ -27,6 +27,75 @@ local invalidValue = {
   greaterMax = 101
 }
 
+local invalidParam = {
+  ["empty_location"] = {
+    { location = {}, -- empty location parameter
+      state = { approximatePosition = 50, deviation = 50 }
+    }
+  },
+  ["invalidType_location"] = {
+    { location = "string", -- invalid type for location parameter
+      state = { approximatePosition = 50, deviation = 50 }
+    }
+  },
+  ["missing_location"] = { -- without location parameter
+    { state = { approximatePosition = 50, deviation = 50 }}
+  },
+  ["invalidName_location"] ={ -- invalid name for location parameter
+    { loCaTion = { col = 49, row = 49 },
+      state = { approximatePosition = 50, deviation = 50 }
+    }
+  },
+  ["invalidName_col"] = { -- invalid name for col parameter from Grid structure
+    { location = { CoL = 49, row = 49 },
+      state = { approximatePosition = 50, deviation = 50 }
+    }
+  },
+  ["invalidName_row"] = { -- invalid name for row parameter from Grid structure
+    { location = { col = 49, RoW = 49 },
+      state = { approximatePosition = 50, deviation = 50 }
+    }
+  },
+  ["empty_state"] = { -- empty state parameter
+    { location = { col = 49, row = 49 },
+      state = {}
+    }
+  },
+  ["invalidType_state"] = { -- invalid type for state parameter
+    { location = { col = 49, row = 49 },
+      state = "string"
+    }
+  },
+  ["missing_state"] = { -- without state parameter
+    { location = { col = 49, row = 49 } }
+  },
+  ["invalidName_state"] = { -- invalid name for state parameter
+    { location = { col = 49, row = 49 },
+      StaTe = { approximatePosition = 50, deviation = 50 }
+    }
+  },
+  ["invalidName_approximatePosition"] = { -- invalid name for approximatePosition parameter from WindowState structure
+    { location = { col = 49, row = 49 },
+      state = { ApproximatePositioN = 50, deviation = 50 }
+    }
+  },
+  ["invalidName_deviation"] = { -- invalid name for deviation parameter from WindowState structure
+    { location = { col = 49, row = 49 },
+      state = { approximatePosition = 50, DeviatioN = 50 }
+    }
+  },
+  ["missing_col"] = { -- without col parameter from Grid structure
+    { location = { row = 49, level = 49, colspan = 49, rowspan = 49, levelspan = 49 },
+      state = { approximatePosition = 50, deviation = 50 }
+    }
+  },
+  ["missing_row"] = { -- without row parameter from Grid structure
+    { location = { col = 49, level = 49, colspan = 49, rowspan = 49, levelspan = 49 },
+      state = { approximatePosition = 50, deviation = 50 }
+    }
+  }
+}
+
 local resultCode = { success = false, resultCode = "GENERIC_ERROR" }
 
 --[[ Scenario ]]
@@ -37,7 +106,7 @@ common.Step("Register App", common.registerApp)
 common.Step("Activate App", common.activateApp)
 
 common.Title("Test")
-for p in pairs(common.windowStatus()[1].location) do
+for p in pairs(common.getWindowStatusParams()[1].location) do
   common.Title("Check " .. p .. " parameter from Grid structure")
   for k, v in pairs(invalidValue) do
     common.Step("HMI sends GetVehicleData response with invalid " .. p .. "=" .. tostring(k),
@@ -45,7 +114,7 @@ for p in pairs(common.windowStatus()[1].location) do
   end
 end
 
-for p in pairs(common.windowStatus()[1].state) do
+for p in pairs(common.getWindowStatusParams()[1].state) do
   common.Title("Check " .. p .. " parameter from WindowState structure")
   for k, v in pairs(invalidValue) do
     common.Step("HMI sends GetVehicleData response with invalid " .. p .. "=" .. tostring(k),
@@ -54,7 +123,7 @@ for p in pairs(common.windowStatus()[1].state) do
 end
 
 common.Title("Check for other parameters")
-for k, v in pairs(common.invalidParam) do
+for k, v in pairs(invalidParam) do
   common.Step("HMI sends GetVehicleData response with " .. k, common.getVehicleData, { v, resultCode })
 end
 

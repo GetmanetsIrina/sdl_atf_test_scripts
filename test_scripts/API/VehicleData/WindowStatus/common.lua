@@ -59,75 +59,6 @@ m.subUnsubParams = {
   resultCode = "SUCCESS"
 }
 
-m.invalidParam = {
-  ["empty_location"] = {
-    { location = {}, -- empty location parameter
-      state = { approximatePosition = 50, deviation = 50 }
-    }
-  },
-  ["invalidType_location"] = {
-    { location = "string", -- invalid type for location parameter
-      state = { approximatePosition = 50, deviation = 50 }
-    }
-  },
-  ["missing_location"] = { -- without location parameter
-    { state = { approximatePosition = 50, deviation = 50 }}
-  },
-  ["invalidName_location"] ={ -- invalid name for location parameter
-    { loCaTion = { col = 49, row = 49 },
-      state = { approximatePosition = 50, deviation = 50 }
-    }
-  },
-  ["invalidName_col"] = { -- invalid name for col parameter from Grid structure
-    { location = { CoL = 49, row = 49 },
-      state = { approximatePosition = 50, deviation = 50 }
-    }
-  },
-  ["invalidName_row"] = { -- invalid name for row parameter from Grid structure
-    { location = { col = 49, RoW = 49 },
-      state = { approximatePosition = 50, deviation = 50 }
-    }
-  },
-  ["empty_state"] = { -- empty state parameter
-    { location = { col = 49, row = 49 },
-      state = {}
-    }
-  },
-  ["invalidType_state"] = { -- invalid type for state parameter
-    { location = { col = 49, row = 49 },
-      state = "string"
-    }
-  },
-  ["missing_state"] = { -- without state parameter
-    { location = { col = 49, row = 49 } }
-  },
-  ["invalidName_state"] = { -- invalid name for state parameter
-    { location = { col = 49, row = 49 },
-      StaTe = { approximatePosition = 50, deviation = 50 }
-    }
-  },
-  ["invalidName_approximatePosition"] = { -- invalid name for approximatePosition parameter from WindowState structure
-    { location = { col = 49, row = 49 },
-      state = { ApproximatePositioN = 50, deviation = 50 }
-    }
-  },
-  ["invalidName_deviation"] = { -- invalid name for deviation parameter from WindowState structure
-    { location = { col = 49, row = 49 },
-      state = { approximatePosition = 50, DeviatioN = 50 }
-    }
-  },
-  ["missing_col"] = { -- without col parameter from Grid structure
-    { location = { row = 49, level = 49, colspan = 49, rowspan = 49, levelspan = 49 },
-      state = { approximatePosition = 50, DeviatioN = 50 }
-    }
-  },
-  ["missing_row"] = { -- without row parameter from Grid structure
-    { location = { col = 49, level = 49, colspan = 49, rowspan = 49, levelspan = 49 },
-      state = { approximatePosition = 50, DeviatioN = 50 }
-    }
-  }
-}
-
 --[[ Functions ]]
 
 --[[ @updatePreloadedPT: Update preloaded file with additional permissions for WindowStatus
@@ -162,13 +93,13 @@ function m.updatePreloadedPT()
   m.setPreloadedPT(pt)
 end
 
---[[ @preconditions: Clean environment and optional backup and update of sdl_preloaded_pt.json file
+--[[ @preconditions: Clean environment, optional backup and update of sdl_preloaded_pt.json file
 --! @parameters:
 --! isPreloadedUpdate: if true then sdl_preloaded_pt.json file will be updated, otherwise - will be not updated
 --! @return: none
 --]]
 function m.preconditions(isPreloadedUpdate)
-  if isPreloadedUpdate == true or isPreloadedUpdate == nil then
+  if isPreloadedUpdate == nil then isPreloadedUpdate = true end
   actions.preconditions()
   if isPreloadedUpdate == true then
     m.updatePreloadedPT()
@@ -223,11 +154,11 @@ function m.getHashId(pAppId)
   return hashId[pAppId]
 end
 
---[[ @windowStatus: Clone table with windowStatus data for use to GetVD and OnVD RPCs
+--[[ @getWindowStatusParams: Clone table with windowStatus data for use to GetVD and OnVD RPCs
 --! @parameters:none
 --! @return: table for GetVD and OnVD
 --]]
-function m.windowStatus()
+function m.getWindowStatusParams()
   return utils.cloneTable(windowStatusData)
 end
 
@@ -239,7 +170,7 @@ end
 --! @return: custom `windowStatus` structure
 --]]
 function m.getCustomData(pSubParam, pParam, pValue)
-  local params = m.windowStatus()
+  local params = m.getWindowStatusParams()
   params[1][pParam][pSubParam] = pValue
   return params
 end
@@ -275,7 +206,7 @@ end
 --[[ @subUnScribeVD: Processing SubscribeVehicleData and UnsubscribeVehicleData RPCs
 --! @parameters:
 --! pRPC: RPC for mobile request
---! isRequestOnHMIExpected: true or ommited - in case VehicleInfo.Sub/UnsubscribeVehicleData_request on HMI is expected, otherwise - not expected
+--! isRequestOnHMIExpected: true or omitted - in case VehicleInfo.Sub/UnsubscribeVehicleData_request on HMI is expected, otherwise - not expected
 --! pAppId: application number (1, 2, etc.)
 --! @return: none
 --]]
