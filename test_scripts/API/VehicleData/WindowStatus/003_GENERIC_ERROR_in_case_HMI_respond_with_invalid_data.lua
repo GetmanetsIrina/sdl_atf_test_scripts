@@ -37,19 +37,19 @@ common.Step("Register App", common.registerApp)
 common.Step("Activate App", common.activateApp)
 
 common.Title("Test")
-for p in pairs(common.windowStatusData[1].location) do
+for p in pairs(common.windowStatus()[1].location) do
   common.Title("Check " .. p .. " parameter from Grid structure")
   for k, v in pairs(invalidValue) do
     common.Step("HMI sends GetVehicleData response with invalid " .. p .. "=" .. tostring(k),
-      common.getVehicleData, { common.setValue(p, "location", v), resultCode })
+      common.getVehicleData, { common.getCustomData(p, "location", v), resultCode })
   end
 end
 
-for p in pairs(common.windowStatusData[1].state) do
+for p in pairs(common.windowStatus()[1].state) do
   common.Title("Check " .. p .. " parameter from WindowState structure")
   for k, v in pairs(invalidValue) do
     common.Step("HMI sends GetVehicleData response with invalid " .. p .. "=" .. tostring(k),
-      common.getVehicleData, { common.setValue(p, "state", v), resultCode })
+      common.getVehicleData, { common.getCustomData(p, "state", v), resultCode })
   end
 end
 

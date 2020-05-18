@@ -39,19 +39,19 @@ common.Step("Activate App", common.activateApp)
 common.Step("App subscribes to windowStatus data", common.subUnScribeVD, { "SubscribeVehicleData" })
 
 common.Title("Test")
-for param in pairs(common.windowStatusData[1].location) do
+for param in pairs(common.windowStatus()[1].location) do
   common.Title("HMI sends with invalid `windowStatus` structure for " .. param)
   for k, v in pairs(invalidValue) do
     common.Step("OnVehicleData with invalid value for " .. param .. "=" .. tostring(k),
-      common.sendOnVehicleData, { common.setValue(param, "location", v), notExpected })
+      common.sendOnVehicleData, { common.getCustomData(param, "location", v), notExpected })
   end
 end
 
-for param in pairs(common.windowStatusData[1].state) do
+for param in pairs(common.windowStatus()[1].state) do
   common.Title("HMI sends with invalid `windowStatus` structure for " .. param)
   for k, v in pairs(invalidValue) do
     common.Step("OnVehicleData with invalid value for " .. param .. "=" .. tostring(k),
-    common.sendOnVehicleData, { common.setValue(param, "state", v), notExpected })
+    common.sendOnVehicleData, { common.getCustomData(param, "state", v), notExpected })
   end
 end
 

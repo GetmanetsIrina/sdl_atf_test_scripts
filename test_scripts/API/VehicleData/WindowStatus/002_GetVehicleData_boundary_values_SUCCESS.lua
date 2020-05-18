@@ -43,7 +43,7 @@ common.Title("Test")
 for k in pairs(windowStatusData[1].state) do
   if windowStatusData[1].state then boundaryValues.minvalue = 0 end
   for key, value in pairs(boundaryValues) do
-    common.Step("GetVehicleData param " .. k .. "=" .. key, common.getVehicleData, { common.setValue(k, "state", value) })
+    common.Step("GetVehicleData param " .. k .. "=" .. key, common.getVehicleData, { common.getCustomData(k, "state", value) })
   end
 end
 
@@ -53,7 +53,7 @@ for k in pairs(windowStatusData[1].location) do
     windowStatusData[1].location.levelspan then boundaryValues.minvalue = 1
   end
   for key, value in pairs(boundaryValues) do
-    common.Step("GetVehicleData param " .. k .. "=" .. key, common.getVehicleData, { common.setValue(k, "location", value) })
+    common.Step("GetVehicleData param " .. k .. "=" .. key, common.getVehicleData, { common.getCustomData(k, "location", value) })
   end
 end
 

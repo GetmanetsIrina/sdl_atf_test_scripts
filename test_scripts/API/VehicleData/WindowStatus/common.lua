@@ -44,7 +44,7 @@ m.wait = utils.wait
 m.getMobileConnection = actions.mobile.getConnection
 m.isSdlRunning = actions.sdl.isRunning
 
-m.windowStatusData = {
+local windowStatusData = {
   {
     location = { col = 49, row = 49, level = 49, colspan = 49, rowspan = 49, levelspan = 49 },
     state = {
@@ -140,18 +140,18 @@ function m.updatePreloadedPT()
     rpcs = {
       GetVehicleData = {
         hmi_levels = { "BACKGROUND", "FULL", "LIMITED", "NONE" },
-        parameters = { "windowStatus"}
+        parameters = { "windowStatus" }
       },
       SubscribeVehicleData = {
-        hmi_levels = { "BACKGROUND", "FULL", "LIMITED", "NONE"  },
-        parameters = { "windowStatus"}
+        hmi_levels = { "BACKGROUND", "FULL", "LIMITED", "NONE" },
+        parameters = { "windowStatus" }
       },
       OnVehicleData = {
-        hmi_levels = { "BACKGROUND", "FULL", "LIMITED", "NONE"  },
-        parameters = { "windowStatus"}
+        hmi_levels = { "BACKGROUND", "FULL", "LIMITED", "NONE" },
+        parameters = { "windowStatus" }
       },
       UnsubscribeVehicleData = {
-        hmi_levels = { "BACKGROUND", "FULL", "LIMITED", "NONE"  },
+        hmi_levels = { "BACKGROUND", "FULL", "LIMITED", "NONE" },
         parameters = { "windowStatus" }
       }
     }
@@ -228,26 +228,26 @@ end
 --! @return: table for GetVD and OnVD
 --]]
 function m.windowStatus()
-  return utils.cloneTable(m.windowStatusData)
+  return utils.cloneTable(windowStatusData)
 end
 
---[[ @setValue: Set value for params from `windowStatus` structure
+--[[ @getCustomData: Preparation of custom `windowStatus` structure
 --! @parameters:
---! pParam: parameters from `windowStatus` structure
---! pData: parameters for mobile response
+--! pSubParam: subparameter from `windowStatus` structure
+--! pParam: parameter from `windowStatus` structure
 --! pValue: value for parameters from the `windowStatus` structure
---! @return: table for GetVD and OnVD
+--! @return: custom `windowStatus` structure
 --]]
-function m.setValue(pParam, pData, pValue)
+function m.getCustomData(pSubParam, pParam, pValue)
   local params = m.windowStatus()
-  params[1][pData][pParam] = pValue
+  params[1][pParam][pSubParam] = pValue
   return params
 end
 
 --[[ @getVehicleData: Processing GetVehicleData RPC
 --! @parameters:
---! pData: parameters for mobile response
---! pResult: expected result code
+--! pData: data for mobile response
+--! pResult: expected result code for mobile response
 --! @return: none
 --]]
 function m.getVehicleData(pData, pResult)
@@ -275,7 +275,7 @@ end
 --[[ @subUnScribeVD: Processing SubscribeVehicleData and UnsubscribeVehicleData RPCs
 --! @parameters:
 --! pRPC: RPC for mobile request
---! isRequestOnHMIExpected: true - in case VehicleInfo.Sub/UnsubscribeVehicleData_requset on HMI is expected, otherwise - false
+--! isRequestOnHMIExpected: true or ommited - in case VehicleInfo.Sub/UnsubscribeVehicleData_request on HMI is expected, otherwise - false
 --! pAppId: application number (1, 2, etc.)
 --! @return: none
 --]]
@@ -300,7 +300,7 @@ end
 
 --[[ @sendOnVehicleData: Processing OnVehicleData RPC
 --! @parameters:
---! pData: parameters for the notification
+--! pData: data for the notification
 --! pExpTime: number of notifications
 --! pAppID: application number (1, 2, etc.)
 --! @return: none
@@ -333,7 +333,9 @@ function m.ignitionOff()
   :Do(function()
     if isOnSDLCloseSent == false then m.cprint(35, "BC.OnSDLClose was not sent") end
     if SDL:CheckStatusSDL() == SDL.RUNNING then SDL:StopSDL() end
-    actions.mobile.deleteSession()
+    for i = 1, m.getAppsCount() do
+      m.deleteSession(i)
+    end
   end)
 end
 
@@ -363,10 +365,12 @@ function m.registerAppWithResumption(pAppId, isHMIsubscription)
     m.getHMIConnection():ExpectNotification("BasicCommunication.OnAppRegistered", {
       application = { appName = m.getConfigAppParams(pAppId).appName }
     })
-    :Do(function(_, data)
+    :Do(function()
       if true == isHMIsubscription then
         m.getHMIConnection():ExpectRequest( "VehicleInfo.SubscribeVehicleData", { windowStatus = true })
-        m.getHMIConnection():SendResponse( data.id, data.method, "SUCCESS", { windowStatus = m.subUnsubParams })
+        :Do(function(_, data)
+          m.getHMIConnection():SendResponse( data.id, data.method, "SUCCESS", { windowStatus = m.subUnsubParams })
+        end)
       else
         m.getHMIConnection():ExpectRequest( "VehicleInfo.SubscribeVehicleData"):Times(0)
       end
