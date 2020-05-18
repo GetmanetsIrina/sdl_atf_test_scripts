@@ -164,18 +164,18 @@ end
 
 --[[ @preconditions: Clean environment and optional backup and update of sdl_preloaded_pt.json file
 --! @parameters:
---! isPreloadedUpdate: if ommited or true then sdl_preloaded_pt.json file will be updated, otherwise - false
+--! isPreloadedUpdate: if true then sdl_preloaded_pt.json file will be updated, otherwise - will be not updated
 --! @return: none
 --]]
 function m.preconditions(isPreloadedUpdate)
-  if isPreloadedUpdate == nil then isPreloadedUpdate = true end
+  if isPreloadedUpdate == true or isPreloadedUpdate == nil then
   actions.preconditions()
   if isPreloadedUpdate == true then
     m.updatePreloadedPT()
   end
 end
 
---! @pTUpdateFunc: Policy Table Update with allowed "Base-4" and "NewVehicleDataGroup" group for application
+--! @pTUpdateFunc: Policy Table Update with allowed "Base-4" and custom groups for application
 --! @parameters:
 --! tbl: policy table
 --! @return: none
@@ -204,7 +204,7 @@ function m.pTUpdateFunc(tbl)
   tbl.policy_table.app_policies[m.getParams().fullAppID].groups = { "Base-4", "NewVehicleDataGroup" }
 end
 
---[[ @setHashId: Set hashId which is required during resumption
+--[[ @setHashId: Set hashId value which is required during resumption
 --! @parameters:
 --! pHashValue: application hashId
 --! pAppId: application number (1, 2, etc.)
@@ -214,7 +214,7 @@ function m.setHashId(pHashValue, pAppId)
   hashId[pAppId] = pHashValue
 end
 
---[[ @getHashId: Get hashId of an app which is required during resumption
+--[[ @getHashId: Get hashId value of an app which is required during resumption
 --! @parameters:
 --! pAppId: application number (1, 2, etc.)
 --! @return: app's hashId
@@ -223,7 +223,7 @@ function m.getHashId(pAppId)
   return hashId[pAppId]
 end
 
---[[ @windowStatus: Clone table with data for use to GetVD and OnVD RPCs
+--[[ @windowStatus: Clone table with windowStatus data for use to GetVD and OnVD RPCs
 --! @parameters:none
 --! @return: table for GetVD and OnVD
 --]]
@@ -275,7 +275,7 @@ end
 --[[ @subUnScribeVD: Processing SubscribeVehicleData and UnsubscribeVehicleData RPCs
 --! @parameters:
 --! pRPC: RPC for mobile request
---! isRequestOnHMIExpected: true or ommited - in case VehicleInfo.Sub/UnsubscribeVehicleData_request on HMI is expected, otherwise - false
+--! isRequestOnHMIExpected: true or ommited - in case VehicleInfo.Sub/UnsubscribeVehicleData_request on HMI is expected, otherwise - not expected
 --! pAppId: application number (1, 2, etc.)
 --! @return: none
 --]]
