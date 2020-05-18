@@ -46,7 +46,7 @@ m.isSdlRunning = actions.sdl.isRunning
 
 local windowStatusData = {
   {
-    location = { col = 49, row = 49, level = 49, colspan = 49, rowspan = 49, levelspan = 49 },
+    location = { col = 0, row = 0, level = 0, colspan = 1, rowspan = 1, levelspan = 1 },
     state = {
       approximatePosition = 50,
       deviation = 50
@@ -95,7 +95,7 @@ end
 
 --[[ @preconditions: Clean environment, optional backup and update of sdl_preloaded_pt.json file
 --! @parameters:
---! isPreloadedUpdate: if true then sdl_preloaded_pt.json file will be updated, otherwise - will be not updated
+--! isPreloadedUpdate: if omitted or true then sdl_preloaded_pt.json file will be updated, otherwise - false
 --! @return: none
 --]]
 function m.preconditions(isPreloadedUpdate)
@@ -206,7 +206,7 @@ end
 --[[ @subUnScribeVD: Processing SubscribeVehicleData and UnsubscribeVehicleData RPCs
 --! @parameters:
 --! pRPC: RPC for mobile request
---! isRequestOnHMIExpected: true or omitted - in case VehicleInfo.Sub/UnsubscribeVehicleData_request on HMI is expected, otherwise - not expected
+--! isRequestOnHMIExpected: true or omitted - in case VehicleInfo.Sub/UnsubscribeVehicleData_request on HMI is expected, otherwise - false
 --! pAppId: application number (1, 2, etc.)
 --! @return: none
 --]]

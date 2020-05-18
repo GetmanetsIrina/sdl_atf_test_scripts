@@ -17,7 +17,7 @@ local common = require('test_scripts/API/VehicleData/WindowStatus/common')
 --[[ Local Variables ]]
 local windowStatusData = {
   {
-    location = { col = 49, row = 49, level = 49, colspan = 49, rowspan = 49, levelspan = 49 },
+    location = { col = 0, row = 0, level = 0, colspan = 1, rowspan = 1, levelspan = 1 },
     state = {
       approximatePosition = 50,
       deviation = 50

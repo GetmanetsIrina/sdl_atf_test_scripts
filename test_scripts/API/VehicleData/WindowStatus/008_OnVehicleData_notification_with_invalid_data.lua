@@ -31,57 +31,57 @@ local invalidValue = {
 local invalidParam = {
   ["empty_location"] = {
     { location = {}, -- empty location parameter
-      state = { approximatePosition = 50, deviation = 50 }
+      state = common.getWindowStatusParams()[1].state
     }
   },
   ["invalidType_location"] = {
     { location = "string", -- invalid type for location parameter
-      state = { approximatePosition = 50, deviation = 50 }
+      state = common.getWindowStatusParams()[1].state
     }
   },
   ["missing_location"] = { -- without location parameter
-    { state = { approximatePosition = 50, deviation = 50 }}
+    { state = common.getWindowStatusParams()[1].state }
   },
   ["invalidName_location"] ={ -- invalid name for location parameter
     { loCaTion = { col = 49, row = 49 },
-      state = { approximatePosition = 50, deviation = 50 }
+      state = common.getWindowStatusParams()[1].state
     }
   },
   ["invalidName_col"] = { -- invalid name for col parameter from Grid structure
     { location = { CoL = 49, row = 49 },
-      state = { approximatePosition = 50, deviation = 50 }
+      state = common.getWindowStatusParams()[1].state
     }
   },
   ["invalidName_row"] = { -- invalid name for row parameter from Grid structure
     { location = { col = 49, RoW = 49 },
-      state = { approximatePosition = 50, deviation = 50 }
+      state = common.getWindowStatusParams()[1].state
     }
   },
   ["empty_state"] = { -- empty state parameter
-    { location = { col = 49, row = 49 },
+    { location = common.getWindowStatusParams()[1].location,
       state = {}
     }
   },
   ["invalidType_state"] = { -- invalid type for state parameter
-    { location = { col = 49, row = 49 },
+    { location = common.getWindowStatusParams()[1].location,
       state = "string"
     }
   },
   ["missing_state"] = { -- without state parameter
-    { location = { col = 49, row = 49 } }
+    { location = common.getWindowStatusParams()[1].location }
   },
   ["invalidName_state"] = { -- invalid name for state parameter
-    { location = { col = 49, row = 49 },
+    { location = common.getWindowStatusParams()[1].location,
       StaTe = { approximatePosition = 50, deviation = 50 }
     }
   },
   ["invalidName_approximatePosition"] = { -- invalid name for approximatePosition parameter from WindowState structure
-    { location = { col = 49, row = 49 },
+    { location = common.getWindowStatusParams()[1].location,
       state = { ApproximatePositioN = 50, deviation = 50 }
     }
   },
   ["invalidName_deviation"] = { -- invalid name for deviation parameter from WindowState structure
-    { location = { col = 49, row = 49 },
+    { location = common.getWindowStatusParams()[1].location,
       state = { approximatePosition = 50, DeviatioN = 50 }
     }
   },
