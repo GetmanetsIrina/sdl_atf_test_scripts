@@ -5,7 +5,7 @@
 -- case `windowStatus` parameter does not exist in apps assigned policies.
 --
 -- In case:
--- 1) `windowStatus` param does not exist in app's assigned policies for OnVehicleData RPC.
+-- 1) `windowStatus` parameter does not exist in app's assigned policies for OnVehicleData RPC.
 -- 2) App is subscribed to `windowStatus` data.
 -- 3) HMI sends valid OnVehicleData notification with all parameters of `windowStatus` structure.
 -- SDL does:
@@ -16,16 +16,6 @@
 local common = require('test_scripts/API/VehicleData/WindowStatus/common')
 
 --[[ Local Variables ]]
-local windowStatusData = {
-  {
-    location = { col = 0, row = 0, level = 0, colspan = 1, rowspan = 1, levelspan = 1 },
-    state = {
-      approximatePosition = 50,
-      deviation = 50
-    }
-  }
-}
-
 local notExpected = 0
 
 --[[ Local Function ]]
@@ -56,7 +46,8 @@ common.Step("Activate App", common.activateApp)
 common.Step("App subscribes to windowStatus data", common.subUnScribeVD, { "SubscribeVehicleData" })
 
 common.Title("Test")
-common.Step("OnVehicleData with windowStatus data", common.sendOnVehicleData, { windowStatusData, notExpected })
+common.Step("OnVehicleData with windowStatus data", common.sendOnVehicleData,
+  { common.getWindowStatusParams(), notExpected })
 
 common.Title("Postconditions")
 common.Step("Stop SDL", common.postconditions)

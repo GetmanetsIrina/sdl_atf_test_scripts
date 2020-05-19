@@ -1,18 +1,22 @@
 ---------------------------------------------------------------------------------------------------
 -- Proposal:https://github.com/smartdevicelink/sdl_evolution/blob/master/proposals/0261-New-vehicle-data-WindowStatus.md
 --
--- Description: Check that SDL processes GetVehicleData if HMI responds with boundary values for `windowStatus` structure:
+-- Description: Check that SDL does not transfer OnVehicleData notification to subscribed app if HMI sends notification
+-- with invalid values of `windowStatus` structure params:
 --    location: { col, row, level, colspan, rowspan, levelspan }
 --    state: { approximatePosition, deviation }
---    windowStatus array size
 --
 -- In case:
--- 1) App sends GetVehicleData request with windowStatus=true to the SDL and this request is allowed by Policies.
--- 2) SDL transfers this request to HMI.
--- 3) HMI sends GetVehicleData response with `windowStatus` structure with boundary values for one of the parameters
--- from `Grid` and `WindowState` structures.
+-- 1) App is subscribed to `windowStatus` data.
+-- 2) HMI sends the invalid `windowStatus` structure in OnVehicleData notification:
+--    - invalid parameter name
+--    - invalid parameter type
+--    - missing mandatory parameter
+--    - params out of bounds
+--    - empty value
 -- SDL does:
---  a)  process this response and transfer it to mobile app.
+--  a) ignore this notification.
+--  b) not send OnVehicleData notification to mobile.
 ---------------------------------------------------------------------------------------------------
 --[[ Required Shared libraries ]]
 local common = require('test_scripts/API/VehicleData/WindowStatus/common')
@@ -38,21 +42,21 @@ common.Step("Activate App", common.activateApp)
 
 common.Title("Test")
 for k in common.spairs(common.getWindowStatusParams()[1].state) do
-  common.Step("GetVehicleData maxValue " .. k .. "=" .. maxValue, common.getVehicleData,
+  common.Step("OnVehicleData maxValue " .. k .. "=" .. maxValue, common.sendOnVehicleData,
     { common.getCustomData(k, "state", maxValue) })
-  common.Step("GetVehicleData minValue " .. k .. "=" .. windowStatusDataMinValues.stateMinvalue, common.getVehicleData,
+  common.Step("OnVehicleData minValue " .. k .. "=" .. windowStatusDataMinValues.stateMinvalue, common.sendOnVehicleData,
     { common.getCustomData(k, "state", windowStatusDataMinValues.stateMinvalue) })
 end
 
 for k in common.spairs(common.getWindowStatusParams()[1].location) do
-  common.Step("GetVehicleData maxValue " .. k .. "=" .. maxValue, common.getVehicleData,
+  common.Step("OnVehicleData maxValue " .. k .. "=" .. maxValue, common.sendOnVehicleData,
     { common.getCustomData(k, "location", maxValue) })
-  common.Step("GetVehicleData minValue " .. k .. "=" .. windowStatusDataMinValues.location[k], common.getVehicleData,
+  common.Step("OnVehicleData minValue " .. k .. "=" .. windowStatusDataMinValues.location[k], common.sendOnVehicleData,
     { common.getCustomData(k, "location", windowStatusDataMinValues.location[k]) })
 end
 
-common.Step("GetVehicleData min windowStatus array size", common.getVehicleData, { minArraySize })
-common.Step("GetVehicleData max windowStatus array size", common.getVehicleData, { maxArraySize })
+common.Step("OnVehicleData min windowStatus array size", common.sendOnVehicleData, { minArraySize })
+common.Step("OnVehicleData max windowStatus array size", common.sendOnVehicleData, { maxArraySize })
 
 common.Title("Postconditions")
 common.Step("Stop SDL", common.postconditions)

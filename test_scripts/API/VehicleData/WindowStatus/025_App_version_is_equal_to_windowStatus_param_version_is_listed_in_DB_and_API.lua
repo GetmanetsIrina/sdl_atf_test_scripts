@@ -1,11 +1,12 @@
 ---------------------------------------------------------------------------------------------------
 -- Proposal:https://github.com/smartdevicelink/sdl_evolution/blob/master/proposals/0261-New-vehicle-data-WindowStatus.md
 --
--- Description: Check that SDL successfully processes VD RPC with new `windowStatus` param in case app version is equal to 6.0
+-- Description: Check that SDL successfully processes VehicleData RPCs with `windowStatus` parameter
+--  in case app version is equal to parameter version
 --
 -- Preconditions:
 -- 1) App is registered with syncMsgVersion=6.2
--- 2) New param `windowStatus` has since=6.2 in DB and API
+-- 2) The parameter `windowStatus` has since=6.2 in DB and API
 -- In case:
 -- 1) App requests Get/Sub/UnsubVehicleData with windowStatus=true.
 -- 2) HMI sends valid OnVehicleData notification with all parameters of `windowStatus` structure.
@@ -20,17 +21,6 @@ local common = require('test_scripts/API/VehicleData/WindowStatus/common')
 common.getParams().syncMsgVersion.majorVersion = 6
 common.getParams().syncMsgVersion.minorVersion = 2
 
---[[ Local Variables ]]
-local windowStatusData = {
-  {
-    location = { col = 0, row = 0, level = 0, colspan = 1, rowspan = 1, levelspan = 1 },
-    state = {
-      approximatePosition = 50,
-      deviation = 50
-    }
-  }
-}
-
 --[[ Scenario ]]
 common.Title("Preconditions")
 common.Step("Clean environment", common.preconditions)
@@ -39,9 +29,9 @@ common.Step("Register App", common.registerApp)
 common.Step("Activate App", common.activateApp)
 
 common.Title("Test")
-common.Step("GetVehicleData for windowStatus", common.getVehicleData, { windowStatusData })
+common.Step("GetVehicleData for windowStatus", common.getVehicleData, { common.getWindowStatusParams() })
 common.Step("App subscribes to windowStatus data", common.subUnScribeVD, { "SubscribeVehicleData" })
-common.Step("OnVehicleData with windowStatus data", common.sendOnVehicleData, { windowStatusData })
+common.Step("OnVehicleData with windowStatus data", common.sendOnVehicleData, { common.getWindowStatusParams() })
 common.Step("App unsubscribes from windowStatus data", common.subUnScribeVD, { "UnsubscribeVehicleData" })
 
 common.Title("Postconditions")

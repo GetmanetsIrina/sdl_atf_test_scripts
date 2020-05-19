@@ -1,29 +1,31 @@
 ---------------------------------------------------------------------------------------------------
 -- Proposal:https://github.com/smartdevicelink/sdl_evolution/blob/master/proposals/0261-New-vehicle-data-WindowStatus.md
 --
--- Description: Check that SDL successfully processes GetVehicleData with new `windowStatus` param.
+-- Description: Check that SDL sends response `GENERIC_ERROR` to mobile app
+--  if HMI sends VD.SubscribeVehicleData response with invalid `windowStatus` data
 --
 -- In case:
--- 1) App sends GetVehicleData request with windowStatus=true to the SDL and this request is allowed by Policies.
+-- 1) App sends SubscribeVehicleData request with windowStatus=true to the SDL and this request is allowed by Policies.
 -- SDL does:
 --  a) transfer this request to HMI.
--- 2) HMI sends GetVehicleData response with all params of structure `windowStatus`.
+-- 2) HMI sends the invalid `windowStatus` structure in VD.SubscribeVehicleData response
 -- SDL does:
---  a) send GetVehicleData response to mobile with all parameters in `windowStatus` structure.
+--  a) respond GENERIC_ERROR to mobile after receiving invalid HMI response
 ---------------------------------------------------------------------------------------------------
 --[[ Required Shared libraries ]]
 local common = require('test_scripts/API/VehicleData/WindowStatus/common')
 
 --[[ Local Variables ]]
-local windowStatusData = {
-  {
-    location = { col = 0, row = 0, level = 0, colspan = 1, rowspan = 1, levelspan = 1 },
-    state = {
-      approximatePosition = 50,
-      deviation = 50
-    }
-  }
+local rpc = "SubscribeVehicleData"
+local invalidValues = {
+  wrongDataType = "VEHICLEDATA_GPS",
+  invalidDataType = 123
 }
+
+local function getData(pValue)
+  local params = common.cloneTable(common.subUnsubParams)
+  params.dataType = pValue
+end
 
 --[[ Scenario ]]
 common.Title("Preconditions")
@@ -33,7 +35,10 @@ common.Step("Register App", common.registerApp)
 common.Step("Activate App", common.activateApp)
 
 common.Title("Test")
-common.Step("GetVehicleData for windowStatus", common.getVehicleData, { windowStatusData })
+for k, v in common.spairs(invalidValues) do
+  common.Step("HMI sends SubscribeVehicleData response with " .. k,
+    common.processRPCgenericError, { rpc, getData(v) })
+end
 
 common.Title("Postconditions")
 common.Step("Stop SDL", common.postconditions)

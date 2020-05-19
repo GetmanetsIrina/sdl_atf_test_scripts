@@ -1,28 +1,21 @@
 ---------------------------------------------------------------------------------------------------
 -- Proposal:https://github.com/smartdevicelink/sdl_evolution/blob/master/proposals/0261-New-vehicle-data-WindowStatus.md
 --
--- Description: Check that SDL successfully processes a valid OnVehicleData notification with new 'windowStatus'
--- structure and transfers it to subscribed app
+-- Description: Check that SDL responds with resultCode: INVALID_DATA
+--  to GetVehicleData requests with invalid data type of `windowStatus` parameter
 --
 -- In case:
--- 1) App is subscribed to `windowStatus` data.
--- 2) HMI sends valid OnVehicleData notification with all parameters of `windowStatus` structure.
+-- 1) App sends valid GetVehicleData request with invalid data type of `windowStatus` parameter
 -- SDL does:
---  a) process this notification and transfer it to mobile app.
+--  a) respond GetVehicleData(success:false, "INVALID_DATA") to the mobile app.
 ---------------------------------------------------------------------------------------------------
 --[[ Required Shared libraries ]]
 local common = require('test_scripts/API/VehicleData/WindowStatus/common')
 
 --[[ Local Variables ]]
-local windowStatusData = {
-  {
-    location = { col = 0, row = 0, level = 0, colspan = 1, rowspan = 1, levelspan = 1 },
-    state = {
-      approximatePosition = 50,
-      deviation = 50
-    }
-  }
-}
+local rpc = "GetVehicleData"
+local resultCode = "INVALID_DATA"
+local requestInvalidValue = 123
 
 --[[ Scenario ]]
 common.Title("Preconditions")
@@ -30,10 +23,9 @@ common.Step("Clean environment", common.preconditions)
 common.Step("Start SDL, HMI, connect Mobile, start Session", common.start)
 common.Step("Register App", common.registerApp)
 common.Step("Activate App", common.activateApp)
-common.Step("App subscribes to windowStatus data", common.subUnScribeVD, { "SubscribeVehicleData" })
 
 common.Title("Test")
-common.Step("OnVehicleData with windowStatus data", common.sendOnVehicleData, { windowStatusData })
+common.Step("GetVehicleData INVALID_DATA", common.processRPCFailure, { rpc, resultCode, requestInvalidValue })
 
 common.Title("Postconditions")
 common.Step("Stop SDL", common.postconditions)

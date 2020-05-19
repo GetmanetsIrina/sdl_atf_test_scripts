@@ -43,6 +43,7 @@ m.postconditions = actions.postconditions
 m.wait = utils.wait
 m.getMobileConnection = actions.mobile.getConnection
 m.isSdlRunning = actions.sdl.isRunning
+m.spairs = utils.spairs
 
 local windowStatusData = {
   {
@@ -65,30 +66,32 @@ m.subUnsubParams = {
 --! @parameters: none
 --! @return: none
 --]]
-function m.updatePreloadedPT()
+function m.updatePreloadedPT(pGroup)
   local pt = m.getPreloadedPT()
-  local WindowStatusGroup = {
-    rpcs = {
-      GetVehicleData = {
-        hmi_levels = { "BACKGROUND", "FULL", "LIMITED", "NONE" },
-        parameters = { "windowStatus" }
-      },
-      SubscribeVehicleData = {
-        hmi_levels = { "BACKGROUND", "FULL", "LIMITED", "NONE" },
-        parameters = { "windowStatus" }
-      },
-      OnVehicleData = {
-        hmi_levels = { "BACKGROUND", "FULL", "LIMITED", "NONE" },
-        parameters = { "windowStatus" }
-      },
-      UnsubscribeVehicleData = {
-        hmi_levels = { "BACKGROUND", "FULL", "LIMITED", "NONE" },
-        parameters = { "windowStatus" }
+  if pGroup == nil then
+    pGroup = {
+      rpcs = {
+        GetVehicleData = {
+          hmi_levels = { "BACKGROUND", "FULL", "LIMITED", "NONE" },
+          parameters = { "windowStatus" }
+        },
+        SubscribeVehicleData = {
+          hmi_levels = { "BACKGROUND", "FULL", "LIMITED", "NONE" },
+          parameters = { "windowStatus" }
+        },
+        OnVehicleData = {
+          hmi_levels = { "BACKGROUND", "FULL", "LIMITED", "NONE" },
+          parameters = { "windowStatus" }
+        },
+        UnsubscribeVehicleData = {
+          hmi_levels = { "BACKGROUND", "FULL", "LIMITED", "NONE" },
+          parameters = { "windowStatus" }
+        }
       }
     }
-  }
+  end
   pt.policy_table.app_policies["default"].groups = { "Base-4", "WindowStatus" }
-  pt.policy_table.functional_groupings["WindowStatus"] = WindowStatusGroup
+  pt.policy_table.functional_groupings["WindowStatus"] = pGroup
   pt.policy_table.functional_groupings["DataConsent-2"].rpcs = json.null
   m.setPreloadedPT(pt)
 end
@@ -98,15 +101,14 @@ end
 --! isPreloadedUpdate: if omitted or true then sdl_preloaded_pt.json file will be updated, otherwise - false
 --! @return: none
 --]]
-function m.preconditions(isPreloadedUpdate)
-  if isPreloadedUpdate == nil then isPreloadedUpdate = true end
+function m.preconditions(isPreloadedUpdate, pGroup)
   actions.preconditions()
   if isPreloadedUpdate == true or isPreloadedUpdate == nil then
-    m.updatePreloadedPT()
+    m.updatePreloadedPT(pGroup)
   end
 end
 
---! @pTUpdateFunc: Policy Table Update with allowed "Base-4" and custom groups for application
+--! @pTUpdateFunc: Policy Table Update with allowed "Base-4" and custom group for application
 --! @parameters:
 --! tbl: policy table
 --! @return: none
@@ -154,9 +156,9 @@ function m.getHashId(pAppId)
   return hashId[pAppId]
 end
 
---[[ @getWindowStatusParams: Clone table with windowStatus data for use to GetVD and OnVD RPCs
+--[[ @getWindowStatusParams: Clone table with windowStatus data for use to GetVD and OnVehicleData RPCs
 --! @parameters:none
---! @return: table for GetVD and OnVD
+--! @return: table for GetVD and OnVehicleData
 --]]
 function m.getWindowStatusParams()
   return utils.cloneTable(windowStatusData)
@@ -175,46 +177,61 @@ function m.getCustomData(pSubParam, pParam, pValue)
   return params
 end
 
---[[ @getVehicleData: Processing GetVehicleData RPC
+--[[ @getVehicleData: Successful processing of GetVehicleData RPC
 --! @parameters:
 --! pData: data for mobile response
---! pResult: expected result code for mobile response
 --! @return: none
 --]]
-function m.getVehicleData(pData, pResult)
-  if not pResult then pResult = { success = true, resultCode = "SUCCESS", windowStatus = pData } end
+function m.getVehicleData(pData)
   local cid = m.getMobileSession():SendRPC("GetVehicleData", { windowStatus = true })
   m.getHMIConnection():ExpectRequest("VehicleInfo.GetVehicleData", { windowStatus = true })
   :Do(function(_,data)
     m.getHMIConnection():SendResponse(data.id, data.method, "SUCCESS", { windowStatus = pData })
   end)
-  m.getMobileSession():ExpectResponse(cid, pResult)
+  m.getMobileSession():ExpectResponse(cid, { success = true, resultCode = "SUCCESS", windowStatus = pData })
 end
 
---[[ @processRPCFailure: Processing VD RPC with ERROR resultCode
+--[[ @processRPCFailure: Processing VehicleData RPC with ERROR resultCode
 --! @parameters:
 --! pRPC: RPC for mobile request
 --! pResult: Result code for mobile response
+--! pRequestValue: windowStatus value for mobile request
 --! @return: none
 --]]
-function m.processRPCFailure(pRPC, pResult)
-  local cid = m.getMobileSession():SendRPC(pRPC, { windowStatus = true })
+function m.processRPCFailure(pRPC, pResult, pRequestValue)
+  if pRequestValue == nil then pRequestValue = true end
+  local cid = m.getMobileSession():SendRPC(pRPC, { windowStatus = pRequestValue })
   m.getHMIConnection():ExpectRequest("VehicleInfo." .. pRPC):Times(0)
   m.getMobileSession():ExpectResponse(cid, { success = false, resultCode = pResult })
+end
+
+--[[ @processRPCgenericError: Processing VehicleData RPC with invalid HMI response
+--! @parameters:
+--! pRPC: RPC for mobile request
+--! pData: data for HMI response
+--! @return: none
+--]]
+function m.processRPCgenericError(pRPC, pData)
+  local cid = m.getMobileSession():SendRPC("pRPC", { windowStatus = true })
+  m.getHMIConnection():ExpectRequest("VehicleInfo." .. pRPC, { windowStatus = true })
+  :Do(function(_,data)
+    m.getHMIConnection():SendResponse(data.id, data.method, "SUCCESS", { windowStatus = pData })
+  end)
+  m.getMobileSession():ExpectResponse(cid, { success = true, resultCode = "GENERIC_ERROR" })
 end
 
 --[[ @subUnScribeVD: Processing SubscribeVehicleData and UnsubscribeVehicleData RPCs
 --! @parameters:
 --! pRPC: RPC for mobile request
---! isRequestOnHMIExpected: true or omitted - in case VehicleInfo.Sub/UnsubscribeVehicleData_request on HMI is expected, otherwise - false
+--! isRequestOnHMIExpected: true or omitted - in case VehicleInfo.Sub/UnsubscribeVehicleData_request on HMI is expected,
+--! otherwise - false
 --! pAppId: application number (1, 2, etc.)
 --! @return: none
 --]]
 function m.subUnScribeVD(pRPC, isRequestOnHMIExpected, pAppId)
   if not pAppId then pAppId = 1 end
-  if isRequestOnHMIExpected == nil then isRequestOnHMIExpected = true end
   local cid = m.getMobileSession(pAppId):SendRPC(pRPC, { windowStatus = true })
-  if isRequestOnHMIExpected then
+  if isRequestOnHMIExpected == true or isRequestOnHMIExpected == nil then
     m.getHMIConnection():ExpectRequest("VehicleInfo." .. pRPC, { windowStatus = true })
     :Do(function(_,data)
       m.getHMIConnection():SendResponse(data.id, data.method, "SUCCESS", { windowStatus = m.subUnsubParams })
@@ -222,7 +239,8 @@ function m.subUnScribeVD(pRPC, isRequestOnHMIExpected, pAppId)
   else
     m.getHMIConnection():ExpectRequest("VehicleInfo." .. pRPC):Times(0)
   end
-  m.getMobileSession(pAppId):ExpectResponse(cid, { success = true, resultCode = "SUCCESS", windowStatus = m.subUnsubParams })
+  m.getMobileSession(pAppId):ExpectResponse(cid,
+    { success = true, resultCode = "SUCCESS", windowStatus = m.subUnsubParams })
   m.getMobileSession(pAppId):ExpectNotification("OnHashChange")
   :Do(function(_, data)
     m.setHashId(data.payload.hashID, pAppId)
@@ -242,6 +260,20 @@ function m.sendOnVehicleData(pData, pExpTime)
   m.getMobileSession():ExpectNotification("OnVehicleData", { windowStatus = pData })
   :Times(pExpTime)
 end
+
+--[[ @OnVehicleDataTwoApps: Processing OnVehicleData RPC for 2 apps
+--! @parameters:
+--! pExpTime: number of notifications for 2 apps
+--]]
+function m.OnVehicleDataTwoApps(pExpTime)
+  local params = m.getWindowStatusParams()
+  m.getHMIConnection():SendNotification("VehicleInfo.OnVehicleData", { windowStatus = params })
+  m.getMobileSession(1):ExpectNotification("OnVehicleData", { windowStatus = params })
+  :Times(pExpTime)
+  m.getMobileSession(2):ExpectNotification("OnVehicleData", { windowStatus = params })
+  :Times(pExpTime)
+end
+
 
 --[[ @ignitionOff: IGNITION_OFF sequence
 --! @parameters: none

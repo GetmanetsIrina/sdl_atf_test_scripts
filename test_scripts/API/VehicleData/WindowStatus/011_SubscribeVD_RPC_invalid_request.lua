@@ -1,18 +1,21 @@
 ---------------------------------------------------------------------------------------------------
 -- Proposal:https://github.com/smartdevicelink/sdl_evolution/blob/master/proposals/0261-New-vehicle-data-WindowStatus.md
 --
--- Description: Successful processing of SubscribeVehicleData with `windowStatus` param.
+-- Description: Check that SDL responds with resultCode: INVALID_DATA
+--  to SubscribeVehicleData requests with invalid data type of `windowStatus` parameter
 --
 -- In case:
--- 1) App sends SubscribeVehicleData request with windowStatus=true to the SDL and this request is allowed by Policies.
+-- 1) App sends valid SubscribeVehicleData request with invalid data type of `windowStatus` parameter
 -- SDL does:
---  a) transfer this request to HMI.
--- 2) HMI responds with `SUCCESS` result to `windowStatus` vehicle data and SubscribeVehicleData request.
--- SDL does:
---  a) respond `SUCCESS`, success:true and with `windowStatus` data to mobile application.
+--  a) respond SubscribeVehicleData(success:false, "INVALID_DATA") to the mobile app.
 ---------------------------------------------------------------------------------------------------
 --[[ Required Shared libraries ]]
 local common = require('test_scripts/API/VehicleData/WindowStatus/common')
+
+--[[ Local Variables ]]
+local rpc = "SubscribeVehicleData"
+local resultCode = "INVALID_DATA"
+local requestInvalidValue = 123
 
 --[[ Scenario ]]
 common.Title("Preconditions")
@@ -22,7 +25,7 @@ common.Step("Register App", common.registerApp)
 common.Step("Activate App", common.activateApp)
 
 common.Title("Test")
-common.Step("App subscribes to windowStatus data", common.subUnScribeVD, { "SubscribeVehicleData" })
+common.Step("SubscribeVehicleData INVALID_DATA", common.processRPCFailure, { rpc, resultCode, requestInvalidValue })
 
 common.Title("Postconditions")
 common.Step("Stop SDL", common.postconditions)
