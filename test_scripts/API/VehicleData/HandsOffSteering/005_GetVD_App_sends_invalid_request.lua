@@ -1,14 +1,16 @@
 ---------------------------------------------------------------------------------------------------
 -- Proposal:https://github.com/smartdevicelink/sdl_evolution/blob/master/proposals/0257-New-vehicle-data-HandsOffSteering.md
 --
--- Description: Check that SDL responds with resultCode INVALID_DATA to GetVehicleDate request if App sends request with
+-- Description: Check that SDL responds with resultCode "INVALID_DATA" to GetVehicleData request if App sends request with
 -- invalid data
 --
 -- Preconditions:
--- 1) Update preloaded_pt file, add handsOffSteering parameter to VD_RPC group
--- 2) RPC GetVehicleData and handsOffSteering is allowed by policies
+-- 1) Update preloaded_pt file, add permissions for vehicle data RPCs and handsOffSteering parameter
+-- 2) RPC GetVehicleData and handsOffSteering are allowed by policies
 -- 3) App is registered
--- 4) App sends invalid GetVehicleData(handsOffSteering=123) request to SDL
+--
+-- In case:
+-- 1) App sends invalid GetVehicleData(handsOffSteering=123) request to SDL
 -- SDL does:
 -- - a) send GetVehicleData response with (success = false, resultCode = INVALID_DATA") to App
 -- - b) not transfer this request to HMI
@@ -18,8 +20,8 @@ local common = require('test_scripts/API/VehicleData/HandsOffSteering/common')
 
 --[[ Local Variables ]]
 local rpc = "GetVehicleData"
-local resultCode = { success = false, resultCode = "INVALID_DATA" }
-local invalidData = 123
+local result = { success = false, resultCode = "INVALID_DATA" }
+local handsOffSteeringValue = 123
 
 --[[ Scenario ]]
 common.Title("Preconditions")
@@ -28,8 +30,8 @@ common.Step("Start SDL, HMI, connect Mobile, start Session", common.start)
 common.Step("Register App", common.registerAppWOPTU)
 
 common.Title("Test")
-common.Step("RPC GetVehicleData, App with invalid request",
-  common.processRPCUnsuccessRequest, { rpc, invalidData, resultCode })
+common.Step("RPC GetVehicleData, invalid request",
+  common.processRPCUnsuccessRequest, { rpc, handsOffSteeringValue, result })
 
 common.Title("Postconditions")
 common.Step("Stop SDL", common.postconditions)
