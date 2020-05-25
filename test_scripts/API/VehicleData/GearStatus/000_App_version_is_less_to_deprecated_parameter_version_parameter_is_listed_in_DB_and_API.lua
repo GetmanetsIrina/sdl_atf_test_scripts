@@ -18,8 +18,8 @@
 local common = require('test_scripts/API/VehicleData/GearStatus/common')
 
 -- [[ Test Configuration ]]
-common.getParams().syncMsgVersion.majorVersion = 5
-common.getParams().syncMsgVersion.minorVersion = 0
+common.getAppParams().syncMsgVersion.majorVersion = 5
+common.getAppParams().syncMsgVersion.minorVersion = 0
 
 --[[ Scenario ]]
 common.Title("Preconditions")
@@ -30,9 +30,9 @@ common.Step("Activate App", common.activateApp)
 
 common.Title("Test")
 common.Step("GetVehicleData for prndl", common.getVehicleData, { common.prndlData, "prndl" })
-common.Step("App subscribes to prndl data", common.subUnScribeVD, { "SubscribeVehicleData", "prndl" })
+common.Step("App subscribes to prndl data", common.processSubscriptionRPC, { "SubscribeVehicleData", "prndl" })
 common.Step("OnVehicleData with prndl data", common.sendOnVehicleData, { common.prndlData, _, "prndl" })
-common.Step("App unsubscribes from prndl data", common.subUnScribeVD, { "UnsubscribeVehicleData", "prndl" })
+common.Step("App unsubscribes from prndl data", common.processSubscriptionRPC, { "UnsubscribeVehicleData", "prndl" })
 
 common.Title("Postconditions")
 common.Step("Stop SDL", common.postconditions)

@@ -1,12 +1,12 @@
 ---------------------------------------------------------------------------------------------------
 -- Proposal: https://github.com/smartdevicelink/sdl_evolution/blob/master/proposals/0266-New-vehicle-data-GearStatus.md
 --
--- Description: SDL resumes the subscription for 'gearStatus' parameter for two Apps after IGN_OFF/ON.
+-- Description: SDL resumes the subscription for 'gearStatus' parameter for two Apps after unexpected disconnect/connect.
 --
 -- Precondition:
 -- 1) Two apps are registered and activated.
 -- 2) Apps are subscribed to `gearStatus` data.
--- 3) IGN_OFF/IGN_ON are performed.
+-- 3) Unexpected disconnect and reconnect are performed.
 -- In case:
 -- 1) Mobile app1 and app2 register with actual hashID.
 -- SDL does:
@@ -42,10 +42,10 @@ common.Step("Register App1", common.registerAppWOPTU)
 common.Step("Register App2", common.registerAppWOPTU, { appId2 })
 common.Step("Activate App1", common.activateApp)
 common.Step("Activate App2", common.activateApp, { appId2 })
-common.Step("App1 subscribes to gearStatus data", common.subUnScribeVD, { "SubscribeVehicleData", _, _, isExpectedSubscribeVDonHMI })
-common.Step("App2 subscribes to gearStatus data", common.subUnScribeVD, { "SubscribeVehicleData", _, _, notExpectedSubscribeVDonHMI, appId2 })
-common.Step("Ignition Off", common.ignitionOff)
-common.Step("Ignition On", common.start)
+common.Step("App1 subscribes to gearStatus data", common.processSubscriptionRPC, { "SubscribeVehicleData", _, _, isExpectedSubscribeVDonHMI })
+common.Step("App2 subscribes to gearStatus data", common.processSubscriptionRPC, { "SubscribeVehicleData", _, _, notExpectedSubscribeVDonHMI, appId2 })
+common.Step("Unexpected disconnect", common.unexpectedDisconnect)
+common.Step("Connect mobile", common.connectMobile)
 
 common.Title("Test")
 common.Step("Re-register App1 with data resumption", common.registerAppWithResumption, { appId1, isSubscribed })

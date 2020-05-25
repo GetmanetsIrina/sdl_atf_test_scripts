@@ -29,7 +29,7 @@ common.Step("Clean environment", common.preconditions)
 common.Step("Start SDL, HMI, connect Mobile, start Session", common.start)
 common.Step("Register App", common.registerApp)
 common.Step("Activate App", common.activateApp)
-common.Step("App subscribes to gearStatus data", common.subUnScribeVD, { "SubscribeVehicleData" })
+common.Step("App subscribes to gearStatus data", common.processSubscriptionRPC, { "SubscribeVehicleData" })
 
 common.Title("Test")
 common.Step("Ignition Off", common.ignitionOff)

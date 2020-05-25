@@ -16,8 +16,8 @@
 local common = require('test_scripts/API/VehicleData/GearStatus/common')
 
 -- [[ Test Configuration ]]
-common.getParams().syncMsgVersion.majorVersion = 5
-common.getParams().syncMsgVersion.minorVersion = 0
+common.getAppParams().syncMsgVersion.majorVersion = 5
+common.getAppParams().syncMsgVersion.minorVersion = 0
 
 --[[ Local Variables ]]
 local resultCode = "INVALID_DATA"
