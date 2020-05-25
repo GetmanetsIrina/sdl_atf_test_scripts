@@ -10,17 +10,14 @@
 --  a) transfer this requests to HMI.
 -- 3) HMI responds with `SUCCESS` result to `gearStatus` vehicle data and UnsubscribeVehicleData request.
 -- SDL does:
---  a) respond with resultCode:`SUCCESS` to mobile application for `gearStatus` data.
--- 4) HMI sends valid OnVehicleData notification with all parameters of `gearStatus` structure.
--- SDL does:
---  a) ignore this notification.
---  b) not send OnVehicleData notification to mobile app.
+--  a) respond with resultCode:`SUCCESS` with `gearStatus` data to mobile application.
 ---------------------------------------------------------------------------------------------------
 --[[ Required Shared libraries ]]
 local common = require('test_scripts/API/VehicleData/GearStatus/common')
 
 --[[ Local Variables ]]
 local notExpected = 0
+local expected = 1
 
 --[[ Scenario ]]
 common.Title("Preconditions")
@@ -28,12 +25,13 @@ common.Step("Clean environment", common.preconditions)
 common.Step("Start SDL, HMI, connect Mobile, start Session", common.start)
 common.Step("Register App", common.registerApp)
 common.Step("Activate App", common.activateApp)
-common.Step("App subscribes to gearStatus data", common.subUnScribeVD, { "SubscribeVehicleData" })
-common.Step("OnVehicleData with gearStatus data", common.sendOnVehicleData, { common.getGearStatusParams() })
+common.Step("App subscribes to gearStatus data", common.processSubscriptionRPC, { "SubscribeVehicleData" })
+common.Step("OnVehicleData with gearStatus data", common.sendOnVehicleData, { common.getGearStatusParams(), expected })
 
 common.Title("Test")
-common.Step("App unsubscribes from gearStatus data", common.subUnScribeVD, { "UnsubscribeVehicleData" })
-common.Step("OnVehicleData with gearStatus data", common.sendOnVehicleData, { common.getGearStatusParams(), notExpected })
+common.Step("App unsubscribes from gearStatus data", common.processSubscriptionRPC, { "UnsubscribeVehicleData" })
+common.Step("Absence OnVehicleData with gearStatus data", common.sendOnVehicleData,
+  { common.getGearStatusParams(), notExpected })
 
 common.Title("Postconditions")
 common.Step("Stop SDL", common.postconditions)

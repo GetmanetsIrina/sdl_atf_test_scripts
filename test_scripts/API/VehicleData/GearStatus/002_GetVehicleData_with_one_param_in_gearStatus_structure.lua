@@ -1,30 +1,17 @@
--- Proposal:https://github.com/smartdevicelink/sdl_evolution/blob/master/proposals/0266-New-vehicle-data-GearStatus.md
+-- Proposal: https://github.com/smartdevicelink/sdl_evolution/blob/master/proposals/0266-New-vehicle-data-GearStatus.md
 --
 -- Description: SDL successfully processes GetVehicleData response if gearStatus structure contains one parameter.
 --
 -- In case:
--- 1) App sends GetVehicleData(gearStatus:true) request.
+-- 1) App sends GetVehicleData(gearStatus=true) request.
 -- SDL does:
 --  a) transfer this request to HMI.
--- 2) HMI sends the `gearStatus` structure with only one param in GetVehicleData response.
+-- 2) HMI sends the `gearStatus` structure with only one parameter in GetVehicleData response.
 -- SDL does:
---  a) respond with resultCode:`SUCCESS` to app with only one param.
+--  a) respond with resultCode:`SUCCESS` to app with only one parameter.
 ---------------------------------------------------------------------------------------------------
 --[[ Required Shared libraries ]]
 local common = require('test_scripts/API/VehicleData/GearStatus/common')
-
---[[ Local Functions ]]
-local function getVDWithOneParam(pData)
-  local cid = common.getMobileSession():SendRPC("GetVehicleData", { gearStatus = true })
-  common.getHMIConnection():ExpectRequest("VehicleInfo.GetVehicleData", { gearStatus = true })
-  :Do(function(_,data)
-    common.getHMIConnection():SendResponse(data.id, data.method, "SUCCESS", { gearStatus = pData })
-  end)
-  common.getMobileSession():ExpectResponse(cid, { success = true, resultCode = "SUCCESS", gearStatus = pData })
-  :ValidIf(function(_, data)
-    return common.checkParam(data, "GetVehicleData")
-  end)
-end
 
 --[[ Scenario ]]
 common.Title("Preconditions")
@@ -34,8 +21,18 @@ common.Step("Register App", common.registerApp)
 common.Step("Activate App", common.activateApp)
 
 common.Title("Test")
-for k,v in pairs(common.getGearStatusParams()) do
-  common.Step("HMI sends response with one " .. k.. " parameter", getVDWithOneParam, { { [k] = v } })
+for parameter in common.spairs(common.getGearStatusParams()) do
+  if parameter == "transmissionType" then
+    for _, value in common.spairs(common.transmissionTypeValues) do
+      common.Step("HMI sends response with transmissionType=" .. value, common.getVehicleData,
+        { { [parameter] = value } })
+    end
+  else
+    for _, value in common.spairs(common.prndlEnumValues) do
+      common.Step("HMI sends response with " .. parameter .. "=" .. value, common.getVehicleData,
+        { { [parameter] = value } })
+    end
+  end
 end
 
 common.Title("Postconditions")

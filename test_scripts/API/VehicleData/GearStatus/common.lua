@@ -1,6 +1,8 @@
 ---------------------------------------------------------------------------------------------------
 -- Common module
 ---------------------------------------------------------------------------------------------------
+--[[ General configuration parameters ]]
+config.defaultProtocolVersion = 2
 config.application1.registerAppInterfaceParams.syncMsgVersion.majorVersion = 6
 config.application1.registerAppInterfaceParams.syncMsgVersion.minorVersion = 2
 config.application2.registerAppInterfaceParams.syncMsgVersion.majorVersion = 6
@@ -13,35 +15,34 @@ local utils = require("user_modules/utils")
 local SDL = require("SDL")
 local runner = require('user_modules/script_runner')
 
---[[ Test Configuration ]]
+--[[ General configuration parameters ]]
 runner.testSettings.isSelfIncluded = false
-config.defaultProtocolVersion = 2
 
 --[[ Local Variables ]]
 local m = {}
 local hashId = {}
 
---[[ Shared Functions ]]
 m.Title = runner.Title
 m.Step = runner.Step
 m.getPreloadedPT = actions.sdl.getPreloadedPT
 m.setPreloadedPT = actions.sdl.setPreloadedPT
-m.registerApp = actions.registerApp
-m.registerAppWOPTU = actions.registerAppWOPTU
-m.activateApp = actions.activateApp
-m.getMobileSession = actions.getMobileSession
-m.getHMIConnection = actions.getHMIConnection
+m.registerApp = actions.app.register
+m.registerAppWOPTU = actions.app.registerNoPTU
+m.activateApp = actions.app.activate
+m.getMobileSession = actions.mobile.getSession
+m.getHMIConnection = actions.hmi.getConnection
 m.restorePreloadedPT = actions.sdl.restorePreloadedPT
 m.cloneTable = utils.cloneTable
 m.getConfigAppParams = actions.getConfigAppParams
 m.start = actions.start
 m.policyTableUpdate = actions.policyTableUpdate
-m.getAppsCount = actions.getAppsCount
-m.getParams = actions.app.getParams
+m.getAppsCount = actions.mobile.getAppsCount
+m.getAppParams = actions.app.getParams
 m.deleteSession = actions.mobile.deleteSession
 m.connectMobile = actions.mobile.connect
 m.wait = utils.wait
 m.postconditions = actions.postconditions
+m.spairs = utils.spairs
 
 local gearStatusData = {
   userSelectedGear = "NINTH",
@@ -49,29 +50,61 @@ local gearStatusData = {
   transmissionType = "MANUAL"
 }
 
-m.subUnsubResponse = {
+local gearStatusSubscriptionResponse = {
   dataType = "VEHICLEDATA_GEARSTATUS",
   resultCode = "SUCCESS"
 }
 
 m.prndlData = "PARK"
 
-local prndlSubUnsubResponse = {
+local prndlSubscriptionResponse = {
   dataType = "VEHICLEDATA_PRNDL",
   resultCode = "SUCCESS"
+}
+
+m.prndlEnumValues = {
+  "PARK",
+  "REVERSE",
+  "NEUTRAL",
+  "DRIVE",
+  "SPORT",
+  "LOWGEAR",
+  "FIRST",
+  "SECOND",
+  "THIRD",
+  "FOURTH",
+  "FIFTH",
+  "SIXTH",
+  "SEVENTH",
+  "EIGHTH",
+  "NINTH",
+  "TENTH",
+  "UNKNOWN",
+  "FAULT"
+}
+
+m.transmissionTypeValues = {
+  "MANUAL",
+  "AUTOMATIC",
+  "SEMI_AUTOMATIC",
+  "DUAL_CLUTCH",
+  "CONTINUOUSLY_VARIABLE",
+  "INFINITELY_VARIABLE",
+  "ELECTRIC_VARIABLE",
+  "DIRECT_DRIVE"
 }
 
 --[[ Common Functions ]]
 
 --[[ @updatePreloadedPT: Update preloaded file with additional permissions for GearStatus
 --! @parameters:
---! pGroups: table with additional updates (optional)
+--! pGroup: table with additional updates (optional)
 --! @return: none
 --]]
-function m.updatePreloadedPT(pGroups)
+function m.updatePreloadedPT(pGroup)
   local pt = m.getPreloadedPT()
-  if not pGroups then
-    pGroups = {
+  if pGroup == nil then
+    pGroup = {
       rpcs = {
         GetVehicleData = {
           hmi_levels = { "BACKGROUND", "LIMITED", "FULL", "NONE" },
@@ -92,26 +125,25 @@ function m.updatePreloadedPT(pGroups)
       }
     }
   end
-  pt.policy_table.functional_groupings["NewTestCaseGroup"] = pGroups
+  pt.policy_table.functional_groupings["NewTestCaseGroup"] = pGroup
   pt.policy_table.app_policies["default"].groups = { "Base-4", "NewTestCaseGroup" }
   pt.policy_table.functional_groupings["DataConsent-2"].rpcs = json.null
   m.setPreloadedPT(pt)
 end
 
---[[ @preconditions: Clean environment and optional backup and update of sdl_preloaded_pt.json file
+--[[ @preconditions: Clean environment, optional backup and update of sdl_preloaded_pt.json file
 --! @parameters:
---! isPreloadedUpdate: if true then sdl_preloaded_pt.json file will be updated, otherwise - will be not updated
+--! isPreloadedUpdate: if omitted or true then sdl_preloaded_pt.json file will be updated, otherwise - false
 --! @return: none
 --]]
-function m.preconditions(isPreloadedUpdate)
-  if isPreloadedUpdate == nil then isPreloadedUpdate = true end
+function m.preconditions(isPreloadedUpdate, pGroup)
   actions.preconditions()
   if isPreloadedUpdate == true or isPreloadedUpdate == nil then
-    m.updatePreloadedPT()
+    m.updatePreloadedPT(pGroup)
   end
 end
 
---! @pTUpdateFunc: Policy Table Update with allowed "Base-4" and custom groups for application
+--! @pTUpdateFunc: Policy Table Update with allowed "Base-4" and custom group for application
 --! @parameters:
 --! tbl: policy table
 --! @return: none
@@ -137,7 +169,7 @@ function m.pTUpdateFunc(tbl)
     }
   }
   tbl.policy_table.functional_groupings.NewVehicleDataGroup = VDgroup
-  tbl.policy_table.app_policies[m.getParams().fullAppID].groups = { "Base-4", "NewVehicleDataGroup" }
+  tbl.policy_table.app_policies[m.getAppParams().fullAppID].groups = { "Base-4", "NewVehicleDataGroup" }
 end
 
 --[[ @setHashId: Set hashId value which is required during resumption
@@ -159,25 +191,23 @@ function m.getHashId(pAppId)
   return hashId[pAppId]
 end
 
---[[ @checkParam: Check the absence of unexpected params in GetVehicleData and OnVehicleData on the mobile app side
+--[[ @checkParam: Check the absence of unexpected parameters
 --! @parameters:
---! pData - parameters for mobile response/notification
---! pRPC - RPC for mobile request/notification
---! @return: true - in case response/notification does not contain unexpected params, otherwise - false with error message
+--! pDataActual - actual received = data to check
+--! pDataExpected - expected data
+--! pRPC - RPC name
+--! @return: true - in case a message contains expected parameters number, otherwise - false with error message
 --]]
-function m.checkParam(pData, pRPC)
-  local count = 0
-  for _ in pairs(pData.payload.gearStatus) do
-    count = count + 1
-  end
-  if count ~= 1 then
-    return false, "Unexpected params are received in " .. pRPC
+local function checkParam(pDataActual, pDataExpected, pRPC)
+  local result = utils.isTableEqual(pDataActual, pDataExpected)
+  if result == false then
+    return false, "Unexpected parameters are received in " .. pRPC
   else
     return true
   end
 end
 
---[[ @getGearStatusParams: Clone table with gearStatus data for use to GetVD and OnVD RPCs
+--[[ @getGearStatusParams: Clone table with gearStatus data for using in GetVD and OnVD RPCs
 --! @parameters: none
 --! @return: table for GetVD and OnVD
 --]]
@@ -185,29 +215,29 @@ function m.getGearStatusParams()
   return utils.cloneTable(gearStatusData)
 end
 
---[[ @responseTosubUnsubReq: Clone table with data for use in SubscribeVD and UnsubscribeVD RPCs
+--[[ @getGearStatusSubscriptionResData: Clone table with data for using in SubscribeVD and UnsubscribeVD RPCs
 --! @parameters: none
---! @return: table for SubscribeVD and UnsubscribeV
+--! @return: table for SubscribeVD and UnsubscribeVD
 --]]
-function m.responseTosubUnsubReq()
-  return utils.cloneTable(m.subUnsubResponse)
+function m.getGearStatusSubscriptionResData()
+  return utils.cloneTable(gearStatusSubscriptionResponse)
 end
 
---[[ @setValue: Set value for params from `gearStatus` structure
+--[[ @getCustomData: Set value for params from `gearStatus` structure
 --! @parameters:
 --! pParam: parameters from `gearStatus` structure
 --! pValue: value for parameters from the `gearStatus` structure
 --! @return: table for GetVD and OnVD
 --]]
-function m.setValue(pParam, pValue)
-  local param = m.gearStatus()
+function m.getCustomData(pParam, pValue)
+  local param = m.getGearStatusParams()
   param[pParam] = pValue
   return param
 end
 
---[[ @getVehicleData: Processing GetVehicleData RPC
+--[[ @getVehicleData: Successful processing of GetVehicleData RPC
 --! @parameters:
---! pData: parameters for GetVehicleData response
+--! pData: data for GetVehicleData response
 --! pParam: parameter for GetVehicleData request
 --! @return: none
 --]]
@@ -219,23 +249,55 @@ function m.getVehicleData(pData, pParam)
     m.getHMIConnection():SendResponse(data.id, data.method, "SUCCESS", { [pParam] = pData })
   end)
   m.getMobileSession():ExpectResponse(cid, { success = true, resultCode = "SUCCESS", [pParam] = pData })
+  :ValidIf(function(_, data)
+    return checkParam(data.payload[pParam], pData, "GetVehicleData")
+  end)
+end
+
+--[[ @processRPCFailure: Processing VehicleData RPC with ERROR resultCode
+--! @parameters:
+--! pRPC: RPC for mobile request
+--! pResult: Result code for mobile response
+--! pValue: gearStatus value for mobile request
+--! @return: none
+--]]
+function m.processRPCFailure(pRPC, pResult, pValue)
+  if not pValue then pValue = true end
+  local cid = m.getMobileSession():SendRPC(pRPC, { gearStatus = pValue })
+  m.getHMIConnection():ExpectRequest("VehicleInfo." .. pRPC):Times(0)
+  m.getMobileSession():ExpectResponse(cid, { success = false, resultCode = pResult })
+end
+
+--[[ @invalidDataFromHMI: Processing VehicleData RPC with invalid HMI response
+--! @parameters:
+--! pRPC: RPC for mobile request
+--! pData: data for HMI response
+--! @return: none
+--]]
+function m.invalidDataFromHMI(pRPC, pData)
+  local cid = m.getMobileSession():SendRPC(pRPC, { gearStatus = true })
+  m.getHMIConnection():ExpectRequest("VehicleInfo." ..pRPC, { gearStatus = true })
+  :Do(function(_, data)
+    m.getHMIConnection():SendResponse(data.id, data.method, "SUCCESS", { gearStatus = pData })
+  end)
+  m.getMobileSession():ExpectResponse(cid, { success = false, resultCode = "GENERIC_ERROR" })
 end
 
 --[[ @subUnScribeVD: Processing Subscribe/UnsubscribeVehicleData RPC
 --! @parameters:
 --! pRPC: RPC for mobile request
---! pParam: parameters for Subscribe/UnsubscribeVehicleData RPC
---! pVDType: VehicleDataType value
---! isRequestOnHMIExpected: true or omitted - in case VehicleInfo.Subscribe/UnsubscribeVehicleData_request on HMI is expected, otherwise - not expected
 --! pAppId: application number (1, 2, etc.)
+--! isRequestOnHMIExpected: true or omitted - in case VehicleInfo.Subscribe/UnsubscribeVehicleData request is expected
+--!  on HMI, otherwise - not expected
+--! pParam: parameters for Subscribe/UnsubscribeVehicleData RPC
 --! @return: none
 --]]
-function m.subUnScribeVD(pRPC, pParam, isRequestOnHMIExpected, pAppId)
+function m.processSubscriptionRPC(pRPC, pAppId, isRequestOnHMIExpected, pParam)
   local responseData
   if not pParam then pParam = "gearStatus" end
-  if pParam == "gearStatus" then responseData = m.subUnsubResponse
+  if pParam == "gearStatus" then responseData = m.getGearStatusSubscriptionResData()
   else
-     responseData = prndlSubUnsubResponse
+     responseData = prndlSubscriptionResponse
   end
   if isRequestOnHMIExpected == nil then isRequestOnHMIExpected = true end
   if not pAppId then pAppId = 1 end
@@ -255,54 +317,38 @@ function m.subUnScribeVD(pRPC, pParam, isRequestOnHMIExpected, pAppId)
   end)
 end
 
---[[ @processRPCFailure: Processing VD RPCs with ERROR resultCode
---! @parameters:
---! pRPC: RPC for mobile request
---! pResult: Result code for mobile response
---! pValue: value for a request parameter
---! @return: none
---]]
-function m.processRPCFailure(pRPC, pResult, pValue)
-  if not pValue then pValue = true end
-  local cid = m.getMobileSession():SendRPC(pRPC, { gearStatus = pValue })
-  m.getHMIConnection():ExpectRequest("VehicleInfo." .. pRPC):Times(0)
-  m.getMobileSession():ExpectResponse(cid, { success = false, resultCode = pResult })
-end
-
---[[ @invalidDataFromHMI: function for check case when HMI does respond with invalid data to VD RPCs
---! @parameters:
---! pRPC: RPC for mobile request
---! pData: data for HMI response
---! pParam: parameter name from GearStatus structure
---! pValue: value for a parameter from GearStatus structure
---! @return: none
---]]
-function m.invalidDataFromHMI(pRPC, pData, pParam, pValue)
-  local params = pData
-  if pParam then params[pParam] = pValue end
-  local cid = m.getMobileSession():SendRPC(pRPC, { gearStatus = true })
-  m.getHMIConnection():ExpectRequest("VehicleInfo." ..pRPC, { gearStatus = true })
-  :Do(function(_, data)
-    m.getHMIConnection():SendResponse(data.id, data.method, "SUCCESS", { gearStatus = params })
-  end)
-  m.getMobileSession():ExpectResponse(cid, { success = false, resultCode = "GENERIC_ERROR" })
-end
-
 --[[ @sendOnVehicleData: Processing OnVehicleData RPC
 --! @parameters:
---! pData: parameter data for the notification
+--! pData: data for the notification
 --! pExpTime: expected number of notifications
 --! pParam: parameter for OnVehicleData RPC
---! pAppID: application number (1, 2, etc.)
 --! @return: none
 --]]
-function m.sendOnVehicleData(pData, pExpTime, pParam, pAppId)
+function m.sendOnVehicleData(pData, pExpTime, pParam)
   if not pExpTime then pExpTime = 1 end
-  if not pAppId then pAppId = 1 end
   if not pParam then pParam = "gearStatus" end
+  if not pData then pData = m.getGearStatusParams() end
   m.getHMIConnection():SendNotification("VehicleInfo.OnVehicleData", { [pParam] = pData })
-  m.getMobileSession(pAppId):ExpectNotification("OnVehicleData", { [pParam] = pData })
+  m.getMobileSession():ExpectNotification("OnVehicleData", { [pParam] = pData })
+  :ValidIf(function(_, data)
+    return checkParam(data.payload[pParam], pData, "OnVehicleData")
+  end)
   :Times(pExpTime)
+end
+
+--[[ @onVehicleDataTwoApps: Processing OnVehicleData RPC for two apps
+--! @parameters:
+--! pExpTimes: number of notifications for 2 apps
+--! @return: none
+--]]
+function m.onVehicleDataTwoApps(pExpTimes)
+  if pExpTimes == nil then pExpTimes = 1 end
+  local params = m.getGearStatusParams()
+  m.getHMIConnection():SendNotification("VehicleInfo.OnVehicleData", { gearStatus = params })
+  m.getMobileSession(1):ExpectNotification("OnVehicleData", { gearStatus = params })
+  :Times(pExpTimes)
+  m.getMobileSession(2):ExpectNotification("OnVehicleData", { gearStatus = params })
+  :Times(pExpTimes)
 end
 
 --[[ @ignitionOff: IGNITION_OFF sequence
@@ -320,15 +366,11 @@ function m.ignitionOff()
       isOnSDLCloseSent = true
       SDL.DeleteFile()
     end)
-    :Times(AtMost(1))
   end)
   m.wait(3000)
   :Do(function()
     if isOnSDLCloseSent == false then m.cprint(35, "BC.OnSDLClose was not sent") end
-    if SDL:CheckStatusSDL() == SDL.RUNNING then SDL:StopSDL() end
-    for i = 1, m.getAppsCount() do
-      m.deleteSession(i)
-    end
+    StopSDL()
   end)
 end
 
@@ -338,12 +380,12 @@ end
 --]]
 function m.unexpectedDisconnect()
   m.getHMIConnection():ExpectNotification("BasicCommunication.OnAppUnregistered", { unexpectedDisconnect = true })
-  :Times(actions.mobile.getAppsCount())
+  :Times(m.getAppsCount())
   actions.mobile.disconnect()
-  utils.wait(1000)
+  m.wait(1000)
 end
 
---[[ @registerAppWithResumption: Successful app registration with resumption
+--[[ @registerAppWithResumption:  Successful application registration with custom expectations for resumption
 --! @parameters:
 --! pAppId: application number (1, 2, etc.)
 --! isHMIsubscription: if true VD.SubscribeVehicleData request is expected on HMI, otherwise - not expected
@@ -351,10 +393,11 @@ end
 --]]
 function m.registerAppWithResumption(pAppId, isHMIsubscription)
   if not pAppId then pAppId = 1 end
-  m.getMobileSession(pAppId):StartService(7)
+  local session = actions.mobile.createSession(pAppId)
+  session:StartService(7)
   :Do(function()
     m.getConfigAppParams(pAppId).hashID = m.getHashId(pAppId)
-    local corId = m.getMobileSession(pAppId):SendRPC("RegisterAppInterface", m.getConfigAppParams(pAppId))
+    local corId = session:SendRPC("RegisterAppInterface", m.getConfigAppParams(pAppId))
     m.getHMIConnection():ExpectNotification("BasicCommunication.OnAppRegistered", {
       application = { appName = m.getConfigAppParams(pAppId).appName }
     })
@@ -362,15 +405,16 @@ function m.registerAppWithResumption(pAppId, isHMIsubscription)
       if true == isHMIsubscription then
         m.getHMIConnection():ExpectRequest( "VehicleInfo.SubscribeVehicleData", { gearStatus = true })
         :Do(function(_, data)
-          m.getHMIConnection():SendResponse( data.id, data.method, "SUCCESS", { gearStatus = m.subUnsubResponse } )
+          m.getHMIConnection():SendResponse( data.id, data.method, "SUCCESS",
+            { gearStatus = m.getGearStatusSubscriptionResData } )
         end)
       else
         m.getHMIConnection():ExpectRequest( "VehicleInfo.SubscribeVehicleData"):Times(0)
       end
     end)
-    m.getMobileSession(pAppId):ExpectResponse(corId, { success = true, resultCode = "SUCCESS" })
+    session:ExpectResponse(corId, { success = true, resultCode = "SUCCESS" })
     :Do(function()
-      m.getMobileSession(pAppId):ExpectNotification("OnPermissionsChange")
+      session:ExpectNotification("OnPermissionsChange")
     end)
   end)
 end
