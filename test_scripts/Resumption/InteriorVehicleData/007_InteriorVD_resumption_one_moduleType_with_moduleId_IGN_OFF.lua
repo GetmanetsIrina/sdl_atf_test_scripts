@@ -44,8 +44,7 @@ common.Step("Ignition off", common.ignitionOff)
 common.Step("Start SDL, HMI, connect Mobile, start Session", common.start)
 common.Step("Re-register App resumption data", common.reRegisterApp,
   { appId, checkResumptionData, common.resumptionFullHMILevel })
-common.Step("Check subscription with OnInteriorVD", common.onInteriorVD,
-  { moduleType, common.getModuleId(moduleType, moduleId) })
+common.Step("Check subscription with OnInteriorVD", common.onInteriorVD, { moduleType, moduleId })
 
 common.Title("Postconditions")
 common.Step("Stop SDL", common.postconditions)

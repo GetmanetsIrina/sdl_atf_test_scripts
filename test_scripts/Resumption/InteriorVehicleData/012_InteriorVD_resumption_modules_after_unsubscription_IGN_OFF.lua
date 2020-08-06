@@ -60,7 +60,7 @@ common.Step("Check subscription with OnInteriorVD for RADIO", common.onInteriorV
 common.Step("Check subscription with OnInteriorVD for CLIMATE", common.onInteriorVD,
   { "CLIMATE", withoutModuleId, isUnsubscribed})
 common.Step("Check subscription with OnInteriorVD for SEAT", common.onInteriorVD,
-  { "SEAT", common.getModuleId("SEAT", seatModuleId), isUnsubscribed})
+  { "SEAT", seatModuleId, isUnsubscribed})
 
 common.Title("Postconditions")
 common.Step("Stop SDL", common.postconditions)

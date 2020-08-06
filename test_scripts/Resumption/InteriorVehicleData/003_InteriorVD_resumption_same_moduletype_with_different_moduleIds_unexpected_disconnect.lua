@@ -75,9 +75,9 @@ common.Step("Connect mobile", common.mobileConnect)
 common.Step("Re-register App resumption data", common.reRegisterApp,
   { appId, checkResumptionData, common.resumptionFullHMILevel })
 common.Step("Check subscription with OnInteriorVD for module " .. moduleId1, common.onInteriorVD,
-  { moduleType, common.getModuleId(moduleType, moduleId1) })
+  { moduleType, moduleId1 })
 common.Step("Check subscription with OnInteriorVD for module " .. moduleId2, common.onInteriorVD,
-  { moduleType, common.getModuleId(moduleType, moduleId2) })
+  { moduleType, moduleId2 })
 
 common.Title("Postconditions")
 common.Step("Stop SDL", common.postconditions)
