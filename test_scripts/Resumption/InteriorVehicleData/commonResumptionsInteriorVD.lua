@@ -283,4 +283,65 @@ function m.ignitionOff()
   end)
 end
 
+function m.reRegisterApps(pCheckResumptionData, pResultCode1stApp, pResultCode2ndApp)
+  if not pResultCode1stApp then pResultCode1stApp = "SUCCESS" end
+  if not pResultCode2ndApp then pResultCode2ndApp = "SUCCESS" end
+
+  local requestParams1 = m.cloneTable(m.getConfigAppParams(1))
+  requestParams1.hashID = m.hashId[1]
+
+  local requestParams2 = m.cloneTable(m.getConfigAppParams(2))
+  requestParams2.hashID = m.hashId[2]
+
+  m.getHMIConnection():ExpectNotification("BasicCommunication.OnAppRegistered")
+  :Do(function(exp, d1)
+      if d1.params.appName == m.getConfigAppParams(1).appName then
+        m.setHMIAppId(d1.params.application.appID, 1)
+      else
+        m.setHMIAppId(d1.params.application.appID, 2)
+      end
+      if exp.occurences == 1 then
+        local corId2 = m.getMobileSession(2):SendRPC("RegisterAppInterface", requestParams2)
+        m.getMobileSession(2):ExpectResponse(corId2, { success = true, resultCode = pResultCode2ndApp })
+      end
+    end)
+  :Times(2)
+
+  local corId1 = m.getMobileSession(1):SendRPC("RegisterAppInterface", requestParams1)
+  m.getMobileSession(1):ExpectResponse(corId1, { success = true, resultCode = pResultCode1stApp })
+
+  m.getHMIConnection():ExpectRequest("BasicCommunication.ActivateApp", { appID = m.getHMIAppId(2) })
+  :Do(function(_, data)
+      m.getHMIConnection():SendResponse(data.id, "BasicCommunication.ActivateApp", "SUCCESS", {})
+    end)
+
+  m.getMobileSession(1):ExpectNotification("OnHMIStatus",
+    { hmiLevel = "NONE", audioStreamingState = "NOT_AUDIBLE", systemContext = "MAIN" },
+    { hmiLevel = "LIMITED", systemContext = "MAIN", audioStreamingState = "AUDIBLE" })
+  :Times(2)
+
+  m.getMobileSession(2):ExpectNotification("OnHMIStatus",
+    { hmiLevel = "NONE", audioStreamingState = "NOT_AUDIBLE", systemContext = "MAIN" },
+    { hmiLevel = "FULL", systemContext = "MAIN", audioStreamingState = "NOT_AUDIBLE" })
+  :Times(2)
+
+  pCheckResumptionData()
+  m.wait(3000)
+end
+
+function m.sessionCreationOpenRPCservice(pAppId)
+  local mobSession = actions.mobile.createSession(pAppId)
+  mobSession:StartService(7)
+end
+
+function m.onInteriorVD2Apps(pModuleType, pNotifTimes1app, pNotifTimes2app, pModuleId)
+  pModuleId = pModuleId or m.getModuleId(pModuleType, 1)
+  m.getHMIConnection():SendNotification("RC.OnInteriorVehicleData",
+    { moduleData = m.getActualModuleIVData(pModuleType, pModuleId) })
+  m.getMobileSession(1):ExpectNotification("OnInteriorVehicleData")
+  :Times(pNotifTimes1app)
+  m.getMobileSession(2):ExpectNotification("OnInteriorVehicleData")
+  :Times(pNotifTimes2app)
+end
+
 return m
