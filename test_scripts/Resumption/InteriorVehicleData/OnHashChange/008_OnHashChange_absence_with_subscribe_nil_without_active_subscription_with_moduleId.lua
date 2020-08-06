@@ -36,12 +36,13 @@ common.Step("App activation", common.activateApp)
 
 common.Title("Test")
 for _, moduleName in pairs(common.modules)do
-  common.Step("Absence OnHashChange after GetInteriorVD without subscribe to " .. moduleName,
-    common.GetInteriorVehicleData, { moduleName, moduleIdNumber, withoutSubscribe, isNotCached, notExpectNotif })
+  local moduleId = common.getModuleId(moduleName, moduleIdNumber)
+  common.Step("Absence OnHashChange after GetInteriorVD without subscribe to " .. moduleName, common.GetInteriorVehicleData,
+    { moduleName, moduleId, withoutSubscribe, isNotCached, notExpectNotif })
   common.Step("OnHashChange after adding subscription to " .. moduleName, common.GetInteriorVehicleData,
-    { moduleName, moduleIdNumber, isSubscribed, isNotCached, expectNotif })
-  common.Step("Absence OnHashChange after GetInteriorVD without subscribe to " .. moduleName,
-    common.GetInteriorVehicleData, { moduleName, moduleIdNumber, withoutSubscribe, isCached, notExpectNotif })
+    { moduleName, moduleId, isSubscribed, isNotCached, expectNotif })
+  common.Step("Absence OnHashChange after GetInteriorVD without subscribe to " .. moduleName, common.GetInteriorVehicleData,
+    { moduleName, moduleId, withoutSubscribe, isCached, notExpectNotif })
 end
 
 common.Title("Postconditions")

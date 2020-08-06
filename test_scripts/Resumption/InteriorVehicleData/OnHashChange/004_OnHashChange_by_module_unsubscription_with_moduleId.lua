@@ -34,10 +34,11 @@ common.Step("App activation", common.activateApp)
 
 common.Title("Test")
 for _, moduleName in pairs(common.modules)do
+  local moduleId = common.getModuleId(moduleName, moduleIdNumber)
   common.Step("Subscription to " .. moduleName, common.GetInteriorVehicleData,
-    { moduleName, moduleIdNumber, isSubscribed, isNotCached, expectNotif })
+    { moduleName, moduleId, isSubscribed, isNotCached, expectNotif })
   common.Step("OnHashChange after removing subscription for " .. moduleName, common.GetInteriorVehicleData,
-    { moduleName, moduleIdNumber, isNotSubscribed, isNotCached, expectNotif })
+    { moduleName, moduleId, isNotSubscribed, isNotCached, expectNotif })
 end
 
 common.Title("Postconditions")
