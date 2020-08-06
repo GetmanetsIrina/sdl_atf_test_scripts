@@ -24,6 +24,8 @@ config.application2.registerAppInterfaceParams.isMediaApplication = false
 local m = {}
 m.modules = { "RADIO", "CLIMATE", "SEAT", "AUDIO", "LIGHT", "HMI_SETTINGS" }
 m.hashId = {}
+local modulesWithSubscription = { }
+local messageStatusAboutDefaultModuleId = false
 
 -- [[ Shared Functions ]]
 m.Title = runner.Title
@@ -39,12 +41,13 @@ m.postconditions = actions.postconditions
 m.getHMIConnection = actions.hmi.getConnection
 m.getMobileSession = actions.mobile.getSession
 m.getHMIAppId = actions.app.getHMIId
-m.mobileDisconnect = actions.mobile.disconnect
 m.mobileConnect = actions.mobile.connect
 m.getConfigAppParams =  actions.getConfigAppParams
 m.setHMIAppId = actions.app.setHMIId
 m.isTableEqual = utils.isTableEqual
+m.isTableContains = utils.isTableContains
 m.fail = actions.run.fail
+m.getActualModuleIVData = rc.state.getActualModuleIVData
 
 --[[ General configuration ]]
 local state = rc.state.buildDefaultActualModuleState(rc.predefined.getRcCapabilities())
@@ -56,6 +59,23 @@ local function boolToTimes(isTrue)
     return 1
   end
   return 0
+end
+
+local function setSubscriptionModuleStatus(pModuleType, pModuleId, isSubscribed)
+  local newValue = {
+    moduleType = pModuleType,
+    moduleId = pModuleId
+  }
+
+  if m.isTableContains(modulesWithSubscription, newValue) == true and isSubscribed == false then
+    for key, value in pairs(modulesWithSubscription) do
+      if m.isTableEqual(value, newValue) then
+        table.remove(modulesWithSubscription, key)
+      end
+    end
+  elseif m.isTableContains(modulesWithSubscription, newValue) == false and isSubscribed == true then
+    table.insert(modulesWithSubscription, newValue)
+  end
 end
 
 function  m.GetInteriorVehicleData(pModuleType, pModuleId, isSubscribe, pIsIVDataCached, hashChangeExpectTimes, pAppId)
@@ -77,6 +97,9 @@ function  m.GetInteriorVehicleData(pModuleType, pModuleId, isSubscribe, pIsIVDat
     end)
   m.getMobileSession(pAppId):ExpectResponse(cid,
     rc.rpc.getAppResponseParams(rpc, true, "SUCCESS", pModuleType, moduleId, isSubscribe))
+  :Do(function()
+      setSubscriptionModuleStatus(pModuleType, moduleId, isSubscribe)
+    end)
 
   m.getMobileSession(pAppId):ExpectNotification("OnHashChange")
   :Do(function(_,data)
@@ -86,7 +109,22 @@ function  m.GetInteriorVehicleData(pModuleType, pModuleId, isSubscribe, pIsIVDat
 end
 
 function m.getModuleId(pModuleType, pModuleIdNumber)
-  local out = m.cloneTable(m.getModuleControlData(pModuleType, pModuleIdNumber))
+  local out = rc.predefined.getModuleControlData(pModuleType, 1)
+  if pModuleIdNumber == 1 or nil then
+    return out.moduleId
+  else
+    local actualData = rc.state.getActualModuleStateOnHMI()
+    for key, value in pairs(actualData[pModuleType]) do
+      if key ~= out.moduleId then
+        return value.data.moduleId
+      end
+    end
+  end
+  if messageStatusAboutDefaultModuleId == false then
+    utils.cprint(color.magenta, "There is only one moduleId for RADIO, LIGHT, HMI_SETTINGS." ..
+      "\nChecking default moduleId for these module types." )
+    messageStatusAboutDefaultModuleId = true
+  end
   return out.moduleId
 end
 
@@ -176,43 +214,55 @@ function m.checkModuleResumptionData(pModuleType, pModuleId)
     subscribe = true,
     moduleId = pModuleId
   }
-  EXPECT_HMICALL("RC.GetInteriorVehicleData", requestParams)
+  m.getHMIConnection():ExpectRequest("RC.GetInteriorVehicleData", requestParams)
   :Do(function(_, data)
       m.getHMIConnection():SendResponse(data.id, data.method, "SUCCESS",
-        { moduleData = m.state.getActualModuleIVData(pModuleType, pModuleId)})
+        { moduleData = m.getActualModuleIVData(pModuleType, pModuleId)})
     end)
 end
 
-function m.getModuleIdNumber(pModuleType, pModuleId)
-  local moduleNumbers = 2
-  for i = 1, moduleNumbers do
-    local out = m.getModuleControlData(pModuleType, i)
-    if out.moduleId == pModuleId then
-      return i
-    end
-  end
-  m.fail(pModuleId .. " is not found for " .. pModuleType .. " in predefinedInteriorVehicleData")
-end
-
-function m.getModuleControlData(pModuleType, pModuleId)
-  local out = rc.predefined.getModuleControlData(pModuleType, 1)
-  if pModuleId == 1 or nil then
-    return out
-  else
-    local actualData = rc.state.getActualModuleStateOnHMI()
-    for key, value in pairs(actualData[pModuleType]) do
-      if key ~= out.moduleId then
-        return value.data
+function m.mobileDisconnect()
+  local actualModules = { }
+  m.getHMIConnection():ExpectRequest(rc.rpc.getHMIEventName("GetInteriorVehicleData", { subscribe = false }))
+  :Do(function(exp,data)
+      actualModules[exp.occurences] = {
+        moduleType = data.params.moduleType,
+        moduleId = data.params.moduleId
+      }
+      if exp.occurences == #modulesWithSubscription then
+        if m.isTableEqual(actualModules, modulesWithSubscription) == false then
+          local errorMessage = "Subscription is removed not for all modules.\n" ..
+            "Actual result:" .. m.tableToString(actualModules) .. "\n" ..
+            "Expected result:" .. m.tableToString(modulesWithSubscription) .."\n"
+          return false, errorMessage
+        end
       end
-    end
-  end
-    utils.cprint(color.magenta, "There is only one moduleId for module " .. pModuleType ..
-      ".\nChecked default moduleId." )
-  return out
+      return true
+    end)
+  :Times(#modulesWithSubscription)
+  actions.mobile.disconnect()
 end
 
 function m.ignitionOff()
   local isOnSDLCloseSent = false
+  local actualModules = { }
+  m.getHMIConnection():ExpectRequest(rc.rpc.getHMIEventName("GetInteriorVehicleData", { subscribe = false }))
+  :Do(function(exp,data)
+      actualModules[exp.occurences] = {
+        moduleType = data.params.moduleType,
+        moduleId = data.params.moduleId
+      }
+      if exp.occurences == #modulesWithSubscription then
+        if m.isTableEqual(actualModules, modulesWithSubscription) == false then
+          local errorMessage = "Subscription is removed not for all modules.\n" ..
+            "Actual result:" .. m.tableToString(actualModules) .. "\n" ..
+            "Expected result:" .. m.tableToString(modulesWithSubscription) .."\n"
+          return false, errorMessage
+        end
+      end
+      return true
+    end)
+  :Times(#modulesWithSubscription)
   m.getHMIConnection():SendNotification("BasicCommunication.OnExitAllApplications", { reason = "SUSPEND" })
   m.getHMIConnection():ExpectNotification("BasicCommunication.OnSDLPersistenceComplete")
   :Do(function()

@@ -38,10 +38,10 @@ local function checkResumptionData()
     }
   end
 
-  EXPECT_HMICALL("RC.GetInteriorVehicleData")
+  common.getHMIConnection()("RC.GetInteriorVehicleData")
   :Do(function(_, data)
-      common.getHMIConnection():SendResponse(data.id, data.method, "SUCCESS",
-        { moduleData = common.getModuleControlData(data.params.moduleType), isSubscribed = true })
+      common.getHMIConnection():SendResponse(data.id, data.method, "SUCCESS", {
+        moduleData = common.getActualModuleIVData(data.params.moduleType, data.params.moduleId), isSubscribed = true })
     end)
   :ValidIf(function(exp, data)
     actualModules[exp.occurences] = {
