@@ -3,8 +3,8 @@
 ---------------------------------------------------------------------------------------------------
 --[[ General configuration parameters ]]
 config.defaultProtocolVersion = 2
-config.application1.registerAppInterfaceParams.appHMIType = { "NAVIGATION" }
-config.application2.registerAppInterfaceParams.appHMIType = { "MEDIA" }
+config.application1.registerAppInterfaceParams.appHMIType = { "NAVIGATION", "REMOTE_CONTROL" }
+config.application2.registerAppInterfaceParams.appHMIType = { "MEDIA", "REMOTE_CONTROL" }
 config.application1.registerAppInterfaceParams.isMediaApplication = false
 config.application2.registerAppInterfaceParams.isMediaApplication = true
 config.checkAllValidations = true
@@ -16,6 +16,7 @@ local json = require("modules/json")
 local atf_logger = require("atf_logger")
 local SDL = require('SDL')
 local color = require("user_modules/consts").color
+local rc = require('user_modules/sequences/remote_control')
 
 --[[ Override expectation's default timeout ]]
 local expectations = require('expectations')
@@ -39,6 +40,8 @@ m.resumptionData = {
   [2] = {}
 }
 
+local moduleTypeValue = "CLIMATE"
+
 m.rpcs = {
   addCommand = { "UI", "VR" },
   addSubMenu = { "UI" },
@@ -46,7 +49,8 @@ m.rpcs = {
   setGlobalProperties = { "UI", "TTS" },
   subscribeVehicleData = { "VehicleInfo" },
   subscribeWayPoints = { "Navigation" },
-  createWindow = { "UI" }
+  createWindow = { "UI" },
+  getInteriorVehicleData = { "RC" },
 }
 
 m.timeToRegApp2 = {
@@ -111,6 +115,9 @@ local function getSuccessHMIResponseData(pData)
     for param in pairs(pData.params) do
       out[param] = { resultCode = "SUCCESS", dataType = dataTypes[param] }
     end
+  elseif pData.method == "RC.GetInteriorVehicleData" then
+    out.moduleData = rc.predefined.getModuleControlData(moduleTypeValue, 1)
+    out.subscribe = pData.params.subscribe
   end
   return out
 end
@@ -504,6 +511,22 @@ m.rpcsRevert = {
         :Times(pTimes)
       end
     }
+  },
+  getInteriorVehicleData = {
+    rpc = "GetInteriorVehicleData",
+    iface = {
+      RC = function(pAppId, pTimes)
+        if not pTimes then pTimes = 2 end
+        local dataForResumption = m.resumptionData[pAppId].getInteriorVehicleData.RC
+        local dataForRevert = m.cloneTable(dataForResumption)
+        dataForRevert.subscribe = false
+        m.getHMIConnection():ExpectRequest("RC.GetInteriorVehicleData", dataForResumption, dataForRevert)
+        :Do(function(_, data)
+            m.sendResponse(data)
+          end)
+        :Times(pTimes)
+      end
+    }
   }
 }
 
@@ -874,6 +897,26 @@ function m.buttonSubscription(pAppId)
     end)
 end
 
+--[[ @getInteriorVehicleData: adding subscription for interior vehicle data
+--! @parameters:
+--! pAppId - application number (1, 2, etc.)
+--! isIVDCashed - false (default), true - if it's expected RC.GetInteriorVehicleData request on HMI
+--! @return: none
+--]]
+function m.getInteriorVehicleData(pAppId, isIVDCashed)
+  if not pAppId then pAppId = 1 end
+  local moduleData = rc.predefined.getModuleControlData(moduleTypeValue, 1)
+  local moduleIdValue = moduleData.moduleId
+  if isIVDCashed == nil then isIVDCashed = false end
+  rc.rc.subscribeToModule(moduleTypeValue, moduleIdValue, pAppId, isIVDCashed)
+  m.resumptionData[pAppId].getInteriorVehicleData = {
+    RC = { moduleType = moduleTypeValue, moduleId = moduleIdValue, subscrube = true } }
+  m.getMobileSession(pAppId):ExpectNotification("OnHashChange")
+  :Do(function(_, data)
+      m.hashId[pAppId] = data.payload.hashID
+    end)
+end
+
 --[[ @addCommandResumption: check resumption of addCommand data
 --! @parameters:
 --! pAppId - application number (1, 2, etc.)
@@ -997,6 +1040,19 @@ function m.createWindowResumption(pAppId, pErrorResponseInterface)
     end)
 end
 
+--[[ @getInteriorVehicleDataResumption: check resumption of interior vehicle data subscription
+--! @parameters:
+--! pAppId - application number (1, 2, etc.)
+--! pErrorResponseInterface - interface of RPC for error response
+--! @return: none
+--]]
+function m.getInteriorVehicleDataResumption(pAppId, pErrorResponseInterface)
+  m.getHMIConnection():ExpectRequest("RC.GetInteriorVehicleData", m.resumptionData[pAppId].getInteriorVehicleData.RC)
+  :Do(function(_, data)
+      m.sendResponse(data, pErrorResponseInterface, "RC")
+    end)
+end
+
 --[[ @unregisterAppInterface: unregister app
 --! @parameters:
 --! pAppId - application number (1, 2, etc.)
@@ -1043,7 +1099,8 @@ function m.updatePreloadedPT()
   pt.policy_table.functional_groupings["DataConsent-2"].rpcs = json.null
   local additionalRPCs = {
     "SubscribeVehicleData", "UnsubscribeVehicleData", "SubscribeWayPoints", "UnsubscribeWayPoints",
-    "OnVehicleData", "OnWayPointChange", "CreateWindow", "GetAppServiceData", "OnAppServiceData"
+    "OnVehicleData", "OnWayPointChange", "CreateWindow", "GetAppServiceData", "OnAppServiceData",
+    "GetInteriorVehicleData", "OnInteriorVehicleData"
   }
   pt.policy_table.functional_groupings.NewTestCaseGroup = { rpcs = { } }
   for _, v in pairs(additionalRPCs) do
@@ -1052,6 +1109,7 @@ function m.updatePreloadedPT()
     }
   end
   pt.policy_table.app_policies.default.groups = { "Base-4", "NewTestCaseGroup" }
+  pt.policy_table.app_policies.default.moduleType = { moduleTypeValue }
   actions.sdl.setPreloadedPT(pt)
 end
 
@@ -1225,6 +1283,12 @@ function m.checkResumptionData2Apps(pErrorRpc, pErrorInterface)
   m.getHMIConnection():ExpectRequest("UI.CreateWindow")
   :Do(function(exp, data)
       m.sendOnSCU(2, exp.occurences)
+      m.sendResponse2Apps(data, pErrorRpc, pErrorInterface)
+    end)
+  :Times(2)
+
+  m.getHMIConnection():ExpectRequest("RC.GetInteriorVehicleData")
+  :Do(function(_, data)
       m.sendResponse2Apps(data, pErrorRpc, pErrorInterface)
     end)
   :Times(2)
@@ -1458,6 +1522,7 @@ function m.checkResumptionDataSuccess(pAppId)
   m.subscribeVehicleDataResumption(pAppId)
   m.subscribeWayPointsResumption(pAppId)
   m.createWindowResumption(pAppId)
+  m.getInteriorVehicleDataResumption(pAppId)
   m.getHMIConnection():ExpectRequest("UI.AddCommand",
     m.resumptionData[pAppId].addCommand.UI)
   :Do(function(_, data)
@@ -1494,8 +1559,10 @@ end
 --! @return: none
 --]]
 function m.checkSubscriptions(pIsExp, pAppId)
+  if pIsExp == nil then pIsExp = true end
   m.sendOnButtonPress(pAppId, pIsExp)
   m.sendOnVehicleData("gps", pIsExp)
+  rc.rc.isSubscribed(moduleTypeValue, rc.predefined.getModuleControlData(moduleTypeValue,1).moduleId, pAppId, pIsExp)
 end
 
 --[[ @reRegisterAppsCustom_SameRPC: re-register 2 apps and check data resumption
