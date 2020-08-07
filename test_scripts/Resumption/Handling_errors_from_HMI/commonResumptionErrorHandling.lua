@@ -33,6 +33,7 @@ m.cloneTable = utils.cloneTable
 m.wait = utils.wait
 m.tableToString = utils.tableToString
 m.connectMobile = actions.mobile.connect
+m.getModuleControlData = rc.predefined.getModuleControlData
 
 m.hashId = {}
 m.resumptionData = {
@@ -116,7 +117,7 @@ local function getSuccessHMIResponseData(pData)
       out[param] = { resultCode = "SUCCESS", dataType = dataTypes[param] }
     end
   elseif pData.method == "RC.GetInteriorVehicleData" then
-    out.moduleData = rc.predefined.getModuleControlData(moduleTypeValue, 1)
+    out.moduleData = m.getModuleControlData(moduleTypeValue, 1)
     out.subscribe = pData.params.subscribe
   end
   return out
@@ -905,7 +906,7 @@ end
 --]]
 function m.getInteriorVehicleData(pAppId, isIVDCashed)
   if not pAppId then pAppId = 1 end
-  local moduleData = rc.predefined.getModuleControlData(moduleTypeValue, 1)
+  local moduleData = m.getModuleControlData(moduleTypeValue, 1)
   local moduleIdValue = moduleData.moduleId
   if isIVDCashed == nil then isIVDCashed = false end
   rc.rc.subscribeToModule(moduleTypeValue, moduleIdValue, pAppId, isIVDCashed)
@@ -1552,17 +1553,16 @@ function m.checkResumptionDataSuccess(pAppId)
   :Times(2)
 end
 
---[[ @checkSubscriptions: verify subscriptions to Button events and Vehicle data
+--[[ @checkSubscriptions: verify subscriptions to Button events and Vehicle data, Interior Vehicle Data
 --! @parameters:
 --! pAppId - application number (1, 2, etc.)
 --! pIsExp - true (default) - if it's expected notification on mobile app
 --! @return: none
 --]]
 function m.checkSubscriptions(pIsExp, pAppId)
-  if pIsExp == nil then pIsExp = true end
   m.sendOnButtonPress(pAppId, pIsExp)
   m.sendOnVehicleData("gps", pIsExp)
-  rc.rc.isSubscribed(moduleTypeValue, rc.predefined.getModuleControlData(moduleTypeValue,1).moduleId, pAppId, pIsExp)
+  m.isSubscribed(pAppId, pIsExp)
 end
 
 --[[ @reRegisterAppsCustom_SameRPC: re-register 2 apps and check data resumption
@@ -1711,6 +1711,17 @@ function m.reRegisterAppsCustom_AnotherRPC(pTimeToRegApp2, pRPC)
   if pTimeToRegApp2 == m.timeToRegApp2.BEFORE_REQUEST then
     m.reRegisterAppCustom(2, "SUCCESS", 10):Do(function() isRAIResponseSent[2] = true end)
   end
+end
+
+--[[ @isSubscribed: send OnInteriorVehicleData
+--! @parameters:
+--! pAppId - application number (1, 2, etc.)
+--! pIsExp - true (default) - if it's expected notification on mobile app
+--! @return: none
+--]]
+function m.isSubscribed(pAppId, pIsExp) do
+  if pIsExp == nil then pIsExp = true end
+  rc.rc.isSubscribed(moduleTypeValue, m.getModuleControlData(moduleTypeValue,1).moduleId, pAppId, pIsExp)
 end
 
 return m
