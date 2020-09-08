@@ -7,7 +7,7 @@
 -- 1) MixingAudioSupported" = true at .ini file
 -- 2) SDL and HMI are started.
 -- 3) Navigation app is registered.
--- 4) Navigation app in LIMITED and NOT_AUDIBLE due to active embedded audio source
+-- 4) Navigation app in LIMITED and AUDIBLE due to active embedded audio source
 --
 -- Steps to reproduce:
 -- 1) SDL receives SDL.ActivateApp (<appID_of_navigation_app>) from HMI
@@ -55,7 +55,7 @@ local function onEventChange(self)
   self.hmiConnection:SendNotification("BasicCommunication.OnEventChanged",
     { eventName = "AUDIO_SOURCE", isActive = true })
   self.mobileSession1:ExpectNotification("OnHMIStatus",
-    { hmiLevel = "BACKGROUND", audioStreamingState = "NOT_AUDIBLE" })
+    { hmiLevel = "LIMITED", audioStreamingState = "AUDIBLE", videoStreamingState = "STREAMABLE" })
 end
 
 local function setMixingAudioSupportedTrue()
