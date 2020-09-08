@@ -8,3 +8,4 @@
 ./test_scripts/Defects/7_0/3119_ChangeRegistration_with_unsupported_language.lua
 ./test_scripts/Defects/7_0/3372_StaySubscribedWaypoints_OnOtherAppDisconnect.lua
 ./test_scripts/Defects/7_0/3205_IGNORED_for_UnSubscribeVehicleData_in_case_VI_interface_is_not_available.lua
+./test_scripts/Defects/7_0/1906_Navigation_app_must_be_activated_during_active_embedded_navigation_and_MixingAudioSupported_true.lua
