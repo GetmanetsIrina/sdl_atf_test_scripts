@@ -16,6 +16,8 @@
 -- Expected result:
 -- SDL->HMI: SDL.OnStatusUpdate(UPDATE_NEEDED)
 ---------------------------------------------------------------------------------------------
+require('user_modules/script_runner').isTestApplicable({ { extendedPolicy = { "HTTP" } } })
+
 --[[ General configuration parameters ]]
 config.defaultProtocolVersion = 2
 
@@ -87,7 +89,7 @@ function Test:RAI_PTU()
   :Do(
     function(_, d1)
       log("SDL->HMI: N: BC.OnAppRegistered")
-      self.applications[config.application1.registerAppInterfaceParams.appID] = d1.params.application.appID
+      self.applications[config.application1.registerAppInterfaceParams.fullAppID] = d1.params.application.appID
       EXPECT_HMINOTIFICATION("SDL.OnStatusUpdate", {status = "UPDATE_NEEDED"}, {status = "UPDATING"}, {status = "UPDATE_NEEDED"}, {status = "UPDATING"})
       :Do(function(_, d)
           log("SDL->HMI: N: SDL.OnStatusUpdate", d.params.status)
@@ -97,6 +99,7 @@ function Test:RAI_PTU()
         end)
       :Times(4)
       :Timeout(65000)
+    end)
 
       local onSystemRequestRecieved = false
       self.mobileSession:ExpectNotification("OnSystemRequest")
@@ -112,7 +115,6 @@ function Test:RAI_PTU()
       :Times(3) -- LOCK_SCREEN_ICON_URL, HTTP, HTTP
       :Timeout(65000)
 
-    end)
   self.mobileSession:ExpectResponse(corId, { success = true, resultCode = "SUCCESS" })
   :Do(
     function()
@@ -157,7 +159,7 @@ function Test:ValidateResult()
   print("Expected: " .. r_expected_timeout)
   print("Actual: " .. r_actual_timeout)
   -- tolerance 2 sec.
-  if (r_actual_timeout < r_expected_timeout) or (r_actual_timeout > r_expected_timeout + 1) then
+  if (r_actual_timeout < r_expected_timeout - 1) or (r_actual_timeout > r_expected_timeout + 1) then
     local msg = "\nExpected timeout '" .. r_expected_timeout .. "', actual '" .. r_actual_timeout .. "'"
     self:FailTestCase(msg)
   end

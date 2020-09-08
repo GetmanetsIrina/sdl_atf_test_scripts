@@ -12,7 +12,7 @@ local module = require('testbase')
 config.deviceMAC = "12ca17b49af2289436f303e0166030a21e525d266e209267433801a8fd4071a0"
 --ToDo: shall be removed when APPLINK-16610 is fixed
 config.defaultProtocolVersion = 2
-local storagePath = config.pathToSDL .. "storage/" ..config.application1.registerAppInterfaceParams.appID.. "_" .. config.deviceMAC.. "/"	
+local storagePath = config.pathToSDL .. "storage/" ..config.application1.registerAppInterfaceParams.fullAppID.. "_" .. config.deviceMAC.. "/"	
 
 -- User required files
 require('user_modules/AppTypes')
@@ -38,6 +38,7 @@ require('user_modules/AppTypes')
 ---------------------------------------------------------------------------------------------
 APIName = "Show" -- set request name
 strMaxLengthFileName255 = string.rep("a", 251)  .. ".png" -- set max length file name
+strMaxLengthInvalidFileName255 = string.rep("a", 251)  .. ".png" -- set max length file name
 --local storagePath = config.pathToSDL .. SDLConfig:GetValue("AppStorageFolder") .. "/" .. tostring(config.application1.registerAppInterfaceParams.appID .. "_" .. tostring(config.deviceMAC) .. "/")
 
 --Debug = {"graphic", "value"} --use to print request before sending to SDL.
@@ -271,6 +272,87 @@ function Test:verify_SUCCESS_Case(Request)
 	EXPECT_RESPONSE(cid, { success = true, resultCode = "SUCCESS" })
 			
 end
+
+--This function sends a request from mobile and verify result on HMI and mobile for WARNINGS resultCode cases.
+function Test:verify_WARNINGS_invalid_image_Case(Request)
+
+  local temp = json.encode(Request)
+  local cid = 0
+  if string.find(temp, "{}") ~= nil or string.find(temp, "{{}}") ~= nil then            
+    temp = string.gsub(temp, "{}", "[]")
+    temp = string.gsub(temp, "{{}}", "[{}]")
+    
+    self.mobileSession.correlationId = self.mobileSession.correlationId + 1
+
+    local msg = 
+    {
+      serviceType      = 7,
+      frameInfo        = 0,
+      rpcType          = 0,
+      rpcFunctionId    = 13,
+      rpcCorrelationId = self.mobileSession.correlationId,        
+      payload          = temp
+    }
+
+    cid = self.mobileSession.correlationId
+
+    self.mobileSession:Send(msg)
+  else
+    --mobile side: sending Show request
+    cid = self.mobileSession:SendRPC("Show", Request)
+  end
+
+  -- TODO: remove after resolving APPLINK-16094
+  ---------------------------------------------
+  if 
+    (Request.graphic and
+    #Request.graphic == 0) then
+      Request.graphic = nil
+  end
+
+  if 
+    (Request.secondaryGraphic and
+    #Request.secondaryGraphic == 0) then
+      Request.secondaryGraphic = nil
+  end
+
+  if 
+    (Request.softButtons and
+    #Request.softButtons == 0) then
+      Request.softButtons = nil
+  end
+
+  if 
+    (Request.customPresets and
+    #Request.customPresets == 0) then
+      Request.customPresets = nil
+  end
+
+  if Request.softButtons then
+    for i=1,#Request.softButtons do
+      if Request.softButtons[i].image then
+        Request.softButtons[i].image = nil
+      end
+    end
+
+  end
+  ---------------------------------------------
+  
+  UIParams = self:createUIParameters(Request)
+
+  
+  --hmi side: expect UI.Show request
+  EXPECT_HMICALL("UI.Show", UIParams)
+  :Do(function(_,data)
+    --hmi side: sending UI.Show response
+    self.hmiConnection:SendResponse(data.id, data.method, "WARNINGS", {info = "Requested image(s) not found."})
+  end)
+
+
+  --mobile side: expect SetGlobalProperties response
+  EXPECT_RESPONSE(cid, { success = true, resultCode = "WARNINGS",info = "Requested image(s) not found." })
+      
+end
 ---------------------------------------------------------------------------------------------
 
 
@@ -329,6 +411,44 @@ end
 --1. All parameters are lower bound
 --2. All parameters are upper bound
 -----------------------------------------------------------------------------------------------
+
+    Test["Show_AllParametersWithInvalidImage_WARNINGS"] = function(self)
+  
+    --mobile side: request parameters
+    local RequestParams = 
+    {
+      mainField1 = "a",
+      mainField2 = "a",
+      mainField3 = "a",
+      mainField4 = "a",
+      statusBar= "a",
+      mediaClock = "a",
+      mediaTrack = "a",
+      alignment = "CENTERED",
+      graphic = 
+      { 
+        imageType = "DYNAMIC",
+        value = "invalidimange.png"
+      },
+      secondaryGraphic = 
+      { 
+        imageType = "DYNAMIC",
+        value = "invalidimange.png"
+      },
+      softButtons = {},
+      customPresets = {},
+      metadataTags =
+      {
+        mainField1 = {},
+        mainField2 = {},
+        mainField3 = {},
+        mainField4 = {}
+      }
+    }
+    
+    self:verify_WARNINGS_invalid_image_Case(RequestParams)
+    
+  end
 
 	Test["Show_AllParametersLowerBound_SUCCESS"] = function(self)
 	
@@ -546,6 +666,184 @@ end
 	end
 	-----------------------------------------------------------------------------------------
 
+  -----------------------------------------------------------------------------------------
+  
+  Test["Show_AllParametersUpperBound_WARNINGS"] = function(self)
+  
+    --mobile side: request parameters
+    local string500Characters = commonFunctions:createString(500)
+    local string499Characters = commonFunctions:createString(499)
+    local RequestParams = 
+    {
+      mainField1 = string500Characters,
+      mainField2 = string500Characters,
+      mainField3 = string500Characters,
+      mainField4 = string500Characters,
+      statusBar= string500Characters,
+      mediaClock = string500Characters,
+      mediaTrack = string500Characters,
+      alignment = "CENTERED",
+      graphic = 
+      { 
+        imageType = "DYNAMIC",
+        value = strMaxLengthFileName255
+      },
+      secondaryGraphic = 
+      { 
+        imageType = "DYNAMIC",
+        value = strMaxLengthFileName255
+      },
+      softButtons = 
+      {
+        {
+          text = "1" .. string499Characters,
+          systemAction = "KEEP_CONTEXT",
+          type = "BOTH",
+          isHighlighted = true,                               
+          image =
+          {
+             imageType = "DYNAMIC",
+             value = strMaxLengthFileName255
+          },                                
+          softButtonID = 1
+        },
+        {
+          text = "2" .. string499Characters,
+          systemAction = "KEEP_CONTEXT",
+          type = "BOTH",
+          isHighlighted = true,                               
+          image =
+          {
+             imageType = "DYNAMIC",
+             value = strMaxLengthFileName255
+          },                                
+          softButtonID = 2
+        },
+        {
+          text = "3" .. string499Characters,
+          systemAction = "KEEP_CONTEXT",
+          type = "BOTH",
+          isHighlighted = true,                               
+          image =
+          {
+             imageType = "DYNAMIC",
+             value = strMaxLengthFileName255
+          },                                
+          softButtonID = 3
+        },
+        {
+          text = "4" .. string499Characters,
+          systemAction = "KEEP_CONTEXT",
+          type = "BOTH",
+          isHighlighted = true,                               
+          image =
+          {
+             imageType = "DYNAMIC",
+             value = strMaxLengthInvalidFileName255
+          },                                
+          softButtonID = 4
+        },
+        {
+          text = "5" .. string499Characters,
+          systemAction = "KEEP_CONTEXT",
+          type = "BOTH",
+          isHighlighted = true,                               
+          image =
+          {
+             imageType = "DYNAMIC",
+             value = strMaxLengthInvalidFileName255
+          },                                
+          softButtonID = 5
+        },
+        {
+          text = "6" .. string499Characters,
+          systemAction = "KEEP_CONTEXT",
+          type = "BOTH",
+          isHighlighted = true,                               
+          image =
+          {
+             imageType = "DYNAMIC",
+             value = strMaxLengthInvalidFileName255
+          },                                
+          softButtonID = 6
+        },
+        {
+          text = "7" .. string499Characters,
+          systemAction = "KEEP_CONTEXT",
+          type = "BOTH",
+          isHighlighted = true,                               
+          image =
+          {
+             imageType = "DYNAMIC",
+             value = strMaxLengthInvalidFileName255
+          },                                
+          softButtonID = 7
+        },
+        {
+          text = "8" .. string499Characters,
+          systemAction = "KEEP_CONTEXT",
+          type = "BOTH",
+          isHighlighted = true,                               
+          image =
+          {
+             imageType = "DYNAMIC",
+             value = strMaxLengthFileName255
+          },                                
+          softButtonID = 8
+        }
+      },
+      customPresets = 
+      {
+        "1" .. string499Characters,
+        "2" .. string499Characters,
+        "3" .. string499Characters,
+        "4" .. string499Characters,
+        "5" .. string499Characters,
+        "6" .. string499Characters,
+        "7" .. string499Characters,
+        "8" .. string499Characters,
+      },  
+      metadataTags =
+      {
+        mainField1 =
+        {
+          "mediaTitle",
+          "mediaArtist",
+          "mediaAlbum",
+          "mediaYear",
+          "mediaGenre"
+        },
+        mainField2 =
+        {
+          "mediaTitle",
+          "mediaArtist",
+          "mediaAlbum",
+          "mediaYear",
+          "mediaGenre"
+        },
+        mainField3 =
+        {
+          "mediaTitle",
+          "mediaArtist",
+          "mediaAlbum",
+          "mediaYear",
+          "mediaGenre"
+        },
+        mainField4 =
+        {
+          "mediaTitle",
+          "mediaArtist",
+          "mediaAlbum",
+          "mediaYear",
+          "mediaGenre"
+        }
+       }
+    }
+    
+    self:verify_WARNINGS_invalid_image_Case(RequestParams)
+    
+  end
+  -----------------------------------------------------------------------------------------
 
 -----------------------------------------------------------------------------------------------
 --Test cases for parameter 1-7: mainField1, mainField2, mainField3, mainField4, statusBar, mediaClock, mediaTrack: type=String, maxlength=500, mandatory=false
@@ -874,7 +1172,7 @@ end
 				
 				end
 
-				local path  = "bin/storage/"..config.application1.registerAppInterfaceParams.appID.. "_" .. config.deviceMAC.. "/"
+				local path  = "bin/storage/"..config.application1.registerAppInterfaceParams.fullAppID.. "_" .. config.deviceMAC.. "/"
                 local value_Icon = path .. "action.png"
           
                 if(data.params.graphic.imageType == "DYNAMIC") then
@@ -3375,7 +3673,7 @@ local function SequenceChecks()
 								 }
 							})
 			:ValidIf(function(_,data)
-                  local path  = "bin/storage/"..config.application1.registerAppInterfaceParams.appID.. "_" .. config.deviceMAC.. "/"
+                  local path  = "bin/storage/"..config.application1.registerAppInterfaceParams.fullAppID.. "_" .. config.deviceMAC.. "/"
                   local value_Icon = path .. "action.png"
           
                   if(data.params.graphic.imageType == "DYNAMIC") then
@@ -3584,7 +3882,7 @@ local function SequenceChecks()
 								 }
 							})
 				:ValidIf(function(_,data)
-                  local path  = "bin/storage/"..config.application1.registerAppInterfaceParams.appID.. "_" .. config.deviceMAC.. "/"
+                  local path  = "bin/storage/"..config.application1.registerAppInterfaceParams.fullAppID.. "_" .. config.deviceMAC.. "/"
                   local value_Icon = path .. "action.png"
           
                   if(data.params.graphic.imageType == "DYNAMIC") then

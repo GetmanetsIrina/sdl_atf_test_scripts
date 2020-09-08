@@ -3,7 +3,6 @@ Test = require('connecttest')
 require('cardinalities')
 local events = require('events')
 local mobile_session = require('mobile_session')
-local config = require('config')
 local json  = require('json4lua/json/json')
 
 ---------------------------------------------------------------------------------------------
@@ -26,7 +25,7 @@ APIName = "ScrollableMessage" -- set request name
 APIId = 25
 strMaxLengthFileName255 = string.rep("a", 251)  .. ".png" -- set max length file name
 
-local storagePath = config.pathToSDL .. "storage/" .. config.application1.registerAppInterfaceParams.appID .. "_" .. config.deviceMAC .. "/"
+local storagePath = config.pathToSDL .. "storage/" .. config.application1.registerAppInterfaceParams.fullAppID .. "_" .. config.deviceMAC .. "/"
 
 --[[
 
@@ -192,6 +191,67 @@ function Test:verify_SUCCESS_Case(Request, HmiLevel)
 end
 
 ---------------------------------------------------------------------------------------------
+
+--This function sends a request from mobile and verify result on HMI and mobile for WARNINGS resultCode cases.
+function Test:verify_WARNINGS_Case(Request, HmiLevel)
+
+  local cid = commonFunctions:sendRequest(self, Request, APIName, APIId)
+
+  --TODO: update after resolving APPLINK-16052
+  if Request.softButtons then
+    for i=1,#Request.softButtons do
+      if Request.softButtons[i].image then
+        Request.softButtons[i].image = nil
+      end
+    end
+  end
+
+  local UIParams = self:createUIParameters(Request)
+
+  --hmi side: expect UI.ScrollableMessage request
+  EXPECT_HMICALL("UI.ScrollableMessage", UIParams)
+  :Do(function(_,data)
+
+    --HMI sends UI.OnSystemContext
+    self.hmiConnection:SendNotification("UI.OnSystemContext",{ appID = self.applications["Test Application"], systemContext = "HMI_OBSCURED" })
+    scrollableMessageId = data.id
+
+    local function scrollableMessageResponse()
+
+      --hmi sends response
+      self.hmiConnection:SendResponse(scrollableMessageId, "UI.ScrollableMessage", "WARNINGS", {info = "Requested image(s) not found."})
+
+      --HMI sends UI.OnSystemContext
+      self.hmiConnection:SendNotification("UI.OnSystemContext",{ appID = self.applications["Test Application"], systemContext = "MAIN" })
+    end
+    RUN_AFTER(scrollableMessageResponse, 1000)
+
+  end)
+
+
+  --mobile side: expect OnHMIStatus notification
+  if HmiLevel == nil then
+    HmiLevel = "FULL"
+  end
+  if
+    HmiLevel == "BACKGROUND" or
+    HmiLevel == "LIMITED" then
+    EXPECT_NOTIFICATION("OnHMIStatus",{})
+    :Times(0)
+  else
+
+    EXPECT_NOTIFICATION("OnHMIStatus",
+        {systemContext = "HMI_OBSCURED", hmiLevel = HmiLevel, audioStreamingState = audibleState},
+        {systemContext = "MAIN", hmiLevel = HmiLevel, audioStreamingState = audibleState}
+    )
+    :Times(2)
+  end
+
+  --mobile side: expect the response
+  EXPECT_RESPONSE(cid, { success = true, resultCode = "WARNINGS",info = "Requested image(s) not found." })
+
+end
+---------------------------------------------------------------------------------------------
 -------------------------------------------Preconditions-------------------------------------
 ---------------------------------------------------------------------------------------------
 
@@ -242,6 +302,7 @@ end
 --1. Positive request
 --2. All parameters are lower bound
 --3. All parameters are upper bound
+--4. Positive request with invalid image
 
 function Test:ScrollableMessage_PositiveRequest()
 	local Request =
@@ -278,6 +339,43 @@ function Test:ScrollableMessage_PositiveRequest()
 	}
 
 	self:verify_SUCCESS_Case(Request)
+end
+
+function Test:ScrollableMessage_PositiveRequest_WithInvalidImage()
+  local Request =
+  {
+    scrollableMessageBody = "abc",
+    softButtons =
+    {
+      {
+        softButtonID = 1,
+        text = "Button1",
+        type = "IMAGE",
+        image =
+        {
+          value = "notavailable.png",
+          imageType = "DYNAMIC"
+        },
+        isHighlighted = false,
+        systemAction = "DEFAULT_ACTION"
+      },
+      {
+        softButtonID = 2,
+        text = "Button2",
+        type = "IMAGE",
+        image =
+        {
+          value = "action.png",
+          imageType = "DYNAMIC"
+        },
+        isHighlighted = false,
+        systemAction = "DEFAULT_ACTION"
+      }
+    },
+    timeout = 5000
+  }
+
+  self:verify_WARNINGS_Case(Request)
 end
 
 function Test:ScrollableMessage_AllParametersLowerBound()

@@ -3,7 +3,6 @@ Test = require('connecttest')
 require('cardinalities')
 local events = require('events')	
 local mobile_session = require('mobile_session')
-local config = require('config')
 require('user_modules/AppTypes')
 
 local SmartDeviceLinkConfigurations = require('user_modules/shared_testcases/SmartDeviceLinkConfigurations')
@@ -23,7 +22,7 @@ end
 config.deviceMAC = "12ca17b49af2289436f303e0166030a21e525d266e209267433801a8fd4071a0"
 --ToDo: shall be removed when APPLINK-16610 is fixed
 config.defaultProtocolVersion = 2
-local storagePath = config.pathToSDL .. "storage/" ..config.application1.registerAppInterfaceParams.appID.. "_" .. config.deviceMAC.. "/"
+local storagePath = config.pathToSDL .. "storage/" ..config.application1.registerAppInterfaceParams.fullAppID.. "_" .. config.deviceMAC.. "/"
 
 function DelayedExp()
   local event = events.Event()
@@ -187,6 +186,44 @@ function setChoiseSet(choiceIDValue, size)
         return temp
 	end	
 end
+
+function setChoiseSetWithInvalidImage(choiceIDValue, size)
+  if (size == nil) then
+    local temp = {{ 
+        choiceID = choiceIDValue,
+        menuName ="Choice" .. tostring(choiceIDValue),
+        vrCommands = 
+        { 
+          "VrChoice" .. tostring(choiceIDValue),
+        }, 
+        image =
+        { 
+          value ="notavailable.png",
+          imageType ="STATIC",
+        }
+    }}
+    return temp
+  else  
+    local temp = {}   
+        for i = 1, size do
+        temp[i] = { 
+            choiceID = choiceIDValue+i-1,
+        menuName ="Choice" .. tostring(choiceIDValue+i-1),
+        vrCommands = 
+        { 
+          "VrChoice" .. tostring(choiceIDValue+i-1),
+        }, 
+        image =
+        { 
+          value ="notavailable.png",
+          imageType ="STATIC",
+        }
+      } 
+        end
+        return temp
+  end 
+end
+
 function setImage()
     local temp = {
 					value = "icon.png",
@@ -1068,6 +1105,35 @@ function Test:activationApp(appIDValue)
 			end
 		end
 	--End Precondition.6
+  -----------------------------------------------------------------------------------------
+
+  --Begin Precondition.7
+  --Description: CreateInteractionChoiceSet 
+        Test["CreateInteractionChoiceSetWithInValidImage"] = function(self)
+              --mobile side: sending CreateInteractionChoiceSet request
+              local infoText = "Requested image(s) not found."
+               cid = self.mobileSession:SendRPC("CreateInteractionChoiceSet",
+                      {
+                        interactionChoiceSetID = 500,
+                        choiceSet = setChoiseSetWithInvalidImage(500),
+                      })
+  
+              --hmi side: expect VR.AddCommand
+              EXPECT_HMICALL("VR.AddCommand", 
+                    { 
+                      cmdID = 500,
+                      type = "Choice",
+                      vrCommands = {"VrChoice"..tostring(500) }
+                    })
+              :Do(function(_,data)            
+                --hmi side: sending VR.AddCommand response
+                self.hmiConnection:SendResponse(data.id, data.method, "WARNINGS", {})
+              end)    
+  
+            --mobile side: expect CreateInteractionChoiceSet response
+            EXPECT_RESPONSE(cid, { success = true,resultCode = "SUCCESS"  })
+        end
+ --End Precondition.7
 
 -- ----------------------------------------------------------------------------------------------
 -- -----------------------------------------VI TEST BLOCK----------------------------------------

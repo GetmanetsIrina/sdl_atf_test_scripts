@@ -3,6 +3,8 @@
 ---------------------------------------------------------------------------------------------------
 --[[ General configuration parameters ]]
 config.defaultProtocolVersion = 3
+config.application1.registerAppInterfaceParams.syncMsgVersion.majorVersion = 5
+config.application2.registerAppInterfaceParams.syncMsgVersion.majorVersion = 5
 
 --[[ Required Shared libraries ]]
 local actions = require("user_modules/sequences/actions")

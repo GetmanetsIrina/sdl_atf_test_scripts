@@ -4,7 +4,7 @@
 --[[ General configuration parameters ]]
 config.SecurityProtocol = "DTLS"
 config.application1.registerAppInterfaceParams.appName = "server"
-config.application1.registerAppInterfaceParams.appID = "SPT"
+config.application1.registerAppInterfaceParams.fullAppID = "SPT"
 -- config.cipherListString = ":SSLv2:AES256-GCM-SHA384"
 
 --[[ Required Shared libraries ]]
@@ -163,9 +163,7 @@ function m.putFileByFrames(pParams)
     firstFrameMessage.frameType = 0x02
     firstFrameMessage.frameInfo = 0
     firstFrameMessage.binaryData = int32ToBytes(binaryDataSize) .. int32ToBytes(countOfDataFrames)
-    if pParams.isFirstFrameEncrypted ~= nil then
-      firstFrameMessage.encryption = pParams.isFirstFrameEncrypted
-    end
+    firstFrameMessage.encryption = false
     table.insert(frames, 1, firstFrameMessage)
   else
     table.insert(frames, msg)
@@ -191,6 +189,8 @@ function m.putFileByFrames(pParams)
 
   if pParams.isSessionEncrypted == false then
     m.getMobileSession():ExpectResponse(correlationId, { success = true, resultCode = "SUCCESS"})
+  elseif pParams.isSentDataEncrypted == false then
+    m.getMobileSession():ExpectResponse(correlationId, { success = false, resultCode = "ENCRYPTION_NEEDED"})
   else
     m.getMobileSession():ExpectEncryptedResponse(correlationId, { success = true, resultCode = "SUCCESS"})
   end

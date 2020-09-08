@@ -3,6 +3,8 @@
 ---------------------------------------------------------------------------------------------------
 --[[ General configuration parameters ]]
 config.defaultProtocolVersion = 3
+config.application1.registerAppInterfaceParams.syncMsgVersion.majorVersion = 5
+config.application2.registerAppInterfaceParams.syncMsgVersion.majorVersion = 5
 
 --[[ Required Shared libraries ]]
 local actions = require("user_modules/sequences/actions")
@@ -70,9 +72,9 @@ function m.StopStreaming(pService, pFile, pAppId)
   if not pAppId then pAppId = 1 end
   m.getMobileSession(pAppId):StopStreaming(pFile)
   if pService == 11 then
-    m.getHMIConnection():ExpectNotification("Navigation.OnVideoDataStreaming", { available = false })
+    m.getHMIConnection():ExpectNotification("Navigation.OnVideoDataStreaming", { available = false }):Timeout(15000)
   else
-    m.getHMIConnection():ExpectNotification("Navigation.OnAudioDataStreaming", { available = false })
+    m.getHMIConnection():ExpectNotification("Navigation.OnAudioDataStreaming", { available = false }):Timeout(15000)
   end
 end
 

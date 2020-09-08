@@ -30,7 +30,7 @@ config.application1.registerAppInterfaceParams.appHMIType = { appHMIType }
 
 --[[ Local Functions ]]
 local function ptUpdate(pTbl)
-  pTbl.policy_table.app_policies[common.getConfigAppParams().appID].AppHMIType = { appHMIType }
+  pTbl.policy_table.app_policies[common.getConfigAppParams().fullAppID].AppHMIType = { appHMIType }
 end
 
 local function startService()
@@ -58,7 +58,7 @@ local function startService()
     end
     RUN_AFTER(response, 550)
   end)
-  :Times(4)
+  :Times(5)
   common.getHMIConnection():ExpectRequest("Navigation.StopStream")
   :Do(function(_, data)
     common.getHMIConnection():SendResponse(data.id, data.method, "SUCCESS", {})

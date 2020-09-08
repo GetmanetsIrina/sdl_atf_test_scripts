@@ -31,6 +31,15 @@
                 "COMMUNICATION": 6,
                 "NORMAL": 4,
                 "NONE": 0
+            },
+            "subtle_notifications_per_minute_by_priority": {
+                "EMERGENCY": 60,
+                "NAVIGATION": 20,
+                "PROJECTION": 20,
+                "VOICECOM": 30,
+                "COMMUNICATION": 15,
+                "NORMAL": 10,
+                "NONE": 0
             }
         },
         "functional_groupings": {
@@ -294,7 +303,7 @@
                     "Alert": {
                         "hmi_levels": ["BACKGROUND"]
                     },
-		    "DiagnosticMessage": {
+            "DiagnosticMessage": {
                         "hmi_levels": ["BACKGROUND",
                         "FULL",
                         "LIMITED"]
@@ -2253,7 +2262,8 @@
                 "priority": "NONE",
                 "default_hmi": "NONE",
                 "groups": ["Base-4"],
-                "RequestType": []
+                "RequestType": [],
+                "RequestSubType": []
             },
             "device": {
                 "keep_context": false,

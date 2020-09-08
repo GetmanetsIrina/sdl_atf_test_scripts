@@ -38,7 +38,7 @@ config.deviceMAC = "12ca17b49af2289436f303e0166030a21e525d266e209267433801a8fd40
 config.defaultProtocolVersion = 2
 config.SDLStoragePath = config.pathToSDL .. "storage/"
 
-local storagePath = config.SDLStoragePath..config.application1.registerAppInterfaceParams.appID.. "_" .. config.deviceMAC.. "/"	
+local storagePath = config.SDLStoragePath..config.application1.registerAppInterfaceParams.fullAppID.. "_" .. config.deviceMAC.. "/"	
 local imageValues = {"a", "icon.png", "qwertyuiopasdfghjklzxcvbnm1234567890[]'.!@#$%^&*()_+-=qwertyuiopasdfghjklzxcvbnm1234567890[]'.!@#$%^&*()_+-=QWERTYUIOPASDFGHJKLZXCVBNM{}|?>:<qwertyuiopasdfghjklzxcvbnm1234567890[]'.!@#$%^&*()_+-=qwertyuiopasdfghjklzxcvbnm1234567890[]'.!@#$%^&*()_+-=QWERTY"}
 local infoMessage = string.rep("a",1000)
 local applicationID
@@ -650,6 +650,57 @@ end
 					:Times(0)
 				end
 			--End Test case CommonRequestCheck.3.10
+			
+		  --Begin Test case CommonRequestCheck.4
+   
+      function Test:CreateInteractionChoiceSet_InvalidImage()
+          --mobile side: sending CreateInteractionChoiceSet request
+          local cid = self.mobileSession:SendRPC("CreateInteractionChoiceSet",
+                              {
+                                interactionChoiceSetID = 1108,
+                                choiceSet = 
+                                { 
+                                  
+                                  { 
+                                    choiceID = 1108,
+                                    menuName ="Choice1108",
+                                    vrCommands = 
+                                    { 
+                                      "Choice1108",
+                                    }, 
+                                    image =
+                                    { 
+                                      value ="notavailable.png",
+                                      imageType ="DYNAMIC",
+                                    }, 
+                                  }
+                                }
+                              })
+          
+            
+          --hmi side: expect VR.AddCommand request
+          EXPECT_HMICALL("VR.AddCommand", 
+                  { 
+                    cmdID = 1108,
+                    appID = applicationID,
+                    type = "Choice",
+                    vrCommands = {"Choice1108" }
+                  })
+          :Do(function(_,data)
+            --hmi side: sending VR.AddCommand response
+            grammarIDValue = data.params.grammarID
+            self.hmiConnection:SendResponse(data.id, data.method, "WARNINGS", {info="Requested image(s) not found."})
+          end)
+          
+          --mobile side: expect CreateInteractionChoiceSet response
+          EXPECT_RESPONSE(cid, { success = true, resultCode = "WARNINGS",info="Requested image(s) not found." })
+
+          --mobile side: expect OnHashChange notification
+          EXPECT_NOTIFICATION("OnHashChange")
+        end
+    --End Test case CommonRequestCheck.4
+    
+    -----------------------------------------------------------------------------------------
 			
 		--Begin Test case CommonRequestCheck.3
 		
