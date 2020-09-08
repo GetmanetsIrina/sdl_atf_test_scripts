@@ -12,10 +12,10 @@
 --    c. non-media app_3 in BACKGROUND and NOT_AUDIBLE
 -- 4) User activates embedded audio source and HMILevel of apps were changed to:
 --    a. media app_1 in BACKGROUND and NOT_AUDIBLE
---    b. navigation app_2 in LIMITED and AUDIBLE
--- 5) User activates navigation app_2 -> OnHMIStatus (FULL, AUDIBLE)
+--    b. navigation app_2 in LIMITED and AUDIBLE, STREAMABLE
+-- 5) User activates navigation app_2 -> OnHMIStatus (FULL, AUDIBLE, STREAMABLE)
 -- 6) User activates media app_1 -> FULL, AUDIBLE
--- Note: embedded audio source was switched off, navigation app_2 gets (LIMITED, AUDIBLE)
+-- Note: embedded audio source was switched off, navigation app_2 gets (LIMITED, AUDIBLE, STREAMABLE)
 -- Steps to reproduce:
 -- 1) User activates non-media app_3
 --    HMI -> SDL: OnAppDeactivated ( <appID_1> )
@@ -24,7 +24,7 @@
 -- 1) SDL -> media app_1 : OnHMIStatus (LIMITED, AUDIBLE)
 -- 2) SDL -> HMI: SDL.ActivateApp (SUCCESS)
 -- 3) SDL -> non-media app_3 : OnHMIStatus (FULL, NOT_AUDIBLE)
--- Note: navigation app_2 still at LIMITED and AUDIBLE
+-- Note: navigation app_2 still at LIMITED and AUDIBLE, STREAMABLE
 ---------------------------------------------------------------------------------------------------
 --[[ Required Shared libraries ]]
 local runner = require('user_modules/script_runner')
@@ -80,18 +80,21 @@ local function deactivateApp(pAppId)
     { appID = common.getHMIAppId(pAppId) })
   common.getMobileSession(pAppId):ExpectNotification("OnHMIStatus")
   :ValidIf(function(_, data)
-    if config["application"..pAppId].registerAppInterfaceParams.isMediaApplication == true or
-      config["application"..pAppId].registerAppInterfaceParams.appHMIType[1] == "NAVIGATION"
-      then
-        return data.payload.audioStreamingState == "AUDIBLE" and
-          data.payload.videoStreamingState == "NOT_STREAMABLE" and
-          data.payload.hmiLevel == "LIMITED" and
-          data.payload.systemContext == "MAIN"
-      else
-        return data.payload.audioStreamingState == "NOT_AUDIBLE" and
-          data.payload.videoStreamingState == "NOT_STREAMABLE" and
-          data.payload.hmiLevel == "BACKGROUND" and
-          data.payload.systemContext == "MAIN"
+    if config["application"..pAppId].registerAppInterfaceParams.isMediaApplication == true then
+      return data.payload.audioStreamingState == "AUDIBLE" and
+        data.payload.videoStreamingState == "NOT_STREAMABLE" and
+        data.payload.hmiLevel == "LIMITED" and
+        data.payload.systemContext == "MAIN"
+    elseif config["application"..pAppId].registerAppInterfaceParams.appHMIType[1] == "NAVIGATION" then
+      return data.payload.audioStreamingState == "AUDIBLE" and
+        data.payload.videoStreamingState == "STREAMABLE" and
+        data.payload.hmiLevel == "LIMITED" and
+        data.payload.systemContext == "MAIN"
+    else
+      return data.payload.audioStreamingState == "NOT_AUDIBLE" and
+        data.payload.videoStreamingState == "NOT_STREAMABLE" and
+        data.payload.hmiLevel == "BACKGROUND" and
+        data.payload.systemContext == "MAIN"
     end
   end)
 end
@@ -99,34 +102,37 @@ end
 local function embededAudioActivated()
   common.getHMIConnection():SendNotification("BasicCommunication.OnEventChanged",
     { eventName = "AUDIO_SOURCE", isActive = true})
-  common.getMobileSession(1):ExpectNotification("OnHMIStatus",
+  common.getMobileSession(mediaAppId):ExpectNotification("OnHMIStatus",
     { hmiLevel = "BACKGROUND", audioStreamingState = "NOT_AUDIBLE", videoStreamingState = "NOT_STREAMABLE" })
-  common.getMobileSession(2):ExpectNotification("OnHMIStatus",
-    { hmiLevel = "BACKGROUND", audioStreamingState = "NOT_AUDIBLE", videoStreamingState = "NOT_STREAMABLE" })
+  common.getMobileSession(naviAppId):ExpectNotification("OnHMIStatus")
+  :Times(0)
+  common.getMobileSession(nonMediaAppId):ExpectNotification("OnHMIStatus")
+  :Times(0)
 end
 
 local function activateNaviApp()
-  local requestId = common.getHMIConnection():SendRequest("SDL.ActivateApp", { appID = common.getHMIAppId(2) })
+  local requestId = common.getHMIConnection():SendRequest("SDL.ActivateApp", { appID = common.getHMIAppId(naviAppId) })
   EXPECT_HMIRESPONSE(requestId)
-  common.getMobileSession(2):ExpectNotification("OnHMIStatus",
-    {hmiLevel = "FULL", audioStreamingState = "NOT_AUDIBLE" })
+  common.getMobileSession(naviAppId):ExpectNotification("OnHMIStatus",
+    {hmiLevel = "FULL", audioStreamingState = "AUDIBLE", videoStreamingState = "STREAMABLE" })
 end
 
 local function activateMediaApp()
   common.getHMIConnection():SendNotification("BasicCommunication.OnEventChanged",
   { eventName = "AUDIO_SOURCE", isActive = false })
-  common.getMobileSession(1):ExpectNotification("OnHMIStatus",
-    { hmiLevel = "LIMITED", audioStreamingState = "AUDIBLE" },
-    { hmiLevel = "FULL", audioStreamingState = "AUDIBLE" })
+  common.getMobileSession(mediaAppId):ExpectNotification("OnHMIStatus",
+    { hmiLevel = "LIMITED", audioStreamingState = "AUDIBLE", videoStreamingState = "NOT_STREAMABLE" },
+    { hmiLevel = "FULL", audioStreamingState = "AUDIBLE", videoStreamingState = "NOT_STREAMABLE" })
   :Times(2)
   :Do(function(exp)
     if exp.occurences == 1 then
-      local requestId = common.getHMIConnection():SendRequest("SDL.ActivateApp", { appID = common.getHMIAppId(1) })
+      local requestId = common.getHMIConnection():SendRequest("SDL.ActivateApp",
+        { appID = common.getHMIAppId(mediaAppId) })
       EXPECT_HMIRESPONSE(requestId)
     end
   end)
-  common.getMobileSession(2):ExpectNotification("OnHMIStatus",
-    { hmiLevel = "LIMITED", audioStreamingState = "AUDIBLE" })
+  common.getMobileSession(naviAppId):ExpectNotification("OnHMIStatus")
+  :Times(0)
 end
 
 --[[ Test ]]
