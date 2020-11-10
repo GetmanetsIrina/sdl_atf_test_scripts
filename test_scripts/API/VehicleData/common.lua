@@ -13,6 +13,10 @@ local color = require("user_modules/consts").color
 --[[ General configuration parameters ]]
 runner.testSettings.isSelfIncluded = false
 config.defaultProtocolVersion = 2
+config.application1.registerAppInterfaceParams.syncMsgVersion = {
+    majorVersion = 7,
+    minorVersion = 1
+}
 
 --[[ Local Variables ]]
 local m = {}
@@ -55,40 +59,41 @@ m.rpc = {
 }
 
 m.vd = {
-  vin = "",
-  gps = "VEHICLEDATA_GPS",
-  speed = "VEHICLEDATA_SPEED",
-  rpm = "VEHICLEDATA_RPM",
-  fuelLevel = "VEHICLEDATA_FUELLEVEL",
-  fuelLevel_State = "VEHICLEDATA_FUELLEVEL_STATE",
-  instantFuelConsumption = "VEHICLEDATA_FUELCONSUMPTION",
-  externalTemperature = "VEHICLEDATA_EXTERNTEMP",
-  prndl = "VEHICLEDATA_PRNDL",
-  tirePressure = "VEHICLEDATA_TIREPRESSURE",
-  odometer = "VEHICLEDATA_ODOMETER",
-  beltStatus = "VEHICLEDATA_BELTSTATUS",
-  bodyInformation = "VEHICLEDATA_BODYINFO",
-  deviceStatus = "VEHICLEDATA_DEVICESTATUS",
-  eCallInfo = "VEHICLEDATA_ECALLINFO",
-  airbagStatus = "VEHICLEDATA_AIRBAGSTATUS",
-  emergencyEvent = "VEHICLEDATA_EMERGENCYEVENT",
+  -- vin = "",
+  -- gps = "VEHICLEDATA_GPS",
+  -- speed = "VEHICLEDATA_SPEED",
+  -- rpm = "VEHICLEDATA_RPM",
+  -- fuelLevel = "VEHICLEDATA_FUELLEVEL",
+  -- fuelLevel_State = "VEHICLEDATA_FUELLEVEL_STATE",
+  -- instantFuelConsumption = "VEHICLEDATA_FUELCONSUMPTION",
+  -- externalTemperature = "VEHICLEDATA_EXTERNTEMP",
+  -- prndl = "VEHICLEDATA_PRNDL",
+  -- tirePressure = "VEHICLEDATA_TIREPRESSURE",
+  -- odometer = "VEHICLEDATA_ODOMETER",
+  -- beltStatus = "VEHICLEDATA_BELTSTATUS",
+  -- bodyInformation = "VEHICLEDATA_BODYINFO",
+  -- deviceStatus = "VEHICLEDATA_DEVICESTATUS",
+  -- eCallInfo = "VEHICLEDATA_ECALLINFO",
+  -- airbagStatus = "VEHICLEDATA_AIRBAGSTATUS",
+  -- emergencyEvent = "VEHICLEDATA_EMERGENCYEVENT",
   -- clusterModeStatus = "VEHICLEDATA_CLUSTERMODESTATUS", -- disabled due to issue: https://github.com/smartdevicelink/sdl_core/issues/3460
-  myKey = "VEHICLEDATA_MYKEY",
-  driverBraking = "VEHICLEDATA_BRAKING",
-  wiperStatus = "VEHICLEDATA_WIPERSTATUS",
-  headLampStatus = "VEHICLEDATA_HEADLAMPSTATUS",
-  engineTorque = "VEHICLEDATA_ENGINETORQUE",
-  accPedalPosition = "VEHICLEDATA_ACCPEDAL",
-  steeringWheelAngle = "VEHICLEDATA_STEERINGWHEEL",
-  turnSignal = "VEHICLEDATA_TURNSIGNAL",
-  fuelRange = "VEHICLEDATA_FUELRANGE",
-  engineOilLife = "VEHICLEDATA_ENGINEOILLIFE",
-  electronicParkBrakeStatus = "VEHICLEDATA_ELECTRONICPARKBRAKESTATUS",
-  cloudAppVehicleID = "VEHICLEDATA_CLOUDAPPVEHICLEID",
-  handsOffSteering = "VEHICLEDATA_HANDSOFFSTEERING",
-  stabilityControlsStatus = "VEHICLEDATA_STABILITYCONTROLSSTATUS",
-  gearStatus = "VEHICLEDATA_GEARSTATUS",
-  windowStatus = "VEHICLEDATA_WINDOWSTATUS"
+  -- myKey = "VEHICLEDATA_MYKEY",
+  -- driverBraking = "VEHICLEDATA_BRAKING",
+  -- wiperStatus = "VEHICLEDATA_WIPERSTATUS",
+  -- headLampStatus = "VEHICLEDATA_HEADLAMPSTATUS",
+  -- engineTorque = "VEHICLEDATA_ENGINETORQUE",
+  -- accPedalPosition = "VEHICLEDATA_ACCPEDAL",
+  -- steeringWheelAngle = "VEHICLEDATA_STEERINGWHEEL",
+  -- turnSignal = "VEHICLEDATA_TURNSIGNAL",
+  -- fuelRange = "VEHICLEDATA_FUELRANGE",
+  -- engineOilLife = "VEHICLEDATA_ENGINEOILLIFE",
+  -- electronicParkBrakeStatus = "VEHICLEDATA_ELECTRONICPARKBRAKESTATUS",
+  -- cloudAppVehicleID = "VEHICLEDATA_CLOUDAPPVEHICLEID",
+  -- handsOffSteering = "VEHICLEDATA_HANDSOFFSTEERING",
+  -- stabilityControlsStatus = "VEHICLEDATA_STABILITYCONTROLSSTATUS",
+  -- gearStatus = "VEHICLEDATA_GEARSTATUS",
+  windowStatus = "VEHICLEDATA_WINDOWSTATUS",
+  climateData = "VEHICLEDATA_CLIMATEDATA"
 }
 
 m.operator = {
@@ -174,6 +179,7 @@ function m.getParamValues(pParams, pCmnSchema)
     local function getStructValue()
       return m.getParamValues(pCmnSchema.struct[itype].param, pCmnSchema)
     end
+
     if pCmnSchema.struct[itype] ~= nil then
       return getStructValue()
     elseif pCmnSchema.enum[itype] ~= nil then
@@ -201,6 +207,7 @@ function m.getParamValues(pParams, pCmnSchema)
     else
       out[k] = getArrayTypeValue(v)
     end
+    if out[k] == nil then m.cprint(color.magenta, "Please pay attention value for VD parameter `" .. k .. "` is nil.") end
   end
   return out
 end
@@ -214,6 +221,7 @@ local function getParamValuesFromAPI()
   local viSchema = api.hmi.interface["VehicleInfo"]
   local cmnSchema = api.hmi.interface["Common"]
   local params = viSchema.type.response.functions.GetVehicleData.param
+
   local paramValues = m.getParamValues(params, cmnSchema)
   -- print not defined in API parameters
   for k in pairs(m.vd) do
@@ -225,9 +233,10 @@ local function getParamValuesFromAPI()
   for k in pairs(paramValues) do
     if m.vd[k] == nil then
       paramValues[k] = nil
-      m.cprint(color.magenta, "Disabled VD parameter:", k)
+      -- m.cprint(color.magenta, "Disabled VD parameter:", k)
     end
   end
+
   return paramValues
 end
 
