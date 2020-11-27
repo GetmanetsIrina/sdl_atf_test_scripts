@@ -6,3 +6,7 @@
 ./test_scripts/Defects_775/006_AddCommand_unexpected_disconnection_before_response.lua
 ./test_scripts/Defects_775/007_AddCommand_unexpected_disconnection_after_response.lua
 ./test_scripts/Defects_775/008_DeleteCommand_HMI_does_not_respond_to_one_of_the_component.lua
+./test_scripts/Defects_775/009_OnResetTimeout_with_response.lua
+./test_scripts/Defects_775/010_OnResetTimeout_without_response.lua
+./test_scripts/Defects_775/011_OnResetTimeout_2_RPCs_in_the_same_time_with_responses.lua
+./test_scripts/Defects_775/012_OnResetTimeout_2_RPCs_in_the_same_time_without_responses.lua
