@@ -70,7 +70,7 @@ local function ScrollableMessage()
       RUN_AFTER(uiOnResetTimeout, timeRunAfterForNot)
     end)
   common.getMobileSession():ExpectResponse(cid, { success = false, resultCode = "GENERIC_ERROR"})
-  :Timeout(16000)
+  :Timeout(17000)
 end
 
 --[[ Scenario ]]
