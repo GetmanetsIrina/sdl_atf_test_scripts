@@ -62,10 +62,8 @@ local function RCPs()
       end
       RUN_AFTER(ttsOnResetTimeout, ttsNotif)
     end)
-  local timeForSM = defaultTimeout + uiNotif + scrollableMessageTimeout + delay
-  print(timeForSM)
   common.getMobileSession():ExpectResponse(cid1, { success = false, resultCode = "GENERIC_ERROR"})
-  :Timeout(timeForSM)
+  :Timeout(defaultTimeout + uiNotif + scrollableMessageTimeout + delay)
   common.getMobileSession():ExpectResponse(cid2, { success = false, resultCode = "GENERIC_ERROR"})
   :Timeout(defaultTimeout + ttsNotif + delay)
 end
