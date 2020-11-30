@@ -15,7 +15,7 @@
 -- 3. HMI does not respond
 --
 -- Expected:
--- 1. SDL responds with 'GENERIC_ERROR, success:false' to mobile application in 12 seconds
+-- 1. SDL responds with 'GENERIC_ERROR, success:false' to mobile application in 11 seconds
 
 -- Steps:
 -- 1. App requests ScrollableMessage RPC
@@ -23,7 +23,7 @@
 -- 3. HMI does not respond
 --
 -- Expected:
--- 1. SDL responds with 'GENERIC_ERROR, success:false' to mobile application in 12 seconds
+-- 1. SDL responds with 'GENERIC_ERROR, success:false' to mobile application in 14 seconds
 ---------------------------------------------------------------------------------------------------
 --[[ Required Shared libraries ]]
 local runner = require('user_modules/script_runner')
@@ -34,6 +34,8 @@ runner.testSettings.isSelfIncluded = false
 
 --[[ Local Constants ]]
 local timeRunAfterForNot = 1000
+local delay = 1000
+local defaultTimeout = 10000
 
 --[[ Local Functions ]]
 local function Speak()
@@ -51,13 +53,14 @@ local function Speak()
       RUN_AFTER(ttsOnResetTimeout, timeRunAfterForNot)
     end)
   common.getMobileSession():ExpectResponse(cid, { success = false, resultCode = "GENERIC_ERROR"})
-  :Timeout(12000)
+  :Timeout(defaultTimeout + timeRunAfterForNot + delay)
 end
 
 local function ScrollableMessage()
+  local scrollableMessageTimeout = 3000
   local requestParams = {
     scrollableMessageBody = "scrollableMessageBody text",
-    timeout = 5000
+    timeout = scrollableMessageTimeout
   }
   local cid = common.getMobileSession():SendRPC("ScrollableMessage", requestParams)
   common.getHMIConnection():ExpectRequest("UI.ScrollableMessage")
@@ -70,7 +73,7 @@ local function ScrollableMessage()
       RUN_AFTER(uiOnResetTimeout, timeRunAfterForNot)
     end)
   common.getMobileSession():ExpectResponse(cid, { success = false, resultCode = "GENERIC_ERROR"})
-  :Timeout(17000)
+  :Timeout(defaultTimeout + timeRunAfterForNot + scrollableMessageTimeout + delay)
 end
 
 --[[ Scenario ]]

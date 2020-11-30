@@ -11,13 +11,13 @@
 --
 -- Steps:
 -- 1. App requests Speak RPC and ScrollableMessage RPC
--- 2. HMI sends UI.OnResetTimeout() notification to SDL in 5 sec after receiving UI.ScrollableMessage request
--- 3. HMI sends TTS.OnResetTimeout() notification to SDL in 9 sec after receiving TTS.Speak request
+-- 2. HMI sends UI.OnResetTimeout() notification to SDL in 2 sec after receiving UI.ScrollableMessage request
+-- 3. HMI sends TTS.OnResetTimeout() notification to SDL in 5 sec after receiving TTS.Speak request
 -- 4. HMI does not respond
 --
 -- Expected:
--- 1. SDL sends Speak response with 'GENERIC_ERROR, success:false' to mobile application in
--- 1. SDL sends Speak response with 'GENERIC_ERROR, success:false' to mobile application in
+-- 1. SDL sends Speak response with 'GENERIC_ERROR, success:false' to mobile application in 15 seconds
+-- 1. SDL sends ScrollableMessage response with 'GENERIC_ERROR, success:false' to mobile application in 17 seconds
 ---------------------------------------------------------------------------------------------------
 --[[ Required Shared libraries ]]
 local runner = require('user_modules/script_runner')
@@ -26,11 +26,18 @@ local common = require('user_modules/sequences/actions')
 --[[ Test Configuration ]]
 runner.testSettings.isSelfIncluded = false
 
+--[[ Local Constants ]]
+local delay = 1000
+local defaultTimeout = 10000
+
 --[[ Local Functions ]]
 local function RCPs()
+  local scrollableMessageTimeout = 5000
+  local uiNotif = 2000
+  local ttsNotif = 5000
   local scrollableParams = {
     scrollableMessageBody = "scrollableMessageBody text",
-    timeout = 5000
+    timeout = scrollableMessageTimeout
   }
   local speakParams = {
     ttsChunks = { { text = "Speak text", type = "TEXT" } }
@@ -44,7 +51,7 @@ local function RCPs()
         common.getHMIConnection():SendNotification("UI.OnResetTimeout",
           { appID = common.getHMIAppId(), methodName = "UI.ScrollableMessage" })
       end
-      RUN_AFTER(uiOnResetTimeout, 2000)
+      RUN_AFTER(uiOnResetTimeout, uiNotif)
     end)
   common.getHMIConnection():ExpectRequest("TTS.Speak")
   :Do(function()
@@ -53,12 +60,12 @@ local function RCPs()
         common.getHMIConnection():SendNotification("TTS.OnResetTimeout",
           { appID = common.getHMIAppId(), methodName = "TTS.Speak" })
       end
-      RUN_AFTER(ttsOnResetTimeout, 5000)
+      RUN_AFTER(ttsOnResetTimeout, ttsNotif)
     end)
   common.getMobileSession():ExpectResponse(cid1, { success = false, resultCode = "GENERIC_ERROR"})
-  :Timeout(13000)
+  :Timeout(defaultTimeout + uiNotif + scrollableMessageTimeout + delay)
   common.getMobileSession():ExpectResponse(cid2, { success = false, resultCode = "GENERIC_ERROR"})
-  :Timeout(16000)
+  :Timeout(defaultTimeout + ttsNotif + delay)
 end
 
 --[[ Scenario ]]
