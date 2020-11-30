@@ -1,3 +1,11 @@
+./test_scripts/Defects_775/001_AddCommand_success.lua
+./test_scripts/Defects_775/002_AddCommand_RunAfter_success.lua
+./test_scripts/Defects_775/003_AddCommand_HMI_does_not_respond_to_one_of_the_component.lua
+./test_scripts/Defects_775/004_AddCommand_HMI_respond_rejected.lua
+./test_scripts/Defects_775/005_AddCommand_HMI_respond_generic_error.lua
+./test_scripts/Defects_775/006_AddCommand_unexpected_disconnection_before_response.lua
+./test_scripts/Defects_775/007_AddCommand_unexpected_disconnection_after_response.lua
+./test_scripts/Defects_775/008_DeleteCommand_HMI_does_not_respond_to_one_of_the_component.lua
 ./test_scripts/Defects_775/009_OnResetTimeout_with_response.lua
 ./test_scripts/Defects_775/010_OnResetTimeout_without_response.lua
 ./test_scripts/Defects_775/011_OnResetTimeout_2_RPCs_in_the_same_time_with_responses.lua
