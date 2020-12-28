@@ -9,6 +9,8 @@ local runner = require('user_modules/script_runner')
 local utils = require('user_modules/utils')
 local events = require("events")
 local bson = require('bson4lua')
+local SDL = require('SDL')
+local hmi_values = require("user_modules/hmi_values")
 
 --[[ General configuration parameters ]]
 config.defaultProtocolVersion = 5
@@ -27,6 +29,7 @@ common.cloneTable = utils.cloneTable
 common.testSettings = runner.testSettings
 common.Title = runner.Title
 common.Step = runner.Step
+common.getDefaultHMITable = hmi_values.getDefaultHMITable
 
 common.bsonType = {
     DOUBLE   = 0x01,
@@ -37,6 +40,8 @@ common.bsonType = {
     INT32    = 0x10,
     INT64    = 0x12
 }
+
+local hmiDefaultCapabilities = common.getDefaultHMITable()
 
 --[[ Tests Configuration ]]
 runner.testSettings.isSelfIncluded = false
@@ -121,7 +126,7 @@ function common.startServiceUnprotectedNACK(pAppId, pServiceId, pRequestPayload,
     end)
 end
 
-function common.registerAppUpdatedProtocolVersion(hasPTU)
+function common.registerAppUpdatedProtocolVersion(hasPTU, responseExpectedData)
     local appId = 1
     local session = common.getMobileSession()
     local msg = {
@@ -151,7 +156,14 @@ function common.registerAppUpdatedProtocolVersion(hasPTU)
             end
         end)
 
-        session:ExpectResponse(corId, { success = true, resultCode = "SUCCESS" })
+        local responseData = { success = true, resultCode = "SUCCESS" }
+        if responseExpectedData then
+            for key, value in pairs(responseExpectedData) do
+                responseData[key] = value
+            end
+        end
+
+        session:ExpectResponse(corId, responseData)
         :Do(function()
             session:ExpectNotification("OnHMIStatus",
                 { hmiLevel = "NONE", audioStreamingState = "NOT_AUDIBLE", systemContext = "MAIN" })
@@ -196,6 +208,106 @@ end
 
 function common.setProtectedServicesInIni()
   common.sdl.setSDLIniParameter("ForceProtectedService", "0x0A, 0x0B")
+end
+
+function common.startWithCustCap(pHMIParams)
+    local event = actions.run.createEvent()
+    actions.init.SDL()
+    :Do(function()
+        actions.init.HMI()
+        :Do(function()
+            actions.init.HMI_onReady(pHMIParams or hmiDefaultCapabilities)
+            :Do(function()
+                actions.init.connectMobile()
+                :Do(function()
+                    actions.init.allowSDL()
+                    :Do(function()
+                        actions.hmi.getConnection():RaiseEvent(event, "Start event")
+                    end)
+                end)
+            end)
+        end)
+    end)
+    return actions.hmi.getConnection():ExpectEvent(event, "Start event")
+end
+
+function common.getVehicleTypeDataFromInitialCap()
+    local initialCap = SDL.HMICap.get()
+    return initialCap.VehicleInfo.vehicleType
+end
+
+function common.getVehicleTypeDataFromCachedCap()
+    local initialCap = SDL.HMICapCache.get()
+    return initialCap.VehicleInfo.vehicleType
+end
+
+function common.getCapWithMandatoryExpVehicleTypeAndInfo()
+    local initialCap = common.cloneTable(hmiDefaultCapabilities)
+    initialCap.VehicleInfo.GetVehicleType.mandatory = true
+    initialCap.BasicCommunication.GetSystemInfo.mandatory = true
+    return initialCap
+end
+
+function common.getHMIParamsWithOutRequests(pParams)
+  local params = pParams or utils.cloneTable(hmiDefaultCapabilities)
+  params.RC.GetCapabilities.occurrence = 0
+  params.UI.GetSupportedLanguages.occurrence = 0
+  params.UI.GetCapabilities.occurrence = 0
+  params.VR.GetSupportedLanguages.occurrence = 0
+  params.VR.GetCapabilities.occurrence = 0
+  params.TTS.GetSupportedLanguages.occurrence = 0
+  params.TTS.GetCapabilities.occurrence = 0
+  params.Buttons.GetCapabilities.occurrence = 0
+  params.VehicleInfo.GetVehicleType.occurrence = 0
+  params.UI.GetLanguage.occurrence = 0
+  params.VR.GetLanguage.occurrence = 0
+  params.TTS.GetLanguage.occurrence = 0
+  return params
+end
+
+function common.ignitionOff()
+  local hmiConnection = actions.hmi.getConnection()
+  local mobileConnection = actions.mobile.getConnection()
+  config.ExitOnCrash = false
+  local timeout = 5000
+  local function removeSessions()
+    for i = 1, actions.mobile.getAppsCount() do
+      actions.mobile.deleteSession(i)
+    end
+  end
+  local event = events.Event()
+  event.matches = function(event1, event2) return event1 == event2 end
+  mobileConnection:ExpectEvent(event, "SDL shutdown")
+  :Do(function()
+    removeSessions()
+    StopSDL()
+    config.ExitOnCrash = true
+  end)
+  hmiConnection:SendNotification("BasicCommunication.OnExitAllApplications", { reason = "SUSPEND" })
+  hmiConnection:ExpectNotification("BasicCommunication.OnSDLPersistenceComplete")
+  :Do(function()
+    hmiConnection:SendNotification("BasicCommunication.OnExitAllApplications",{ reason = "IGNITION_OFF" })
+    for i = 1, actions.mobile.getAppsCount() do
+      actions.mobile.getSession(i):ExpectNotification("OnAppInterfaceUnregistered", { reason = "IGNITION_OFF" })
+    end
+  end)
+  hmiConnection:ExpectNotification("BasicCommunication.OnAppUnregistered", { unexpectedDisconnect = false })
+  :Times(actions.mobile.getAppsCount())
+  local isSDLShutDownSuccessfully = false
+  hmiConnection:ExpectNotification("BasicCommunication.OnSDLClose")
+  :Do(function()
+    utils.cprint(35, "SDL was shutdown successfully")
+    isSDLShutDownSuccessfully = true
+    mobileConnection:RaiseEvent(event, event)
+  end)
+  :Timeout(timeout)
+  local function forceStopSDL()
+    if isSDLShutDownSuccessfully == false then
+      utils.cprint(35, "SDL was shutdown forcibly")
+      mobileConnection:RaiseEvent(event, event)
+    end
+  end
+  actions.run.runAfter(forceStopSDL, timeout + 500)
 end
 
 return common
