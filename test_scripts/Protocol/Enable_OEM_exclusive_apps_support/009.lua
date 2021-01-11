@@ -8,20 +8,6 @@ local common = require("test_scripts/Protocol/commonProtocol")
 local hmiCap = common.setHMIcap(common.vehicleTypeInfoParams.custom)
 local rpcServiceAckParams = common.getRpcServiceAckParams(hmiCap)
 
-local hmiCapWithOutRequests = common.cloneTable(hmiCap)
-hmiCapWithOutRequests.RC.GetCapabilities.occurrence = 0
-hmiCapWithOutRequests.UI.GetSupportedLanguages.occurrence = 0
-hmiCapWithOutRequests.UI.GetCapabilities.occurrence = 0
-hmiCapWithOutRequests.VR.GetSupportedLanguages.occurrence = 0
-hmiCapWithOutRequests.VR.GetCapabilities.occurrence = 0
-hmiCapWithOutRequests.TTS.GetSupportedLanguages.occurrence = 0
-hmiCapWithOutRequests.TTS.GetCapabilities.occurrence = 0
-hmiCapWithOutRequests.Buttons.GetCapabilities.occurrence = 0
-hmiCapWithOutRequests.VehicleInfo.GetVehicleType.occurrence = 0
-hmiCapWithOutRequests.UI.GetLanguage.occurrence = 0
-hmiCapWithOutRequests.VR.GetLanguage.occurrence = 0
-hmiCapWithOutRequests.TTS.GetLanguage.occurrence = 0
-
 --[[ Local Functions ]]
 local function updateHMICapabilitiesFile()
   local hmiCapTbl = common.getHMICapabilitiesFromFile()
@@ -41,7 +27,7 @@ common.Step("Ignition off", common.ignitionOff)
 
 common.Title("Test")
 common.Step("Ignition on, Start SDL, HMI does not send GetSystemInfo notification",
-  common.startWithCustomCap, { hmiCapWithOutRequests })
+  common.startWithCustomCap, { hmiCap, true })
 common.Step("Start RPC Service, Vehicle type data in StartServiceAck", common.startRpcService, { rpcServiceAckParams })
 common.Step("Vehicle type data in RAI", common.registerAppEx, { common.vehicleTypeInfoParams.custom })
 

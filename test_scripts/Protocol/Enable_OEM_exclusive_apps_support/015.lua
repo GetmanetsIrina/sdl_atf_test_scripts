@@ -3,13 +3,6 @@
 ---------------------------------------------------------------------------------------------------
 --[[ Required Shared libraries ]]
 local common = require("test_scripts/Protocol/commonProtocol")
-local test = require("user_modules/dummy_connecttest")
-
---[[ Overridden Functions ]]
-local initHMI_onReady_Orig = test.initHMI_onReady
-function test:initHMI_onReady(hmi_table)
-  return initHMI_onReady_Orig(self, hmi_table, false)
-end
 
 --[[ Local Variables ]]
 local vehicleTypeInfoParams = {

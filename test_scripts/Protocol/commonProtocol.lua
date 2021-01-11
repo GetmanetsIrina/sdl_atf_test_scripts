@@ -37,7 +37,7 @@ common.ptsTable = actions.sdl.getPTS
 common.getParams = actions.app.getParams
 common.isTableEqual = utils.isTableEqual
 common.failTestStep = actions.run.fail
-common.initHMI_onReady = ssl.initHMI_onReady
+common.init.HMI_onReady = actions.init.HMI_onReady
 common.getHMICapabilitiesFromFile = actions.sdl.getHMICapabilitiesFromFile
 common.setHMICapabilitiesToFile = actions.sdl.setHMICapabilitiesToFile
 common.createSession = actions.mobile.createSession
@@ -274,7 +274,15 @@ local function registerGetSystemTimeResponse()
   :Times(AnyNumber())
 end
 
-function common.startWithCustomCap(pHMIParams)
+function common.init.HMI_onReady(pHMIParams, isCacheUsed)
+    local ret = test:initHMI_onReady(pHMIParams, isCacheUsed or false)
+    ret:Do(function()
+        utils.cprint(35, "HMI is ready")
+    end)
+    return ret
+end
+
+function common.startWithCustomCap(pHMIParams, isCacheUsed)
     local event = actions.run.createEvent()
     actions.init.SDL()
     :Do(function()
@@ -284,7 +292,7 @@ function common.startWithCustomCap(pHMIParams)
                 propertyName = "BasicCommunication.OnSystemTimeReady" })
             actions.getHMIConnection():ExpectResponse(rid)
             :Do(function()
-                actions.init.HMI_onReady(pHMIParams or hmiDefaultCapabilities)
+                common.init.HMI_onReady(pHMIParams or hmiDefaultCapabilities, isCacheUsed)
                 :Do(function()
                     actions.getHMIConnection():SendNotification("BasicCommunication.OnSystemTimeReady")
                     registerGetSystemTimeResponse()
