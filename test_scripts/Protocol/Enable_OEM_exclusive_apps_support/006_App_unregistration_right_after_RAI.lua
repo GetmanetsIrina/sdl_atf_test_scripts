@@ -6,7 +6,7 @@
 --  and EndService after successful registration
 --
 -- Steps:
--- 1. HMI provides all vehicle type data in BC.GetSystemInfo(ccpu_version, systemHardwareVersion)
+-- 1. HMI provides all vehicle type data in BC.GetSystemInfo(ccpu_version)
 --  and VI.GetVehicleType(make, model, modelYear, trim) responses
 -- 2. RPC service is opened by app via 5th protocol
 -- 3. App sends RAI request via 5th protocol

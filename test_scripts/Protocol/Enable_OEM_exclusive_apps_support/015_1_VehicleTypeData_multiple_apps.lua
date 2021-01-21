@@ -5,7 +5,7 @@
 --  RAI via 5 protocol after all vehicle type data have been received
 --
 -- Steps:
--- 1. HMI provides all vehicle type data in BC.GetSystemInfo(ccpu_version, systemHardwareVersion)
+-- 1. HMI provides all vehicle type data in BC.GetSystemInfo(ccpu_version)
 --  and VI.GetVehicleType(make, model, modelYear, trim) responses
 -- 2. App1 requests StartService(RPC) via 5th protocol and then RAI
 -- SDL does:

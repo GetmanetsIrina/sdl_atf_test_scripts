@@ -66,18 +66,17 @@ common.vehicleTypeInfoParams = {
     model = "Focus",
     modelYear = "2015",
     trim = "SEL",
-    ccpu_version = "12345_TV",
-    systemHardwareVersion = "V4567_GJK"
+    ccpu_version = "12345_TV"
   },
   custom = {
     make = "OEM1",
     model = "Mustang",
     modelYear = "2020",
     trim = "LES",
-    ccpu_version = "2020_TV",
-    systemHardwareVersion = "2020_GJK"
+    ccpu_version = "2020_TV"
   }
 }
+common.defaultSystemHardwareVersion = " "
 
 --[[ Tests Configuration ]]
 runner.testSettings.isSelfIncluded = false
@@ -310,10 +309,10 @@ function common.getRpcServiceAckParams(pHMIcap)
     local ackParams = {
         make = common.setStringBsonValue(vehicleTypeParams.make),
         model = common.setStringBsonValue(vehicleTypeParams.model),
-        modelYear = common.setStringBsonValue(vehicleTypeParams.modelYear),
+        ["model year"] = common.setStringBsonValue(vehicleTypeParams.modelYear),
         trim = common.setStringBsonValue(vehicleTypeParams.trim),
         systemSoftwareVersion = common.setStringBsonValue(systemInfoParams.ccpu_version),
-        systemHardwareVersion = common.setStringBsonValue(systemInfoParams.systemHardwareVersion)
+        systemHardwareVersion = common.setStringBsonValue(common.defaultSystemHardwareVersion)
     }
     for key, KeyValue in pairs(ackParams) do
         if not KeyValue.value then
@@ -363,7 +362,6 @@ function common.registerAppEx(responseExpectedData, pAppId)
 
     local responseData = { success = true, resultCode = "SUCCESS" }
     responseData.systemSoftwareVersion = responseExpectedData.ccpu_version
-    responseData.systemHardwareVersion = responseExpectedData.systemHardwareVersion
     local vehicleType = {
         make = responseExpectedData.make,
         model = responseExpectedData.model,
@@ -379,7 +377,7 @@ function common.registerAppEx(responseExpectedData, pAppId)
     :ValidIf(function(_, data)
         local isResult  = true
         local errorMsg = ""
-        if not responseExpectedData.systemHardwareVersion and data.systemHardwareVersion then
+        if data.systemHardwareVersion then
             errorMsg = errorMsg .. "\n RAI response contains unexpected systemHardwareVersion parameter"
             isResult = false
         end
@@ -408,7 +406,6 @@ function common.setHMIcap(pVehicleTypeData)
 
     local getSystemInfoParams = hmicap.BasicCommunication.GetSystemInfo.params
     getSystemInfoParams.ccpu_version = pVehicleTypeData.ccpu_version
-    getSystemInfoParams.systemHardwareVersion = pVehicleTypeData.systemHardwareVersion
 
     return hmicap
 end
@@ -597,10 +594,10 @@ function common.getRpcServiceAckParamsFromStruct(pVehicleTypeInfoParams)
     local ackParams = {
         make = common.setStringBsonValue(pVehicleTypeInfoParams.make),
         model = common.setStringBsonValue(pVehicleTypeInfoParams.model),
-        modelYear = common.setStringBsonValue(pVehicleTypeInfoParams.modelYear),
+        ["model year"] = common.setStringBsonValue(pVehicleTypeInfoParams.modelYear),
         trim = common.setStringBsonValue(pVehicleTypeInfoParams.trim),
         systemSoftwareVersion = common.setStringBsonValue(pVehicleTypeInfoParams.ccpu_version),
-        systemHardwareVersion = common.setStringBsonValue(pVehicleTypeInfoParams.systemHardwareVersion)
+        systemHardwareVersion = common.setStringBsonValue(common.defaultSystemHardwareVersion)
     }
     for key, KeyValue in pairs(ackParams) do
         if not KeyValue.value then
