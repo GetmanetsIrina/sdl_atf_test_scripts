@@ -16,8 +16,7 @@
 --     .ini file in HMICapabilities parameter via StartServiceAck to the app
 -- 4. App sends RAI request via 5th protocol
 -- SDL does:
---  - Provide systemSoftwareVersion and systemHardwareVersion values received from HMI in BC.GetSystemInfo response
---     via RAI response to the app
+--  - Provide systemSoftwareVersion value received from HMI in BC.GetSystemInfo response via RAI response to the app
 --  - Provide the values for make, model, modelYear, trim parameters from the initial SDL capabilities file defined in
 --     .ini file in HMICapabilities parameter via RAI response to the app
 ---------------------------------------------------------------------------------------------------

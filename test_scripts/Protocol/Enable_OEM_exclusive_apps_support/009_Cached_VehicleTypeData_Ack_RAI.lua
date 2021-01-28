@@ -20,8 +20,7 @@
 --     in StartServiceAck to the app
 -- 5. App requests RAI
 -- SDL does:
---  - Provide systemSoftwareVersion and systemHardwareVersion values received from HMI in BC.GetSystemInfo response
---     via RAI response to the app
+--  - Provide systemSoftwareVersion values received from HMI in BC.GetSystemInfo response via RAI response to the app
 --  - Provide the values for make, model, modelYear, trim parameters from cached HMI capabilities
 --     in RAI response to the app
 ---------------------------------------------------------------------------------------------------

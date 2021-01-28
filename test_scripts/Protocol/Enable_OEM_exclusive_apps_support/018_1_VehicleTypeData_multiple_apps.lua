@@ -10,11 +10,11 @@
 -- 2. App1 requests StartService(RPC) via 5th protocol and then RAI
 -- SDL does:
 --  - Provide the vehicle type info with all parameter values received from HMI in StartServiceAck and
---     RAI response to the app1
+--     RAI response(except systemHardwareVersion) to the app1
 -- 3. App2 requests StartService(RPC) via 5th protocol and then RAI
 -- SDL does:
 --  - Provide the vehicle type info with all parameter values received from HMI in StartServiceAck and
---     RAI response to the app2
+--     RAI response(except systemHardwareVersion) to the app2
 ---------------------------------------------------------------------------------------------------
 --[[ Required Shared libraries ]]
 local common = require("test_scripts/Protocol/commonProtocol")
