@@ -363,7 +363,6 @@ function common.registerAppEx(responseExpectedData, pAppId)
 
     local responseData = { success = true, resultCode = "SUCCESS" }
     responseData.systemSoftwareVersion = responseExpectedData.ccpu_version
-    responseData.systemHardwareVersion = responseExpectedData.systemHardwareVersion
     local vehicleType = {
         make = responseExpectedData.make,
         model = responseExpectedData.model,
@@ -379,7 +378,7 @@ function common.registerAppEx(responseExpectedData, pAppId)
     :ValidIf(function(_, data)
         local isResult  = true
         local errorMsg = ""
-        if not responseExpectedData.systemHardwareVersion and data.systemHardwareVersion then
+        if data.systemHardwareVersion then
             errorMsg = errorMsg .. "\n RAI response contains unexpected systemHardwareVersion parameter"
             isResult = false
         end
