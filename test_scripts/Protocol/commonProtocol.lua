@@ -206,8 +206,9 @@ function common.startServiceUnprotectedNACK(pAppId, pServiceId, pRequestPayload,
     return ret
 end
 
-function common.registerAppUpdatedProtocolVersion(hasPTU)
+function common.registerAppUpdatedProtocolVersion(hasPTU, pProtocolVersion)
     local appId = 1
+    pProtocolVersion = pProtocolVersion or "5.3.0"
     local session = common.getMobileSession()
     local msg = {
         serviceType = common.serviceType.RPC,
@@ -215,7 +216,7 @@ function common.registerAppUpdatedProtocolVersion(hasPTU)
         frameInfo = constants.FRAME_INFO.START_SERVICE,
         sessionId = session.sessionId,
         encryption = false,
-        binaryData = bson.to_bytes({ protocolVersion = { type = common.bsonType.STRING, value = "5.3.0" }})
+        binaryData = bson.to_bytes({ protocolVersion = { type = common.bsonType.STRING, value = pProtocolVersion }})
     }
     session:Send(msg)
 
@@ -465,7 +466,7 @@ end
 
 function common.startRpcService(pAckParams, pAppId)
     pAppId = pAppId or 1
-    local reqParams = { protocolVersion = common.setStringBsonValue("5.3.0") }
+    local reqParams = { protocolVersion = common.setStringBsonValue("5.4.0") }
     return common.startServiceUnprotectedACK(pAppId, common.serviceType.RPC, reqParams, pAckParams)
 end
 
