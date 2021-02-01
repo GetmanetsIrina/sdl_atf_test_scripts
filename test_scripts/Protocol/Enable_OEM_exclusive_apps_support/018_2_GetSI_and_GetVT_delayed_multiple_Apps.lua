@@ -30,9 +30,7 @@ local delay2 = 3000
 
 --[[ Local Functions ]]
 local function delayedStartServiceAckMultipleApps(_, pTS, pRpcServiceAckParams)
-
-
-  local reqParams = { protocolVersion = common.setStringBsonValue("5.3.0") }
+  local reqParams = { protocolVersion = common.setStringBsonValue("5.4.0") }
   local mobSession1 = common.createSession(1)
   local mobSession2 = common.createSession(2)
   local msg = {

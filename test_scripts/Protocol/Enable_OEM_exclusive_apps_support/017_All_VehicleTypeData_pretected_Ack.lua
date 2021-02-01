@@ -20,7 +20,7 @@ local rpcServiceAckParams = common.getRpcServiceAckParams(hmiCap)
 
 local rpcServiceParams = {
   reqParams = {
-    protocolVersion = { type = common.bsonType.STRING, value = "5.3.0" }
+    protocolVersion = { type = common.bsonType.STRING, value = "5.4.0" }
   }
 }
 

@@ -17,7 +17,7 @@
 --  - Provide the values for make, model, modelYear, trim parameters received from HMI in StartServiceAck to the app
 -- 4. App requests RAI
 -- SDL does:
---  - Provide systemHardwareVersion and systemSoftwareVersion values from the DB in RAI response to the app
+--  - Provide systemSoftwareVersion value from the DB in RAI response to the app
 --  - Provide the values for make, model, modelYear, trim parameters received from HMI in RAI response to the app
 ---------------------------------------------------------------------------------------------------
 --[[ Required Shared libraries ]]

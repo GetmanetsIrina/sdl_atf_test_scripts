@@ -17,6 +17,9 @@ local common = require("test_scripts/Protocol/commonProtocol")
 --[[ Local Variables ]]
 local hmiCap = common.setHMIcap(common.vehicleTypeInfoParams.default)
 
+local rpcProtocolVer = "5.4.0"
+local woPTU = nil
+
 local videoServiceParams = {
   reqParams = {
     height = { type = common.bsonType.INT32,  value = 350 },
@@ -60,7 +63,7 @@ common.Step("Clean environment", common.preconditions)
 common.Step("Start SDL, HMI, connect Mobile, start Session", common.start, { hmiCap })
 
 common.Title("Test")
-common.Step("Register App", common.registerAppUpdatedProtocolVersion)
+common.Step("Register App", common.registerAppUpdatedProtocolVersion, { woPTU, rpcProtocolVer })
 common.Step("Activate App", common.activateApp)
 common.Step("Start unprotected Video Service, ACK", startServiceUnprotectedACK,
   { 1, common.serviceType.VIDEO, videoServiceParams.reqParams, videoServiceParams.reqParams, setVideoConfig })
